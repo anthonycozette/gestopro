@@ -1,25 +1,23 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "../components/navbar";
-import Footer from "../components/footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "GestoPro - Gestion comptable pour auto-entrepreneurs",
-    description:
-        "Solution SaaS de gestion comptable avec IA pour micro-entreprises",
+  title: "GestoPro - Gestion comptable pour auto-entrepreneurs",
+  description:
+    "Solution SaaS de gestion comptable avec IA pour micro-entreprises",
 };
 
 export default function RootLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <html lang="fr">
-            <body className={inter.className}>{children}</body>
-        </html>
-    );
+  return (
+    <html lang="fr">
+      <body className={inter.className}>{children}</body>
+    </html>
+  );
 }
