@@ -83,9 +83,44 @@ class SubscriptionController extends AbstractController
     }
 
     #[Route('/subscription/success', name: 'app_subscription_success')]
-    public function success(): Response
+    public function success(Request $request, StripeService $stripe): Response
     {
+        $sessionId = $request->query->get('session_id');
+
+        if ($sessionId) {
+            try {
+                $stripe->handleSuccessfulCheckout($this->getUser(), $sessionId);
+            } catch (ApiErrorException $e) {
+                // Ne pas bloquer la page de succès si Stripe est indisponible
+            }
+        }
+
         return $this->render('subscription/success.html.twig');
+    }
+
+    #[Route('/subscription/sync', name: 'app_subscription_sync', methods: ['POST'])]
+    public function sync(Request $request, StripeService $stripe): Response
+    {
+        if (!$this->isCsrfTokenValid('subscription_sync', $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token CSRF invalide.');
+            return $this->redirectToRoute('app_subscription_manage');
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        try {
+            $plan = $stripe->syncSubscriptionFromStripe($user);
+            if ($plan) {
+                $this->addFlash('success', 'Abonnement synchronisé : plan ' . ucfirst($plan) . ' activé.');
+            } else {
+                $this->addFlash('error', 'Aucun abonnement actif trouvé sur Stripe pour ce compte.');
+            }
+        } catch (ApiErrorException $e) {
+            $this->addFlash('error', 'Erreur Stripe : ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('app_subscription_manage');
     }
 
     #[Route('/subscription/portal', name: 'app_subscription_portal', methods: ['POST'])]
