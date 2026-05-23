@@ -1,0 +1,120 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ invoice.number }} — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>{{ invoice.number }}</h1>
+    <div class="topbar-actions">
+        {% if invoice.status == 'draft' %}
+            <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'sent'}) }}" style="display:inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
+                <button type="submit" class="btn btn-primary">Marquer comme envoyée</button>
+            </form>
+        {% endif %}
+        {% if invoice.status == 'sent' %}
+            <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'paid'}) }}" style="display:inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
+                <button type="submit" class="btn btn-success">Marquer comme payée</button>
+            </form>
+        {% endif %}
+        <a href="{{ path('app_invoice_edit', {id: invoice.id}) }}" class="btn btn-secondary">Modifier</a>
+        <a href="{{ path('app_invoices') }}" class="btn btn-secondary">Retour</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
+    <div>
+        <!-- Lignes -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:16px;">
+                <div>
+                    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Client</div>
+                    <div style="font-size:16px;font-weight:600;">{{ invoice.client.name }}</div>
+                    {% if invoice.client.email %}<div style="color:#6b7280;font-size:13px;">{{ invoice.client.email }}</div>{% endif %}
+                    {% if invoice.client.fullAddress %}<div style="color:#6b7280;font-size:13px;">{{ invoice.client.fullAddress }}</div>{% endif %}
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;">Émise le</div>
+                    <div>{{ invoice.issuedAt|date('d/m/Y') }}</div>
+                    {% if invoice.dueAt %}
+                    <div style="font-size:12px;color:#6b7280;margin-top:8px;text-transform:uppercase;">Échéance</div>
+                    <div>{{ invoice.dueAt|date('d/m/Y') }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th style="text-align:right">Qté</th>
+                        <th style="text-align:right">PU HT</th>
+                        <th style="text-align:right">TVA</th>
+                        <th style="text-align:right">Total HT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in invoice.lines %}
+                    <tr>
+                        <td>{{ line.description }}</td>
+                        <td style="text-align:right">{{ line.quantity }}</td>
+                        <td style="text-align:right">{{ line.unitPrice|number_format(2, ',', ' ') }} €</td>
+                        <td style="text-align:right">{{ line.tvaRate }} %</td>
+                        <td style="text-align:right"><strong>{{ line.totalHt|number_format(2, ',', ' ') }} €</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="border-top:2px solid #e5e7eb; margin-top:12px; padding-top:12px;">
+                <div style="display:flex; justify-content:flex-end; gap:40px;">
+                    <div style="text-align:right;">
+                        <div style="color:#6b7280; font-size:13px; margin-bottom:4px;">Total HT</div>
+                        <div style="color:#6b7280; font-size:13px; margin-bottom:8px;">TVA</div>
+                        <div style="font-weight:700; font-size:16px;">Total TTC</div>
+                    </div>
+                    <div style="text-align:right; min-width:120px;">
+                        <div style="font-size:13px; margin-bottom:4px;">{{ invoice.totalHt|number_format(2, ',', ' ') }} €</div>
+                        <div style="font-size:13px; margin-bottom:8px;">{{ invoice.totalTva|number_format(2, ',', ' ') }} €</div>
+                        <div style="font-weight:700; font-size:16px;">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if invoice.notes %}
+            <div style="margin-top:16px; padding-top:12px; border-top:1px solid #e5e7eb; color:#6b7280; font-size:13px;">
+                {{ invoice.notes }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="card-title">Statut</div>
+            <div style="margin-bottom:16px;">
+                {% if invoice.status == 'paid' %}<span class="badge badge-green" style="font-size:14px;padding:5px 12px;">Payée</span>
+                {% elseif invoice.status == 'sent' %}<span class="badge badge-blue" style="font-size:14px;padding:5px 12px;">Envoyée</span>
+                {% elseif invoice.status == 'overdue' %}<span class="badge badge-red" style="font-size:14px;padding:5px 12px;">En retard</span>
+                {% elseif invoice.status == 'draft' %}<span class="badge badge-gray" style="font-size:14px;padding:5px 12px;">Brouillon</span>
+                {% elseif invoice.status == 'cancelled' %}<span class="badge badge-orange" style="font-size:14px;padding:5px 12px;">Annulée</span>
+                {% endif %}
+            </div>
+
+            {% if invoice.paidAt %}
+            <div style="font-size:13px; color:#6b7280;">Payée le {{ invoice.paidAt|date('d/m/Y') }}</div>
+            {% endif %}
+
+            <div style="margin-top:16px; border-top:1px solid #e5e7eb; padding-top:12px;">
+                <form method="post" action="{{ path('app_invoice_delete', {id: invoice.id}) }}"
+                      onsubmit="return confirm('Supprimer cette facture définitivement ?')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete_invoice_' ~ invoice.id) }}">
+                    <button type="submit" class="btn btn-danger btn-sm" style="width:100%">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
