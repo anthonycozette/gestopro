@@ -1,7 +1,7 @@
 knp_snappy:
     pdf:
         enabled: true
-        binary: "%kernel.project_dir%/vendor/h4cc/wkhtmltopdf-i386/bin/wkhtmltopdf-i386"
+        binary: "%env(WKHTMLTOPDF_PATH)%"
         options:
             encoding: utf-8
             margin-top: 15
@@ -11,4 +11,4 @@ knp_snappy:
             page-size: A4
     image:
         enabled: true
-        binary: "%kernel.project_dir%/vendor/h4cc/wkhtmltopdf-i386/bin/wkhtmltopdf-i386"
+        binary: "%env(WKHTMLTOPDF_PATH)%"
