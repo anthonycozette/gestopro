@@ -139,7 +139,7 @@ Accountant ────────────────┘
 
 ---
 
-## Phase 5 — SaaS & Abonnements ⬜
+## Phase 5 — SaaS & Abonnements ✅
 
 | Plan    | Prix      | Limites                                      |
 |---------|-----------|----------------------------------------------|
@@ -147,11 +147,14 @@ Accountant ────────────────┘
 | Pro     | 19 €/mois | Illimité, assistant IA, OCR reçus            |
 | Expert  | 49 €/mois | Pro + portail comptable, bilans IA illimités |
 
-- [ ] Stripe Checkout + webhooks
-- [ ] Gestion abonnement (upgrade, downgrade, résiliation)
-- [ ] Portail client Stripe (historique facturation)
-- [ ] Guards Symfony selon le plan actif
-- [ ] Page tarifs + landing page GestoPro
+- [x] Stripe Checkout (sessions subscription pro/expert)
+- [x] Webhooks Stripe (checkout.completed, subscription.updated/deleted)
+- [x] Gestion abonnement (upgrade, portail Stripe, résiliation via portail)
+- [x] Portail client Stripe (historique facturation, changement carte)
+- [x] Guards plan free (max 5 clients, max 10 factures/mois)
+- [x] Page tarifs publique `/pricing` (3 colonnes, FAQ)
+- [x] Sidebar : badge plan + lien abonnement
+- [ ] Prix Stripe à configurer dans `.env.local` (STRIPE_PRICE_PRO, STRIPE_PRICE_EXPERT)
 
 ---
 
@@ -261,7 +264,7 @@ MAILER_DSN=smtp://localhost:1025
 | 2     | ✅ Fait     | Comptabilité cœur            |
 | 3     | ✅ Fait     | Dashboard & stats            |
 | 4     | ✅ Fait     | Portail expert-comptable     |
-| 5     | ⬜ À faire  | SaaS & abonnements Stripe    |
+| 5     | ✅ Fait     | SaaS & abonnements Stripe    |
 | 6     | ⬜ À faire  | API mobile                   |
 | 7     | ⬜ À faire  | Intégration Claude AI        |
 | 8     | ⬜ À faire  | Sécurité, tests, prod        |
