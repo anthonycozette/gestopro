@@ -96,6 +96,13 @@
                                style="padding-right:32px;" required>
                         <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#6b7280;">€</span>
                     </div>
+                    <div id="ca-hint" style="margin-top:6px; font-size:12px; color:#2563eb; display:none;">
+                        <span id="ca-hint-text"></span>
+                        <button type="button" id="ca-apply" onclick="applyCaSuggestion()"
+                                style="margin-left:8px; background:#2563eb; color:#fff; border:none; border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer;">
+                            Appliquer
+                        </button>
+                    </div>
                 </div>
 
                 <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:12px; margin-bottom:16px;">
@@ -170,6 +177,8 @@ function updatePeriod() {
     fillPeriod();
 }
 
+let _caSuggestion = null;
+
 function fillPeriod() {
     const type = document.getElementById('periodicity').value;
     const year = document.getElementById('period-year').value;
@@ -192,6 +201,33 @@ function fillPeriod() {
     document.getElementById('period-start').value = start;
     document.getElementById('period-end').value   = end;
     document.getElementById('period-label').value  = label;
+
+    fetchCaSuggestion(start, end);
+}
+
+function fetchCaSuggestion(start, end) {
+    _caSuggestion = null;
+    document.getElementById('ca-hint').style.display = 'none';
+
+    fetch(`{{ path('app_urssaf_ca_suggestion') }}?start=${start}&end=${end}`)
+        .then(r => r.json())
+        .then(data => {
+            _caSuggestion = data.revenue;
+            const hint = document.getElementById('ca-hint');
+            const text = document.getElementById('ca-hint-text');
+            if (_caSuggestion > 0) {
+                text.textContent = `Factures payées sur la période : ${_caSuggestion.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € HT`;
+                hint.style.display = 'block';
+            }
+        })
+        .catch(() => {});
+}
+
+function applyCaSuggestion() {
+    if (_caSuggestion === null) return;
+    document.getElementById('revenue').value = _caSuggestion;
+    document.getElementById('ca-hint').style.display = 'none';
+    recalc();
 }
 
 function recalc() {

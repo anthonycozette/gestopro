@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\UrssafDeclaration;
+use App\Repository\InvoiceRepository;
 use App\Repository\UrssafDeclarationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -13,6 +15,28 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/urssaf', name: 'app_urssaf')]
 class UrssafController extends AbstractController
 {
+    #[Route('/ca-suggestion', name: '_ca_suggestion', methods: ['GET'])]
+    public function caSuggestion(Request $request, InvoiceRepository $invoiceRepo): JsonResponse
+    {
+        $start = $request->query->get('start', '');
+        $end   = $request->query->get('end', '');
+
+        if (!$start || !$end) {
+            return $this->json(['revenue' => 0]);
+        }
+
+        try {
+            $startDate = new \DateTimeImmutable($start);
+            $endDate   = new \DateTimeImmutable($end . ' 23:59:59');
+        } catch (\Throwable) {
+            return $this->json(['revenue' => 0]);
+        }
+
+        $revenue = $invoiceRepo->getRevenueForPeriod($this->getUser(), $startDate, $endDate);
+
+        return $this->json(['revenue' => round($revenue, 2)]);
+    }
+
     #[Route('', name: '')]
     public function index(UrssafDeclarationRepository $repo): Response
     {
