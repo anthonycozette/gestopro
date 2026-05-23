@@ -4,184 +4,146 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tarifs — GestoPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('styles/subscription.css') }}">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; color: #111827; }
-        a { color: #2563eb; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-
-        .nav { background: #1e293b; padding: 16px 40px; display: flex; justify-content: space-between; align-items: center; }
-        .nav-brand { font-size: 22px; font-weight: 700; color: #fff; }
-        .nav-brand span { color: #60a5fa; }
-        .nav-links { display: flex; gap: 16px; align-items: center; }
-        .nav-links a { color: #94a3b8; font-size: 14px; }
-        .nav-links a:hover { color: #fff; text-decoration: none; }
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: .15s; text-decoration: none; }
-        .btn-primary { background: #2563eb; color: #fff; }
-        .btn-primary:hover { background: #1d4ed8; text-decoration: none; color: #fff; }
-        .btn-white { background: #fff; color: #111827; }
-        .btn-white:hover { background: #f3f4f6; text-decoration: none; color: #111827; }
-
-        .hero { text-align: center; padding: 80px 20px 60px; }
-        .hero h1 { font-size: 42px; font-weight: 800; color: #111827; margin-bottom: 16px; }
-        .hero h1 span { color: #2563eb; }
-        .hero p { font-size: 18px; color: #6b7280; max-width: 520px; margin: 0 auto 12px; }
-        .hero-badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 4px 14px; border-radius: 99px; font-size: 13px; font-weight: 600; margin-bottom: 32px; }
-
-        .plans { display: flex; gap: 24px; max-width: 960px; margin: 0 auto; padding: 0 20px 80px; justify-content: center; }
-        .plan { background: #fff; border: 2px solid #e5e7eb; border-radius: 12px; padding: 32px 28px; flex: 1; max-width: 300px; position: relative; }
-        .plan.popular { border-color: #2563eb; }
-        .popular-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: #2563eb; color: #fff; font-size: 12px; font-weight: 700; padding: 3px 14px; border-radius: 99px; white-space: nowrap; }
-
-        .plan-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; margin-bottom: 8px; }
-        .plan-price { font-size: 40px; font-weight: 800; color: #111827; margin-bottom: 4px; }
-        .plan-price span { font-size: 16px; font-weight: 400; color: #9ca3af; }
-        .plan-desc { font-size: 14px; color: #6b7280; margin-bottom: 24px; line-height: 1.5; }
-        .plan-features { list-style: none; margin-bottom: 32px; }
-        .plan-features li { font-size: 14px; color: #374151; padding: 7px 0; border-bottom: 1px solid #f3f4f6; display: flex; gap: 10px; align-items: flex-start; }
-        .plan-features li:last-child { border-bottom: none; }
-        .plan-features .check { color: #16a34a; font-weight: 700; flex-shrink: 0; }
-        .plan-features .cross { color: #d1d5db; flex-shrink: 0; }
-        .plan-btn { display: block; text-align: center; padding: 11px 20px; border-radius: 8px; font-size: 15px; font-weight: 600; transition: .15s; }
-        .plan-btn-primary { background: #2563eb; color: #fff; }
-        .plan-btn-primary:hover { background: #1d4ed8; text-decoration: none; color: #fff; }
-        .plan-btn-outline { background: #fff; color: #374151; border: 2px solid #d1d5db; }
-        .plan-btn-outline:hover { border-color: #9ca3af; text-decoration: none; color: #111827; }
-
-        .faq { max-width: 680px; margin: 0 auto 80px; padding: 0 20px; }
-        .faq h2 { font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 32px; }
-        .faq-item { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
-        .faq-item h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
-        .faq-item p { font-size: 14px; color: #6b7280; line-height: 1.6; }
-
-        .footer { background: #1e293b; text-align: center; padding: 24px; font-size: 13px; color: #64748b; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: #fff; color: #1c1a17; -webkit-font-smoothing: antialiased; }
     </style>
 </head>
 <body>
 
-<nav class="nav">
-    <div class="nav-brand">Gesto<span>Pro</span></div>
-    <div class="nav-links">
+<nav class="pricing-nav">
+    <a href="{{ path('app_dashboard') }}" class="pricing-nav-brand">
+        <div class="brand-g">G</div>
+        GestoPro
+    </a>
+    <div class="pricing-nav-links">
         {% if app.user %}
             <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
-            <a href="{{ path('app_subscription_manage') }}" class="btn btn-primary">Mon abonnement</a>
+            <a href="{{ path('app_subscription_manage') }}" class="btn btn-primary" style="display:inline-flex;align-items:center;padding:8px 18px;background:#2563eb;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+                Mon abonnement
+            </a>
         {% else %}
             <a href="{{ path('app_login') }}">Connexion</a>
-            <a href="{{ path('app_register') }}" class="btn btn-primary">Essai gratuit</a>
+            <a href="{{ path('app_register') }}" style="display:inline-flex;align-items:center;padding:8px 18px;background:#2563eb;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+                Essai gratuit
+            </a>
         {% endif %}
     </div>
 </nav>
 
-<div class="hero">
-    <div class="hero-badge">Sans engagement · Résiliable à tout moment</div>
-    <h1>Tarifs simples,<br><span>sans surprise</span></h1>
+<section class="pricing-hero">
+    <div class="pricing-hero-badge">✦ Sans engagement · Résiliable à tout moment</div>
+    <h1>Tarifs simples,<br><em>sans surprise</em></h1>
     <p>Commencez gratuitement. Passez au Pro quand vous en avez besoin.</p>
-</div>
+</section>
 
-<div class="plans">
+<div class="pricing-plans">
 
-    <!-- FREE -->
-    <div class="plan">
+    {# ── FREE ── #}
+    <div class="plan-card">
         <div class="plan-name">Gratuit</div>
-        <div class="plan-price">0 € <span>/mois</span></div>
+        <div class="plan-price">0 € <span class="per">/mois</span></div>
         <div class="plan-desc">Pour découvrir GestoPro sans engagement.</div>
+        <div class="plan-divider"></div>
         <ul class="plan-features">
-            <li><span class="check">✓</span> Jusqu'à 5 clients</li>
-            <li><span class="check">✓</span> 10 factures / mois</li>
-            <li><span class="check">✓</span> Gestion des dépenses</li>
-            <li><span class="check">✓</span> Déclarations URSSAF</li>
-            <li><span class="cross">✗</span> <span style="color:#9ca3af">Assistant IA Claude</span></li>
-            <li><span class="cross">✗</span> <span style="color:#9ca3af">Scan OCR des reçus</span></li>
-            <li><span class="cross">✗</span> <span style="color:#9ca3af">Portail expert-comptable</span></li>
-            <li><span class="cross">✗</span> <span style="color:#9ca3af">Bilans IA illimités</span></li>
+            <li><span class="feat-on">✓</span> Jusqu'à 5 clients</li>
+            <li><span class="feat-on">✓</span> 10 factures / mois</li>
+            <li><span class="feat-on">✓</span> Gestion des dépenses</li>
+            <li><span class="feat-on">✓</span> Déclarations URSSAF</li>
+            <li><span class="feat-off">✗</span> <span>Assistant IA Claude</span></li>
+            <li><span class="feat-off">✗</span> <span>Scan OCR des reçus</span></li>
+            <li><span class="feat-off">✗</span> <span>Portail expert-comptable</span></li>
+            <li><span class="feat-off">✗</span> <span>Bilans IA illimités</span></li>
         </ul>
         {% if app.user %}
-            <a href="{{ path('app_dashboard') }}" class="plan-btn plan-btn-outline">Plan actuel</a>
+            <a href="{{ path('app_dashboard') }}" class="plan-cta plan-cta-outline">Plan actuel</a>
         {% else %}
-            <a href="{{ path('app_register') }}" class="plan-btn plan-btn-outline">Commencer gratuitement</a>
+            <a href="{{ path('app_register') }}" class="plan-cta plan-cta-outline">Commencer gratuitement</a>
         {% endif %}
     </div>
 
-    <!-- PRO -->
-    <div class="plan popular">
-        <div class="popular-badge">Le plus populaire</div>
-        <div class="plan-name">Pro</div>
-        <div class="plan-price">19 € <span>/mois</span></div>
+    {# ── PRO ── #}
+    <div class="plan-card popular">
+        <div class="plan-popular-badge">Le plus populaire</div>
+        <div class="plan-name pro">Pro</div>
+        <div class="plan-price">19 € <span class="per">/mois</span></div>
         <div class="plan-desc">Pour les indépendants qui veulent gagner du temps.</div>
+        <div class="plan-divider"></div>
         <ul class="plan-features">
-            <li><span class="check">✓</span> Clients illimités</li>
-            <li><span class="check">✓</span> Factures illimitées</li>
-            <li><span class="check">✓</span> Gestion des dépenses</li>
-            <li><span class="check">✓</span> Déclarations URSSAF</li>
-            <li><span class="check">✓</span> <strong>Assistant IA Claude</strong></li>
-            <li><span class="check">✓</span> <strong>Scan OCR des reçus</strong></li>
-            <li><span class="cross">✗</span> <span style="color:#9ca3af">Portail expert-comptable</span></li>
-            <li><span class="cross">✗</span> <span style="color:#9ca3af">Bilans IA illimités</span></li>
+            <li><span class="feat-on">✓</span> Clients illimités</li>
+            <li><span class="feat-on">✓</span> Factures illimitées</li>
+            <li><span class="feat-on">✓</span> Gestion des dépenses</li>
+            <li><span class="feat-on">✓</span> Déclarations URSSAF</li>
+            <li><span class="feat-on">✓</span> <strong>Assistant IA Claude</strong></li>
+            <li><span class="feat-on">✓</span> <strong>Scan OCR des reçus</strong></li>
+            <li><span class="feat-off">✗</span> <span>Portail expert-comptable</span></li>
+            <li><span class="feat-off">✗</span> <span>Bilans IA illimités</span></li>
         </ul>
         {% if app.user %}
             <form method="post" action="{{ path('app_subscription_checkout', {plan: 'pro'}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('subscription_checkout') }}">
-                <button type="submit" class="plan-btn plan-btn-primary" style="width:100%;cursor:pointer;border:none;">
-                    Passer au Pro →
-                </button>
+                <button type="submit" class="plan-cta plan-cta-primary">Passer au Pro →</button>
             </form>
         {% else %}
-            <a href="{{ path('app_register') }}" class="plan-btn plan-btn-primary">Essayer 14 jours gratuit</a>
+            <a href="{{ path('app_register') }}" class="plan-cta plan-cta-primary">Essayer 14 jours gratuit</a>
         {% endif %}
     </div>
 
-    <!-- EXPERT -->
-    <div class="plan">
-        <div class="plan-name">Expert</div>
-        <div class="plan-price">49 € <span>/mois</span></div>
-        <div class="plan-desc">Pour les auto-entrepreneurs accompagnés d'un expert-comptable.</div>
+    {# ── EXPERT ── #}
+    <div class="plan-card">
+        <div class="plan-name expert">Expert</div>
+        <div class="plan-price">49 € <span class="per">/mois</span></div>
+        <div class="plan-desc">Pour les indépendants accompagnés d'un expert-comptable.</div>
+        <div class="plan-divider"></div>
         <ul class="plan-features">
-            <li><span class="check">✓</span> Tout le plan Pro</li>
-            <li><span class="check">✓</span> <strong>Portail expert-comptable</strong></li>
-            <li><span class="check">✓</span> <strong>Bilans IA illimités</strong></li>
-            <li><span class="check">✓</span> Validation & tampon numérique</li>
-            <li><span class="check">✓</span> Annotation expert sur bilans</li>
-            <li><span class="check">✓</span> Support prioritaire</li>
-            <li><span class="check">✓</span> Export PDF premium</li>
+            <li><span class="feat-on">✓</span> Tout le plan Pro</li>
+            <li><span class="feat-on">✓</span> <strong>Portail expert-comptable</strong></li>
+            <li><span class="feat-on">✓</span> <strong>Bilans IA illimités</strong></li>
+            <li><span class="feat-on">✓</span> Validation & tampon numérique</li>
+            <li><span class="feat-on">✓</span> Annotation expert sur bilans</li>
+            <li><span class="feat-on">✓</span> Support prioritaire</li>
+            <li><span class="feat-on">✓</span> Export PDF premium</li>
         </ul>
         {% if app.user %}
             <form method="post" action="{{ path('app_subscription_checkout', {plan: 'expert'}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('subscription_checkout') }}">
-                <button type="submit" class="plan-btn plan-btn-outline" style="width:100%;cursor:pointer;">
-                    Passer à Expert →
-                </button>
+                <button type="submit" class="plan-cta plan-cta-expert">Passer à Expert →</button>
             </form>
         {% else %}
-            <a href="{{ path('app_register') }}" class="plan-btn plan-btn-outline">Commencer avec Expert</a>
+            <a href="{{ path('app_register') }}" class="plan-cta plan-cta-expert">Commencer avec Expert</a>
         {% endif %}
     </div>
 
 </div>
 
-<div class="faq">
+<div class="pricing-faq">
     <h2>Questions fréquentes</h2>
 
-    <div class="faq-item">
+    <div class="faq-card">
         <h3>Puis-je changer de plan à tout moment ?</h3>
-        <p>Oui. Vous pouvez upgrader ou downgrader depuis votre espace abonnement. La facturation est ajustée au prorata.</p>
+        <p>Oui. Vous pouvez upgrader ou downgrader depuis votre espace abonnement. La facturation est ajustée au prorata — vous ne payez que ce que vous utilisez.</p>
     </div>
-    <div class="faq-item">
+    <div class="faq-card">
         <h3>Comment fonctionne la résiliation ?</h3>
-        <p>Résiliez depuis le portail Stripe en un clic. Vous conservez l'accès jusqu'à la fin de la période payée, puis retombez sur le plan gratuit.</p>
+        <p>Résiliez depuis le portail Stripe en un clic. Vous conservez l'accès jusqu'à la fin de la période payée, puis retombez automatiquement sur le plan gratuit.</p>
     </div>
-    <div class="faq-item">
+    <div class="faq-card">
         <h3>Mes données sont-elles sécurisées ?</h3>
-        <p>Vos données comptables sont hébergées en Europe, chiffrées au repos et en transit. Seul vous et votre expert-comptable invité y accédez.</p>
+        <p>Vos données comptables sont hébergées en Europe, chiffrées au repos et en transit. Seul vous et votre expert-comptable invité y accèdent.</p>
     </div>
-    <div class="faq-item">
+    <div class="faq-card">
         <h3>L'assistant IA a-t-il accès à mes données ?</h3>
         <p>Claude reçoit uniquement le contexte que vous lui soumettez (bilans, questions). Aucune donnée n'est utilisée pour entraîner les modèles Anthropic.</p>
     </div>
 </div>
 
-<div class="footer">
+<footer class="pricing-footer">
     © {{ "now"|date("Y") }} GestoPro — Fait avec soin pour les indépendants français
-</div>
+</footer>
 
 </body>
 </html>

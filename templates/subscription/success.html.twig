@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}Abonnement activé — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/subscription.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>Abonnement activé</h1>
@@ -8,16 +12,46 @@
 {% endblock %}
 
 {% block body %}
-<div style="max-width:480px;margin:60px auto;text-align:center;">
-    <div class="card" style="padding:48px 32px;">
-        <div style="font-size:56px;margin-bottom:20px;">🎉</div>
-        <h2 style="font-size:22px;font-weight:700;margin-bottom:12px;">Bienvenue dans le plan {{ app.user.plan|capitalize }} !</h2>
-        <p style="font-size:15px;color:#6b7280;line-height:1.7;margin-bottom:32px;">
-            Votre abonnement est actif. Toutes les fonctionnalités de votre plan sont maintenant disponibles.
-        </p>
-        <a href="{{ path('app_dashboard') }}" class="btn btn-primary" style="padding:12px 28px;font-size:15px;">
+{% set plan = app.user.plan %}
+
+<div class="sub-success-wrap">
+    <div class="sub-success-card">
+
+        <div class="sub-success-emoji">🎉</div>
+
+        <div class="sub-success-title">
+            Bienvenue dans le plan {{ plan|capitalize }} !
+        </div>
+
+        <div class="sub-success-text">
+            Votre abonnement est maintenant actif. Toutes les fonctionnalités
+            de votre plan sont disponibles immédiatement.
+        </div>
+
+        {% if plan == 'pro' %}
+        <div class="sub-success-features">
+            <span class="feat-on">✓</span> Clients & factures illimités<br>
+            <span class="feat-on">✓</span> Assistant IA Claude activé<br>
+            <span class="feat-on">✓</span> Scan OCR des reçus disponible
+        </div>
+        {% elseif plan == 'expert' %}
+        <div class="sub-success-features">
+            <span class="feat-on">✓</span> Tout le plan Pro inclus<br>
+            <span class="feat-on">✓</span> Portail expert-comptable activé<br>
+            <span class="feat-on">✓</span> Bilans IA illimités disponibles
+        </div>
+        {% endif %}
+
+        <a href="{{ path('app_dashboard') }}" class="btn btn-primary" style="display:inline-flex;padding:13px 32px;font-size:15px;width:100%;justify-content:center;">
             Aller au tableau de bord →
         </a>
+
+        <div style="margin-top:16px;">
+            <a href="{{ path('app_subscription_manage') }}" style="font-size:13px;color:#9ca3af;text-decoration:none;">
+                Gérer mon abonnement
+            </a>
+        </div>
+
     </div>
 </div>
 {% endblock %}
