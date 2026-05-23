@@ -38,7 +38,7 @@
             {{ thresholdServices|number_format(0, ',', ' ') }} €
         </div>
         <div style="font-size:11px; color:#6b7280; margin-top:2px;">
-            {{ [0, thresholdServices - totalRevenue]|max|number_format(0, ',', ' ') }} € restants
+            {{ max(0, thresholdServices - totalRevenue)|number_format(0, ',', ' ') }} € restants
         </div>
     </div>
 </div>
