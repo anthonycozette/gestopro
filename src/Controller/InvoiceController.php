@@ -8,6 +8,8 @@ use App\Repository\ClientRepository;
 use App\Repository\InvoiceRepository;
 use App\Service\InvoiceNumberService;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Bundle\SnappyBundle\Snappy\Response\PdfResponse;
+use Knp\Snappy\Pdf;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -74,6 +76,21 @@ class InvoiceController extends AbstractController
         }
 
         return $this->render('invoice/show.html.twig', ['invoice' => $invoice]);
+    }
+
+    #[Route('/{id}/pdf', name: '_pdf')]
+    public function pdf(Invoice $invoice, Pdf $knpPdf): Response
+    {
+        if ($invoice->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $html = $this->renderView('invoice/pdf.html.twig', ['invoice' => $invoice]);
+
+        return new PdfResponse(
+            $knpPdf->getOutputFromHtml($html),
+            'facture-' . $invoice->getNumber() . '.pdf'
+        );
     }
 
     #[Route('/{id}/status/{status}', name: '_status', methods: ['POST'])]

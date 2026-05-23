@@ -17,6 +17,7 @@
                 <button type="submit" class="btn btn-success">Marquer comme payée</button>
             </form>
         {% endif %}
+        <a href="{{ path('app_invoice_pdf', {id: invoice.id}) }}" class="btn btn-secondary">Télécharger PDF</a>
         <a href="{{ path('app_invoice_edit', {id: invoice.id}) }}" class="btn btn-secondary">Modifier</a>
         <a href="{{ path('app_invoices') }}" class="btn btn-secondary">Retour</a>
     </div>

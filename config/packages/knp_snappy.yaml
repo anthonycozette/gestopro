@@ -1,0 +1,14 @@
+knp_snappy:
+    pdf:
+        enabled: true
+        binary: "%kernel.project_dir%/vendor/h4cc/wkhtmltopdf-i386/bin/wkhtmltopdf-i386"
+        options:
+            encoding: utf-8
+            margin-top: 15
+            margin-right: 15
+            margin-bottom: 15
+            margin-left: 15
+            page-size: A4
+    image:
+        enabled: true
+        binary: "%kernel.project_dir%/vendor/h4cc/wkhtmltopdf-i386/bin/wkhtmltopdf-i386"
