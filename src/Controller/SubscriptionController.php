@@ -98,6 +98,29 @@ class SubscriptionController extends AbstractController
         return $this->render('subscription/success.html.twig');
     }
 
+    #[Route('/subscription/cancel', name: 'app_subscription_cancel', methods: ['POST'])]
+    public function cancel(Request $request, StripeService $stripe): Response
+    {
+        if (!$this->isCsrfTokenValid('subscription_cancel', $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token CSRF invalide.');
+            return $this->redirectToRoute('app_subscription_manage');
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        try {
+            $stripe->cancelSubscription($user);
+            $this->addFlash('success', 'Votre abonnement a été résilié. Vous conservez l\'accès jusqu\'à la fin de la période payée.');
+        } catch (ApiErrorException $e) {
+            $this->addFlash('error', 'Erreur Stripe : ' . $e->getMessage());
+        } catch (\RuntimeException $ex) {
+            $this->addFlash('error', $ex->getMessage());
+        }
+
+        return $this->redirectToRoute('app_subscription_manage');
+    }
+
     #[Route('/subscription/sync', name: 'app_subscription_sync', methods: ['POST'])]
     public function sync(Request $request, StripeService $stripe): Response
     {

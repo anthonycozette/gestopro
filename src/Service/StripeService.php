@@ -80,6 +80,24 @@ class StripeService
         ]);
     }
 
+    public function cancelSubscription(User $user): void
+    {
+        $subscriptionId = $user->getStripeSubscriptionId();
+        if (!$subscriptionId) {
+            throw new \RuntimeException('Aucun abonnement actif à résilier.');
+        }
+
+        \Stripe\Subscription::update($subscriptionId, [
+            'cancel_at_period_end' => true,
+        ]);
+
+        $subscription = \Stripe\Subscription::retrieve($subscriptionId);
+        $endsAt = new \DateTimeImmutable('@' . $subscription->current_period_end);
+
+        $user->setSubscriptionEndsAt($endsAt);
+        $this->em->flush();
+    }
+
     public function syncSubscriptionFromStripe(User $user): ?string
     {
         $customerId = $this->getOrCreateCustomer($user);

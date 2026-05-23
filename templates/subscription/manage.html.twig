@@ -108,19 +108,61 @@
 
     {% if plan == 'pro' %}
     <div class="card">
-        <div class="card-title">Passer à Expert</div>
-        <div style="display:flex;gap:20px;align-items:center;">
-            <div style="flex:1;font-size:14px;color:#374151;line-height:1.7;">
-                Accédez au portail expert-comptable, aux bilans IA illimités et à la validation numérique.
-            </div>
-            <div>
+        <div class="card-title">Changer de plan</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+            <div style="border:2px solid #7c3aed;border-radius:8px;padding:16px;">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#7c3aed;margin-bottom:4px;">Expert</div>
+                <div style="font-size:20px;font-weight:800;margin-bottom:8px;">49 €<span style="font-size:13px;font-weight:400;color:#9ca3af;">/mois</span></div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Portail expert-comptable + bilans IA illimités</div>
                 <form method="post" action="{{ path('app_subscription_checkout', {plan: 'expert'}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('subscription_checkout') }}">
-                    <button type="submit" class="btn" style="background:#7c3aed;color:#fff;white-space:nowrap;">
-                        Passer à Expert — 49 €/mois
-                    </button>
+                    <button type="submit" class="btn" style="width:100%;background:#7c3aed;color:#fff;font-size:13px;">Passer à Expert ↑</button>
                 </form>
             </div>
+
+            <div style="border:2px solid #e5e7eb;border-radius:8px;padding:16px;">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Gratuit</div>
+                <div style="font-size:20px;font-weight:800;margin-bottom:8px;">0 €<span style="font-size:13px;font-weight:400;color:#9ca3af;">/mois</span></div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">5 clients, 10 factures/mois, sans IA</div>
+                <form method="post" action="{{ path('app_subscription_cancel') }}"
+                      onsubmit="return confirm('Résilier votre abonnement Pro ? Vous conserverez l\'accès jusqu\'à la fin de la période payée.')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('subscription_cancel') }}">
+                    <button type="submit" class="btn btn-secondary" style="width:100%;font-size:13px;">Résilier ↓</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+
+    {% if plan == 'expert' %}
+    <div class="card">
+        <div class="card-title">Changer de plan</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+            <div style="border:2px solid #2563eb;border-radius:8px;padding:16px;">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#2563eb;margin-bottom:4px;">Pro</div>
+                <div style="font-size:20px;font-weight:800;margin-bottom:8px;">19 €<span style="font-size:13px;font-weight:400;color:#9ca3af;">/mois</span></div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Illimité, IA, OCR — sans portail expert</div>
+                <form method="post" action="{{ path('app_subscription_checkout', {plan: 'pro'}) }}"
+                      onsubmit="return confirm('Passer au plan Pro ? La différence sera calculée au prorata.')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('subscription_checkout') }}">
+                    <button type="submit" class="btn btn-secondary" style="width:100%;font-size:13px;">Passer à Pro ↓</button>
+                </form>
+            </div>
+
+            <div style="border:2px solid #e5e7eb;border-radius:8px;padding:16px;">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Gratuit</div>
+                <div style="font-size:20px;font-weight:800;margin-bottom:8px;">0 €<span style="font-size:13px;font-weight:400;color:#9ca3af;">/mois</span></div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">5 clients, 10 factures/mois, sans IA</div>
+                <form method="post" action="{{ path('app_subscription_cancel') }}"
+                      onsubmit="return confirm('Résilier votre abonnement Expert ? Vous conserverez l\'accès jusqu\'à la fin de la période payée.')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('subscription_cancel') }}">
+                    <button type="submit" class="btn btn-secondary" style="width:100%;font-size:13px;">Résilier ↓</button>
+                </form>
+            </div>
+
         </div>
     </div>
     {% endif %}
