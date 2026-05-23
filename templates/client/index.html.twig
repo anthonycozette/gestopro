@@ -54,9 +54,9 @@
         {# Toolbar #}
         <div class="toolbar">
             <div class="tab-bar">
-                <button class="tab-btn active">Tous <span class="tab-count">{{ clients|length }}</span></button>
-                <button class="tab-btn">Avec factures <span class="tab-count">{{ clients|filter(c => c.invoices|length > 0)|length }}</span></button>
-                <button class="tab-btn">Sans facture <span class="tab-count">{{ clients|filter(c => c.invoices|length == 0)|length }}</span></button>
+                <button class="tab-btn active" data-filter="all">Tous <span class="tab-count">{{ clients|length }}</span></button>
+                <button class="tab-btn" data-filter="with-invoices">Avec factures <span class="tab-count">{{ clients|filter(c => c.invoices|length > 0)|length }}</span></button>
+                <button class="tab-btn" data-filter="no-invoices">Sans facture <span class="tab-count">{{ clients|filter(c => c.invoices|length == 0)|length }}</span></button>
             </div>
             <div style="flex:1;"></div>
             <a href="{{ path('app_client_new') }}" class="btn btn-primary btn-sm">+ Nouveau client</a>
@@ -76,7 +76,7 @@
             <tbody>
                 {% set avatarColors = ['#2563eb','#7c3aed','#16a34a','#ea580c','#0891b2','#db2777','#ca8a04'] %}
                 {% for client in clients %}
-                <tr>
+                <tr data-group="{{ client.invoices|length > 0 ? 'with-invoices' : 'no-invoices' }}">
                     <td>
                         <div class="client-cell">
                             <span class="avatar avatar-sm"
@@ -121,4 +121,19 @@
         </table>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.querySelectorAll('.tab-btn[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.tab-btn[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('tbody tr[data-group]').forEach(row => {
+            row.style.display = (filter === 'all' || row.dataset.group === filter) ? '' : 'none';
+        });
+    });
+});
+</script>
 {% endblock %}

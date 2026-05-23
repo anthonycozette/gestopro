@@ -58,10 +58,10 @@
     {% else %}
         <div class="toolbar">
             <div class="tab-bar">
-                <button class="tab-btn active">Toutes <span class="tab-count">{{ expenses|length }}</span></button>
-                <button class="tab-btn">Déductibles <span class="tab-count">{{ expenses|filter(e => e.deductible)|length }}</span></button>
+                <button class="tab-btn active" data-filter="all">Toutes <span class="tab-count">{{ expenses|length }}</span></button>
+                <button class="tab-btn" data-filter="deductible">Déductibles <span class="tab-count">{{ expenses|filter(e => e.deductible)|length }}</span></button>
                 {% if toVerify > 0 %}
-                <button class="tab-btn" style="color:#d97706;">À vérifier <span class="tab-count">{{ toVerify }}</span></button>
+                <button class="tab-btn" data-filter="ocr-low" style="color:#d97706;">À vérifier <span class="tab-count">{{ toVerify }}</span></button>
                 {% endif %}
             </div>
             <div style="flex:1;"></div>
@@ -88,7 +88,9 @@
                 {% for expense in expenses %}
                 {% set ocr = expense.ocrConfidence %}
                 {% set ocrClass = ocr is not null ? (ocr >= 80 ? 'ok' : (ocr >= 50 ? 'warn' : 'bad')) : null %}
-                <tr {% if ocr is not null and ocr < 50 %}style="background:#fff9f5;"{% endif %}>
+                <tr data-deductible="{{ expense.deductible ? '1' : '0' }}"
+                    data-ocr-low="{{ ocr is not null and ocr < 80 ? '1' : '0' }}"
+                    {% if ocr is not null and ocr < 50 %}style="background:#fff9f5;"{% endif %}>
                     <td><div class="receipt-thumb"></div></td>
                     <td>
                         <a href="{{ path('app_expense_show', {id: expense.id}) }}" style="font-weight:600;font-size:13px;color:#1c1a17;">
@@ -161,4 +163,23 @@
         </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.querySelectorAll('.tab-btn[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.tab-btn[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('tbody tr[data-deductible]').forEach(row => {
+            let show = false;
+            if (filter === 'all')        show = true;
+            if (filter === 'deductible') show = row.dataset.deductible === '1';
+            if (filter === 'ocr-low')    show = row.dataset.ocrLow === '1';
+            row.style.display = show ? '' : 'none';
+        });
+    });
+});
+</script>
 {% endblock %}
