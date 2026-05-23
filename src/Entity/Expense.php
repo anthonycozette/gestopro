@@ -29,13 +29,13 @@ class Expense
     #[Assert\PositiveOrZero]
     private string $amountTtc = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $amountHt = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $tva = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2)]
     private string $tvaRate = '0.00';
 
     #[ORM\Column(length: 50, nullable: true)]

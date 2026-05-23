@@ -48,13 +48,13 @@ class Invoice
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $paidAt = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $totalHt = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $totalTva = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $totalTtc = '0.00';
 
     #[ORM\Column(length: 3, options: ['default' => 'EUR'])]

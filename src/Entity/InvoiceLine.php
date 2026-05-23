@@ -28,13 +28,13 @@ class InvoiceLine
     #[Assert\PositiveOrZero]
     private string $unitPrice = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2)]
     private string $tvaRate = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $totalHt = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $totalTva = '0.00';
 
     #[ORM\Column(options: ['default' => 0])]
