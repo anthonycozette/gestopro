@@ -10,17 +10,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
   <style>
-    /* ── TOKENS ─────────────────────────────────────────── */
+    /* ── TOKENS ─────────────────────────────────────────────────────── */
     :root {
-      --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-      --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-      --accent:      #2563eb;
-      --accent-50:   #eff6ff;
-      --accent-100:  #dbeafe;
-      --accent-700:  #1d4ed8;
-      --radius:    10px;
-      --radius-sm:  6px;
-      --radius-lg: 14px;
+      --font-sans:    "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+      --accent:       #2563eb;
+      --accent-light: rgba(37,99,235,.12);
+      --warm:         oklch(64% 0.14 50);
+      --sage:         oklch(58% 0.11 145);
+      --radius:       10px;
+      --radius-sm:    6px;
+      --radius-lg:    14px;
       /* status */
       --st-draft-bg: #f1f3f6;  --st-draft-fg: #6b7280;
       --st-sent-bg:  #eff6ff;  --st-sent-fg:  #1d4ed8;
@@ -31,12 +32,12 @@
       --st-dec-bg:   #fee2e2;  --st-dec-fg:   #b91c1c;
     }
 
-    /* ── RESET ──────────────────────────────────────────── */
+    /* ── RESET ───────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: var(--font-sans);
-      background: #f5f6f8;
-      color: #0f172a;
+      background: #fafbfd;
+      color: #1c1a17;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
@@ -47,159 +48,155 @@
     input::-webkit-inner-spin-button { -webkit-appearance: none; }
     input[type=number] { -moz-appearance: textfield; }
 
-    /* ── LAYOUT ─────────────────────────────────────────── */
+    /* ── LAYOUT ──────────────────────────────────────────────────────── */
     .layout { display: flex; min-height: 100vh; }
 
-    /* ── SIDEBAR ────────────────────────────────────────── */
+    /* ── SIDEBAR — Aurore (light blue) ──────────────────────────────── */
     .sidebar {
-      width: 220px;
-      background: #0f172a;
+      width: 240px;
+      background: #dde8f2;
+      border-right: 1px solid #c7d6e3;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
+      padding: 16px 12px 14px;
     }
-    .sidebar-brand {
-      padding: 20px 16px 16px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
+
+    /* brand card */
+    .brand-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 12px;
+      background: #fff;
+      border: 1px solid #c7d6e3;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(20,40,80,.05);
+      margin-bottom: 16px;
+      text-decoration: none !important;
     }
-    .sidebar-brand .brand-name {
-      font-size: 17px;
-      font-weight: 800;
-      color: #fff;
-      letter-spacing: -.025em;
+    .brand-icon {
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      background: linear-gradient(135deg, #2563eb 0%, oklch(64% 0.14 50) 100%);
+      color: #fff; font-weight: 800; font-size: 15px; letter-spacing: -.5px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 10px rgba(37,99,235,.28);
     }
-    .sidebar-brand .brand-name span { color: #60a5fa; }
-    .sidebar-brand .brand-tag {
-      font-size: 10px;
-      font-weight: 500;
-      color: #334155;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      margin-top: 2px;
-    }
-    .sidebar-nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+    .brand-text-name { font-size: 14px; font-weight: 700; color: #1c2a3a; letter-spacing: -.2px; }
+    .brand-text-sub  { font-size: 10.5px; color: #5b6b7e; margin-top: 1px; }
+
+    /* nav */
+    .sidebar-nav { flex: 1; }
     .nav-section {
-      padding: 14px 14px 4px;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: #334155;
+      font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #7b8b9e; padding: 12px 10px 4px;
     }
     .sidebar-nav a {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 8px 14px;
-      color: #64748b;
-      font-size: 13px;
-      font-weight: 500;
-      border-radius: 6px;
-      margin: 1px 6px;
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 10px; margin: 1px 0;
+      color: #364253; font-size: 13px; font-weight: 500;
+      border: 1px solid transparent; text-decoration: none;
       transition: background .1s, color .1s;
-      text-decoration: none;
     }
-    .sidebar-nav a:hover { background: rgba(255,255,255,.05); color: #cbd5e1; text-decoration: none; }
-    .sidebar-nav a.active { background: rgba(37,99,235,.18); color: #93c5fd; }
-    .nav-icon { width: 15px; height: 15px; flex-shrink: 0; opacity: .8; }
-    .sidebar-footer {
-      padding: 12px 14px;
-      border-top: 1px solid rgba(255,255,255,.06);
+    .sidebar-nav a:hover { background: rgba(255,255,255,.65); color: #1c2a3a; text-decoration: none; }
+    .sidebar-nav a.active {
+      background: #ffffff;
+      border-color: rgba(35,72,135,.1);
+      box-shadow: 0 1px 3px rgba(20,40,80,.08);
+      color: #2563eb; font-weight: 600;
     }
-    .plan-chip {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      border-radius: 99px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .05em;
-      margin-bottom: 8px;
+    .nav-icon {
+      width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #5b6b7e;
     }
-    .plan-free   { background: #1e293b; color: #475569; }
-    .plan-pro    { background: rgba(37,99,235,.25);  color: #93c5fd; }
-    .plan-expert { background: rgba(124,58,237,.25); color: #c4b5fd; }
-    .footer-user { color: #cbd5e1; font-size: 12px; font-weight: 500; margin-bottom: 4px; }
-    .footer-links a { color: #475569; font-size: 11.5px; }
-    .footer-links a:hover { color: #64748b; }
+    .sidebar-nav a.active .nav-icon { background: rgba(37,99,235,.12); color: #2563eb; }
+    .sidebar-nav a:not(.active):hover .nav-icon { color: #364253; }
+    .sidebar-nav a[style*="opacity"] .nav-icon { opacity: .4; }
 
-    /* ── MAIN ────────────────────────────────────────────── */
+    /* sidebar footer */
+    .sidebar-footer { border-top: 1px solid #c7d6e3; padding-top: 12px; margin-top: 12px; }
+    .sidebar-user {
+      display: flex; align-items: center; gap: 9px;
+      padding: 9px 10px; background: rgba(255,255,255,.55);
+      border: 1px solid rgba(199,214,227,.6); border-radius: 10px;
+    }
+    .user-avatar {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #2563eb, oklch(64% 0.14 50));
+      color: #fff; font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-name  { font-size: 12px; font-weight: 600; color: #1c2a3a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-links { font-size: 10.5px; }
+    .user-links a { color: #5b6b7e; }
+    .user-links a:hover { color: #1c2a3a; text-decoration: none; }
+    .plan-chip {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 99px;
+      font-size: 9px; font-weight: 700; letter-spacing: .06em;
+      flex-shrink: 0; margin-left: auto;
+    }
+    .plan-free   { background: #e2e8f0; color: #475569; }
+    .plan-pro    { background: rgba(37,99,235,.14); color: #1d4ed8; }
+    .plan-expert { background: rgba(124,58,237,.14); color: #6d28d9; }
+
+    /* ── MAIN ────────────────────────────────────────────────────────── */
     .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
-    /* ── TOPBAR ──────────────────────────────────────────── */
+    /* ── TOPBAR ──────────────────────────────────────────────────────── */
     .topbar {
-      background: #fff;
-      border-bottom: 1px solid #e8eaed;
-      padding: 13px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      background: #fff; border-bottom: 1px solid #e6e8ee;
+      padding: 12px 24px;
+      display: flex; justify-content: space-between; align-items: center;
       flex-shrink: 0;
     }
-    .topbar h1 { font-size: 15px; font-weight: 600; color: #0f172a; letter-spacing: -.01em; }
+    .topbar h1 { font-size: 15px; font-weight: 600; color: #1c1a17; letter-spacing: -.01em; }
     .topbar-actions { display: flex; gap: 8px; align-items: center; }
 
-    /* ── CONTENT ─────────────────────────────────────────── */
+    /* ── CONTENT ─────────────────────────────────────────────────────── */
     .content { flex: 1; padding: 24px; overflow-y: auto; }
 
-    /* ── CARDS ───────────────────────────────────────────── */
+    /* ── CARDS ───────────────────────────────────────────────────────── */
     .card {
-      background: #fff;
-      border: 1px solid #e8eaed;
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 18px;
+      background: #fff; border: 1px solid #e6e8ee;
+      border-radius: var(--radius); padding: 20px; margin-bottom: 18px;
     }
     .card-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: #6b7280;
-      margin-bottom: 16px;
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #9ca3af; margin-bottom: 16px;
     }
 
-    /* ── TABLE ───────────────────────────────────────────── */
+    /* ── TABLE ───────────────────────────────────────────────────────── */
     table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
     th {
-      text-align: left;
-      padding: 9px 12px;
-      background: #f8f9fb;
-      border-bottom: 1px solid #e8eaed;
-      font-size: 10.5px;
-      font-weight: 600;
-      color: #9ca3af;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      white-space: nowrap;
+      text-align: left; padding: 9px 12px; background: #f5f7fb;
+      border-bottom: 1px solid #e6e8ee; font-size: 10px; font-weight: 600;
+      color: #9ca3af; text-transform: uppercase; letter-spacing: .07em; white-space: nowrap;
     }
-    td { padding: 10px 12px; border-bottom: 1px solid #f1f3f5; vertical-align: middle; color: #374151; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; color: #374151; }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #fafbfc; }
-    td a { color: #0f172a; font-weight: 600; }
+    tr:hover td { background: #fafbfd; }
+    td a { color: #1c1a17; font-weight: 600; }
     td a:hover { color: var(--accent); text-decoration: none; }
     .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
 
-    /* ── BUTTONS ─────────────────────────────────────────── */
+    /* ── BUTTONS ─────────────────────────────────────────────────────── */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 13px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: background .12s, border-color .12s, color .12s;
-      text-decoration: none;
-      white-space: nowrap;
-      font-family: var(--font-sans);
-      line-height: 1;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 13px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1px solid transparent; transition: all .12s;
+      text-decoration: none; white-space: nowrap;
+      font-family: var(--font-sans); line-height: 1;
     }
     .btn:hover { text-decoration: none; }
-    .btn-primary   { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn-primary:hover { background: var(--accent-700); border-color: var(--accent-700); color: #fff; }
+    .btn-primary {
+      background: linear-gradient(180deg, #2563eb, #1d4ed8);
+      color: #fff; border-color: #1d4ed8;
+      box-shadow: 0 1px 2px rgba(37,99,235,.25), inset 0 1px 0 rgba(255,255,255,.14);
+    }
+    .btn-primary:hover { background: #1d4ed8; color: #fff; }
     .btn-secondary { background: #fff; color: #374151; border-color: #d1d5db; }
     .btn-secondary:hover { background: #f9fafb; color: #111827; }
     .btn-danger    { background: #ef4444; color: #fff; border-color: #ef4444; }
@@ -208,25 +205,15 @@
     .btn-success:hover { background: #15803d; color: #fff; }
     .btn-sm { padding: 4px 10px; font-size: 11.5px; }
 
-    /* ── STATUS BADGES (dot indicator) ───────────────────── */
+    /* ── STATUS BADGES ───────────────────────────────────────────────── */
     .st-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 9px;
-      border-radius: 999px;
-      font-size: 11.5px;
-      font-weight: 600;
-      letter-spacing: .01em;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 999px;
+      font-size: 11.5px; font-weight: 600; letter-spacing: .01em; white-space: nowrap;
     }
     .st-badge::before {
-      content: "";
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: currentColor;
-      opacity: .9;
-      flex-shrink: 0;
+      content: ""; width: 5px; height: 5px; border-radius: 50%;
+      background: currentColor; opacity: .9; flex-shrink: 0;
     }
     .st-draft    { background: var(--st-draft-bg);  color: var(--st-draft-fg); }
     .st-sent     { background: var(--st-sent-bg);   color: var(--st-sent-fg); }
@@ -237,7 +224,7 @@
     .st-declined { background: var(--st-dec-bg);    color: var(--st-dec-fg); }
     .st-expired  { background: var(--st-cancel-bg); color: var(--st-cancel-fg); }
 
-    /* legacy compat */
+    /* legacy */
     .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
     .badge-green  { background: #dcfce7; color: #166534; }
     .badge-blue   { background: #dbeafe; color: #1e40af; }
@@ -245,49 +232,27 @@
     .badge-gray   { background: #f1f3f6; color: #6b7280; }
     .badge-orange { background: #ffedd5; color: #9a3412; }
 
-    /* ── FORMS ───────────────────────────────────────────── */
+    /* ── FORMS ───────────────────────────────────────────────────────── */
     .form-group { margin-bottom: 16px; }
-    .form-group label {
-      display: block;
-      font-size: 12.5px;
-      font-weight: 500;
-      margin-bottom: 5px;
-      color: #374151;
-    }
+    .form-group label { display: block; font-size: 12.5px; font-weight: 500; margin-bottom: 5px; color: #374151; }
     .form-control {
-      width: 100%;
-      padding: 8px 11px;
-      border: 1px solid #d1d5db;
-      border-radius: var(--radius-sm);
-      font-size: 13.5px;
-      color: #0f172a;
-      font-family: var(--font-sans);
-      background: #fff;
+      width: 100%; padding: 8px 11px; border: 1px solid #d1d5db;
+      border-radius: var(--radius-sm); font-size: 13.5px; color: #1c1a17;
+      font-family: var(--font-sans); background: #fff;
       transition: border-color .15s, box-shadow .15s;
     }
-    .form-control:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-    }
+    .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
     textarea.form-control { resize: vertical; }
     .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
-    /* ── ALERTS ──────────────────────────────────────────── */
-    .alert {
-      padding: 11px 14px;
-      border-radius: var(--radius-sm);
-      margin-bottom: 14px;
-      font-size: 13.5px;
-      border-width: 1px;
-      border-style: solid;
-    }
+    /* ── ALERTS ──────────────────────────────────────────────────────── */
+    .alert { padding: 11px 14px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 13.5px; border: 1px solid; }
     .alert-success { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
     .alert-error   { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
     .alert-info    { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
 
-    /* ── EMPTY STATE ─────────────────────────────────────── */
+    /* ── EMPTY STATE ─────────────────────────────────────────────────── */
     .empty-state { text-align: center; padding: 56px 24px; color: #9ca3af; }
     .empty-state p { margin-bottom: 16px; font-size: 14px; }
     .empty-state-icon { font-size: 32px; margin-bottom: 12px; opacity: .4; }
@@ -298,55 +263,82 @@
 {% if app.user %}
 <div class="layout">
   <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-name">Gesto<span>Pro</span></div>
-      <div class="brand-tag">Gestion · Comptabilité</div>
+
+    <!-- Brand -->
+    <div class="brand-card">
+      <div class="brand-icon">G</div>
+      <div style="min-width:0; flex:1;">
+        <div class="brand-text-name">GestoPro</div>
+        <div class="brand-text-sub">{{ app.user.firstName }}'s espace</div>
+      </div>
     </div>
 
+    <!-- Navigation -->
     <nav class="sidebar-nav">
       <div class="nav-section">Principal</div>
+
       <a href="{{ path('app_dashboard') }}"
          {% if app.request.attributes.get('_route') == 'app_dashboard' %}class="active"{% endif %}>
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
-          <rect x="1" y="1" width="6.5" height="6.5" rx="1.5"/><rect x="8.5" y="1" width="6.5" height="6.5" rx="1.5" opacity=".5"/><rect x="1" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".5"/><rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".5"/>
-        </svg>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <rect x="1" y="1" width="6.5" height="6.5" rx="1.5"/>
+            <rect x="8.5" y="1" width="6.5" height="6.5" rx="1.5" opacity=".45"/>
+            <rect x="1" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".45"/>
+            <rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".45"/>
+          </svg>
+        </span>
         Tableau de bord
       </a>
 
       <div class="nav-section">Comptabilité</div>
+
       <a href="{{ path('app_clients') }}"
          {% if app.request.attributes.get('_route') starts with 'app_client' %}class="active"{% endif %}>
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5 6a1 1 0 0 1-1-1c0-2.5 2.7-4 6-4s6 1.5 6 4a1 1 0 0 1-1 1H3Z"/>
-        </svg>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5 6a1 1 0 0 1-1-1c0-2.5 2.7-4 6-4s6 1.5 6 4a1 1 0 0 1-1 1H3Z"/>
+          </svg>
+        </span>
         Clients
       </a>
+
       <a href="{{ path('app_invoices') }}"
          {% if app.request.attributes.get('_route') starts with 'app_invoice' %}class="active"{% endif %}>
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4Zm1 4h6v1H5V4Zm0 3h6v1H5V7Zm0 3h4v1H5v-1Z"/>
-        </svg>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4Zm1 4h6v1H5V4Zm0 3h6v1H5V7Zm0 3h4v1H5v-1Z"/>
+          </svg>
+        </span>
         Factures
       </a>
+
       <a href="{{ path('app_quotes') }}"
          {% if app.request.attributes.get('_route') starts with 'app_quote' %}class="active"{% endif %}>
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4Zm1 4h3v1H5V4Zm5 0h-1v1h1V4ZM5 7h6v1H5V7Zm0 3h4v1H5v-1Z"/>
-        </svg>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4Zm1 4h3v1H5V4Zm5 0h-1v1h1V4ZM5 7h6v1H5V7Zm0 3h4v1H5v-1Z"/>
+          </svg>
+        </span>
         Devis
       </a>
+
       <a href="{{ path('app_expenses') }}"
          {% if app.request.attributes.get('_route') starts with 'app_expense' %}class="active"{% endif %}>
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm.5 3v.6a1.5 1.5 0 0 1 .1 3l-1 .3a.5.5 0 1 0 0 1H9a.5.5 0 0 0 .5-.5h1A1.5 1.5 0 0 1 9 10.4V11H7v-.6a1.5 1.5 0 0 1-.1-3l1-.3a.5.5 0 1 0 0-1H7a.5.5 0 0 0-.5.5h-1A1.5 1.5 0 0 1 7 5.6V5h1.5Z"/>
-        </svg>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm.5 3.5v.6A1.5 1.5 0 0 1 9 7.6l-1 .3a.5.5 0 1 0 0 1h1.25A.5.5 0 0 0 9.75 9H11A1.5 1.5 0 0 1 9.5 10.4v.6h-1.5v-.6A1.5 1.5 0 0 1 6.5 8.4l1-.3a.5.5 0 1 0 0-1H6.25a.5.5 0 0 0-.5.5H4.5A1.5 1.5 0 0 1 6 5.6v-.6h1.5l.5-.5h.5Z"/>
+          </svg>
+        </span>
         Dépenses
       </a>
+
       <a href="{{ path('app_urssaf') }}"
          {% if app.request.attributes.get('_route') starts with 'app_urssaf' %}class="active"{% endif %}>
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4Zm0 5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V9Zm1 4a1 1 0 0 0 0 2h7a1 1 0 0 0 0-2H2Z"/>
-        </svg>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4Zm0 5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V9Zm1 4a1 1 0 0 0 0 2h7a1 1 0 0 0 0-2H2Z"/>
+          </svg>
+        </span>
         URSSAF
       </a>
 
@@ -354,37 +346,48 @@
       <div class="nav-section">Expert Comptable</div>
       <a href="{{ path('app_balance_sheets') }}"
          {% if app.request.attributes.get('_route') starts with 'app_balance_sheet' %}class="active"{% endif %}>
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M3 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H3Zm2 4h6v1H5V5Zm0 3h6v1H5V8Zm0 3h4v1H5v-1Z"/>
-        </svg>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M3 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H3Zm2 4h6v1H5V5Zm0 3h6v1H5V8Zm0 3h4v1H5v-1Z"/>
+          </svg>
+        </span>
         Bilans comptables
       </a>
       {% else %}
       <div class="nav-section">Expert Comptable</div>
       <a href="{{ path('app_subscription_manage') }}" style="opacity:.35;" title="Réservé au plan Expert">
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3v9h10V6h-1.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5H6V4.5a2 2 0 1 1 4 0V6Z"/>
-        </svg>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3v9h10V6h-1.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5H6V4.5a2 2 0 1 1 4 0V6Z"/>
+          </svg>
+        </span>
         Bilans (Expert)
       </a>
       {% endif %}
     </nav>
 
+    <!-- Footer -->
     <div class="sidebar-footer">
-      {% if app.user.plan == 'pro' %}
-        <div class="plan-chip plan-pro">PRO</div>
-      {% elseif app.user.plan == 'expert' %}
-        <div class="plan-chip plan-expert">EXPERT</div>
-      {% else %}
-        <div class="plan-chip plan-free">GRATUIT</div>
-      {% endif %}
-      <div class="footer-user">{{ app.user.firstName }} {{ app.user.lastName }}</div>
-      <div class="footer-links">
-        <a href="{{ path('app_subscription_manage') }}">Abonnement</a>
-        <span style="color:#334155"> · </span>
-        <a href="{{ path('app_logout') }}">Déconnexion</a>
+      <div class="sidebar-user">
+        <div class="user-avatar">{{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}</div>
+        <div style="min-width:0; flex:1;">
+          <div class="user-name">{{ app.user.firstName }} {{ app.user.lastName }}</div>
+          <div class="user-links">
+            <a href="{{ path('app_subscription_manage') }}">Abonnement</a>
+            <span style="color:#c7d6e3"> · </span>
+            <a href="{{ path('app_logout') }}">Déco</a>
+          </div>
+        </div>
+        {% if app.user.plan == 'pro' %}
+          <span class="plan-chip plan-pro">PRO</span>
+        {% elseif app.user.plan == 'expert' %}
+          <span class="plan-chip plan-expert">EXPERT</span>
+        {% else %}
+          <span class="plan-chip plan-free">GRATUIT</span>
+        {% endif %}
       </div>
     </div>
+
   </aside>
 
   <div class="main">
