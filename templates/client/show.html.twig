@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ client.name }} — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>{{ client.name }}</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_client_edit', {id: client.id}) }}" class="btn btn-secondary">Modifier</a>
+        <a href="{{ path('app_clients') }}" class="btn btn-secondary">Retour</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div style="display:grid; grid-template-columns:1fr 2fr; gap:20px;">
+
+    <div>
+        <div class="card">
+            <div class="card-title">Informations</div>
+            <table>
+                {% if client.email %}<tr><td style="color:#6b7280;width:100px">Email</td><td>{{ client.email }}</td></tr>{% endif %}
+                {% if client.phone %}<tr><td style="color:#6b7280">Téléphone</td><td>{{ client.phone }}</td></tr>{% endif %}
+                {% if client.siret %}<tr><td style="color:#6b7280">SIRET</td><td>{{ client.siret }}</td></tr>{% endif %}
+                {% if client.address %}<tr><td style="color:#6b7280">Adresse</td><td>{{ client.fullAddress }}</td></tr>{% endif %}
+                <tr><td style="color:#6b7280">Client depuis</td><td>{{ client.createdAt|date('d/m/Y') }}</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="card-title">Factures ({{ client.invoices|length }})</div>
+            {% if client.invoices is empty %}
+                <p style="color:#6b7280; font-size:14px;">Aucune facture pour ce client.</p>
+            {% else %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Numéro</th>
+                            <th>Date</th>
+                            <th>Montant TTC</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in client.invoices %}
+                        <tr>
+                            <td><a href="{{ path('app_invoice_show', {id: invoice.id}) }}">{{ invoice.number }}</a></td>
+                            <td>{{ invoice.issuedAt|date('d/m/Y') }}</td>
+                            <td>{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</td>
+                            <td>
+                                {% if invoice.status == 'paid' %}<span class="badge badge-green">Payée</span>
+                                {% elseif invoice.status == 'sent' %}<span class="badge badge-blue">Envoyée</span>
+                                {% elseif invoice.status == 'overdue' %}<span class="badge badge-red">En retard</span>
+                                {% elseif invoice.status == 'draft' %}<span class="badge badge-gray">Brouillon</span>
+                                {% else %}<span class="badge badge-gray">{{ invoice.status }}</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

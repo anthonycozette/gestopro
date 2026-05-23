@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ title }} — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>{{ title }}</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_clients') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="card" style="max-width:640px;">
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+        <div class="form-group">
+            <label>Nom <span style="color:#ef4444">*</span></label>
+            <input type="text" name="name" class="form-control" value="{{ client.name }}" required autofocus>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" class="form-control" value="{{ client.email }}">
+            </div>
+            <div class="form-group">
+                <label>Téléphone</label>
+                <input type="text" name="phone" class="form-control" value="{{ client.phone }}">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>SIRET</label>
+                <input type="text" name="siret" class="form-control" maxlength="14" value="{{ client.siret }}">
+            </div>
+            <div class="form-group">
+                <label>Pays</label>
+                <select name="country" class="form-control">
+                    <option value="FR" {% if client.country == 'FR' %}selected{% endif %}>France</option>
+                    <option value="BE" {% if client.country == 'BE' %}selected{% endif %}>Belgique</option>
+                    <option value="CH" {% if client.country == 'CH' %}selected{% endif %}>Suisse</option>
+                    <option value="LU" {% if client.country == 'LU' %}selected{% endif %}>Luxembourg</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Adresse</label>
+            <input type="text" name="address" class="form-control" value="{{ client.address }}">
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Code postal</label>
+                <input type="text" name="postalCode" class="form-control" value="{{ client.postalCode }}">
+            </div>
+            <div class="form-group">
+                <label>Ville</label>
+                <input type="text" name="city" class="form-control" value="{{ client.city }}">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:8px;">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a href="{{ path('app_clients') }}" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

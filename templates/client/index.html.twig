@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+{% block title %}Clients — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Clients</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_client_new') }}" class="btn btn-primary">+ Nouveau client</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="card">
+    {% if clients is empty %}
+        <div class="empty-state">
+            <p>Aucun client pour l'instant.</p>
+            <a href="{{ path('app_client_new') }}" class="btn btn-primary">Ajouter mon premier client</a>
+        </div>
+    {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Ville</th>
+                    <th>Factures</th>
+                    <th>Ajouté le</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <td><a href="{{ path('app_client_show', {id: client.id}) }}"><strong>{{ client.name }}</strong></a></td>
+                    <td>{{ client.email ?? '—' }}</td>
+                    <td>{{ client.city ?? '—' }}</td>
+                    <td>{{ client.invoices|length }}</td>
+                    <td>{{ client.createdAt|date('d/m/Y') }}</td>
+                    <td style="text-align:right; white-space:nowrap;">
+                        <a href="{{ path('app_client_edit', {id: client.id}) }}" class="btn btn-secondary btn-sm">Modifier</a>
+                        <form method="post" action="{{ path('app_client_delete', {id: client.id}) }}" style="display:inline"
+                              onsubmit="return confirm('Supprimer ce client ?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_client_' ~ client.id) }}">
+                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}
