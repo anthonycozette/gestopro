@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+{% block title %}Devis — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Devis</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_quote_new') }}" class="btn btn-primary">+ Nouveau devis</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="card">
+    {% if quotes is empty %}
+        <div class="empty-state">
+            <p>Aucun devis pour l'instant.</p>
+            <a href="{{ path('app_quote_new') }}" class="btn btn-primary">Créer mon premier devis</a>
+        </div>
+    {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Numéro</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Validité</th>
+                    <th>Montant TTC</th>
+                    <th>Statut</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for quote in quotes %}
+                <tr>
+                    <td><a href="{{ path('app_quote_show', {id: quote.id}) }}"><strong>{{ quote.number }}</strong></a></td>
+                    <td>{{ quote.client.name }}</td>
+                    <td>{{ quote.issuedAt|date('d/m/Y') }}</td>
+                    <td>{{ quote.dueAt ? quote.dueAt|date('d/m/Y') : '—' }}</td>
+                    <td><strong>{{ quote.totalTtc|number_format(2, ',', ' ') }} €</strong></td>
+                    <td>{{ _self.statusBadge(quote.status) }}</td>
+                    <td style="text-align:right">
+                        <a href="{{ path('app_quote_show', {id: quote.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+
+{% macro statusBadge(status) %}
+    {% if status == 'draft' %}<span class="badge badge-gray">Brouillon</span>
+    {% elseif status == 'sent' %}<span class="badge badge-blue">Envoyé</span>
+    {% elseif status == 'accepted' %}<span class="badge badge-green">Accepté</span>
+    {% elseif status == 'declined' %}<span class="badge badge-red">Refusé</span>
+    {% elseif status == 'expired' %}<span class="badge badge-orange">Expiré</span>
+    {% else %}<span class="badge badge-gray">{{ status }}</span>{% endif %}
+{% endmacro %}
+{% endblock %}

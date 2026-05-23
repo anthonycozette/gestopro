@@ -99,6 +99,9 @@
                     <a href="{{ path('app_invoices') }}" {% if app.request.attributes.get('_route') starts with 'app_invoice' %}class="active"{% endif %}>
                         Factures
                     </a>
+                    <a href="{{ path('app_quotes') }}" {% if app.request.attributes.get('_route') starts with 'app_quote' %}class="active"{% endif %}>
+                        Devis
+                    </a>
                     <a href="{{ path('app_expenses') }}" {% if app.request.attributes.get('_route') starts with 'app_expense' %}class="active"{% endif %}>
                         Dépenses
                     </a>

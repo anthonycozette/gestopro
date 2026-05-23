@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; margin: 0; padding: 32px 16px; color: #111827; }
+        .container { max-width: 560px; margin: 0 auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+        .header { background: #1e293b; padding: 28px 32px; }
+        .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 700; }
+        .header h1 span { color: #60a5fa; }
+        .body { padding: 32px; }
+        .greeting { font-size: 16px; margin-bottom: 20px; color: #374151; }
+        .invoice-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+        .invoice-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px solid #e2e8f0; }
+        .invoice-row:last-child { border-bottom: none; font-weight: 700; font-size: 16px; padding-top: 12px; }
+        .label { color: #6b7280; }
+        .value { color: #111827; font-weight: 500; }
+        .total { color: #2563eb; font-size: 18px; font-weight: 800; }
+        .message { font-size: 14px; color: #6b7280; line-height: 1.7; margin-bottom: 24px; }
+        .footer { background: #f8fafc; padding: 20px 32px; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Gesto<span>Pro</span></h1>
+    </div>
+    <div class="body">
+        <div class="greeting">
+            Bonjour {{ quote.client.name }},
+        </div>
+
+        <p class="message">
+            Veuillez trouver ci-joint votre devis <strong>{{ quote.number }}</strong>
+            de la part de <strong>{{ user.fullName }}</strong>.
+        </p>
+
+        <div class="invoice-box">
+            <div class="invoice-row">
+                <span class="label">Numéro</span>
+                <span class="value">{{ quote.number }}</span>
+            </div>
+            <div class="invoice-row">
+                <span class="label">Date d'émission</span>
+                <span class="value">{{ quote.issuedAt|date('d/m/Y') }}</span>
+            </div>
+            {% if quote.dueAt %}
+            <div class="invoice-row">
+                <span class="label">Valable jusqu'au</span>
+                <span class="value">{{ quote.dueAt|date('d/m/Y') }}</span>
+            </div>
+            {% endif %}
+            <div class="invoice-row">
+                <span class="label">Total HT</span>
+                <span class="value">{{ quote.totalHt|number_format(2, ',', ' ') }} €</span>
+            </div>
+            <div class="invoice-row">
+                <span class="label">TVA</span>
+                <span class="value">{{ quote.totalTva|number_format(2, ',', ' ') }} €</span>
+            </div>
+            <div class="invoice-row">
+                <span class="label">Total TTC</span>
+                <span class="total">{{ quote.totalTtc|number_format(2, ',', ' ') }} €</span>
+            </div>
+        </div>
+
+        {% if quote.notes %}
+        <p class="message">{{ quote.notes }}</p>
+        {% endif %}
+
+        <p class="message">
+            Le devis PDF est joint à cet email.
+            Pour l'accepter ou pour toute question, n'hésitez pas à nous contacter.
+        </p>
+    </div>
+    <div class="footer">
+        Cet email a été envoyé par {{ user.fullName }} via GestoPro.
+    </div>
+</div>
+</body>
+</html>

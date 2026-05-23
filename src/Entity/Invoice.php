@@ -32,11 +32,17 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'invoices')]
 class Invoice
 {
+    public const TYPE_INVOICE = 'invoice';
+    public const TYPE_QUOTE   = 'quote';
+
     public const STATUS_DRAFT     = 'draft';
     public const STATUS_SENT      = 'sent';
     public const STATUS_PAID      = 'paid';
     public const STATUS_OVERDUE   = 'overdue';
     public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_ACCEPTED  = 'accepted';
+    public const STATUS_DECLINED  = 'declined';
+    public const STATUS_EXPIRED   = 'expired';
 
     public const STATUSES = [
         self::STATUS_DRAFT,
@@ -44,12 +50,18 @@ class Invoice
         self::STATUS_PAID,
         self::STATUS_OVERDUE,
         self::STATUS_CANCELLED,
+        self::STATUS_ACCEPTED,
+        self::STATUS_DECLINED,
+        self::STATUS_EXPIRED,
     ];
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
+    #[ORM\Column(length: 20, options: ['default' => self::TYPE_INVOICE])]
+    private string $type = self::TYPE_INVOICE;
 
     #[ORM\Column(length: 30, unique: true)]
     #[Groups(['invoice:read'])]
@@ -123,6 +135,10 @@ class Invoice
 
     public function getId(): ?int { return $this->id; }
 
+    public function getType(): string { return $this->type; }
+    public function setType(string $type): static { $this->type = $type; return $this; }
+    public function isQuote(): bool { return $this->type === self::TYPE_QUOTE; }
+
     public function getNumber(): ?string { return $this->number; }
     public function setNumber(string $number): static { $this->number = $number; return $this; }
 
@@ -132,6 +148,7 @@ class Invoice
     public function isDraft(): bool { return $this->status === self::STATUS_DRAFT; }
     public function isPaid(): bool { return $this->status === self::STATUS_PAID; }
     public function isOverdue(): bool { return $this->status === self::STATUS_OVERDUE; }
+    public function isAccepted(): bool { return $this->status === self::STATUS_ACCEPTED; }
 
     public function getIssuedAt(): ?\DateTimeImmutable { return $this->issuedAt; }
     public function setIssuedAt(\DateTimeImmutable $date): static { $this->issuedAt = $date; return $this; }

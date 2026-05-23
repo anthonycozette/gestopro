@@ -30,14 +30,14 @@ class InvoiceRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
-    public function findLastNumberForYear(User $user, int $year): ?string
+    public function findLastNumberForYear(User $user, int $year, string $prefix = 'FAC'): ?string
     {
         $result = $this->createQueryBuilder('i')
             ->select('i.number')
             ->where('i.user = :user')
             ->andWhere('i.number LIKE :prefix')
             ->setParameter('user', $user)
-            ->setParameter('prefix', 'FAC-' . $year . '-%')
+            ->setParameter('prefix', $prefix . '-' . $year . '-%')
             ->orderBy('i.number', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
