@@ -60,24 +60,24 @@
 
         <div class="toolbar">
             <div class="inv-tabs">
-                <button class="inv-tab active">
+                <button class="inv-tab active" data-filter="all">
                     <span class="dot dot-all"></span>Toutes
                     <span class="inv-tab-count">{{ invoices|length }}</span>
                 </button>
-                <button class="inv-tab">
+                <button class="inv-tab" data-filter="paid">
                     <span class="dot dot-paid"></span>Payées
                     <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'paid')|length }}</span>
                 </button>
-                <button class="inv-tab">
+                <button class="inv-tab" data-filter="sent">
                     <span class="dot dot-sent"></span>Envoyées
                     <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'sent')|length }}</span>
                 </button>
-                <button class="inv-tab">
+                <button class="inv-tab" data-filter="draft">
                     <span class="dot dot-draft"></span>Brouillons
                     <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'draft')|length }}</span>
                 </button>
                 {% if invoices|filter(i => i.status == 'overdue')|length > 0 %}
-                <button class="inv-tab">
+                <button class="inv-tab" data-filter="overdue">
                     <span class="dot dot-late"></span>En retard
                     <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'overdue')|length }}</span>
                 </button>
@@ -103,7 +103,7 @@
             <tbody>
                 {% for invoice in invoices %}
                 {% set isLate = invoice.status == 'overdue' %}
-                <tr {% if isLate %}style="background:#fff9f9;"{% endif %}>
+                <tr data-status="{{ invoice.status }}" {% if isLate %}style="background:#fff9f9;"{% endif %}>
                     <td>
                         <a href="{{ path('app_invoice_show', {id: invoice.id}) }}"
                            style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#1c1a17;">
@@ -164,4 +164,21 @@
 
     {% endif %}
 </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.querySelectorAll('.inv-tab[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+
+        document.querySelectorAll('.inv-tab[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.querySelectorAll('tbody tr[data-status]').forEach(row => {
+            row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+        });
+    });
+});
+</script>
 {% endblock %}
