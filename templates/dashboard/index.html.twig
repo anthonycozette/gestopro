@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard — GestoPro{% endblock %}
+
+{% block body %}
+<div style="max-width:800px;margin:40px auto;font-family:sans-serif;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">
+        <h1>GestoPro</h1>
+        <div>
+            Bonjour, {{ app.user.firstName }} {{ app.user.lastName }}
+            &nbsp;|&nbsp;
+            <a href="{{ path('app_logout') }}">Déconnexion</a>
+        </div>
+    </div>
+
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:24px;border-radius:8px;color:#1e40af;">
+        Dashboard en construction — Phase 3.
+    </div>
+</div>
+{% endblock %}

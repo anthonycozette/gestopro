@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer un compte — GestoPro{% endblock %}
+
+{% block body %}
+<div style="max-width:440px;margin:60px auto;font-family:sans-serif;">
+    <h1 style="text-align:center;margin-bottom:24px;">GestoPro</h1>
+    <h2 style="text-align:center;font-size:18px;color:#4b5563;margin-bottom:24px;">Créer un compte</h2>
+
+    {% if error %}
+        <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:12px;border-radius:6px;margin-bottom:16px;">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    <form method="post" style="background:#f9fafb;border:1px solid #e5e7eb;padding:24px;border-radius:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div>
+                <label style="display:block;margin-bottom:4px;font-weight:500;">Prénom</label>
+                <input type="text" name="firstName" required
+                       style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="display:block;margin-bottom:4px;font-weight:500;">Nom</label>
+                <input type="text" name="lastName" required
+                       style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;">
+            </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:4px;font-weight:500;">Email</label>
+            <input type="email" name="email" required autofocus
+                   style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;">
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <label style="display:block;margin-bottom:4px;font-weight:500;">Mot de passe <span style="color:#6b7280;font-size:13px;">(min. 8 caractères)</span></label>
+            <input type="password" name="password" minlength="8" required
+                   style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;">
+        </div>
+
+        <button type="submit"
+                style="width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:16px;cursor:pointer;">
+            Créer mon compte
+        </button>
+    </form>
+
+    <p style="text-align:center;margin-top:16px;">
+        Déjà inscrit ? <a href="{{ path('app_login') }}">Se connecter</a>
+    </p>
+</div>
+{% endblock %}
