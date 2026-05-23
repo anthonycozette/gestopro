@@ -17,13 +17,21 @@
     <div>
         <div class="card">
             <div class="card-title">Informations</div>
-            <table>
-                {% if client.email %}<tr><td style="color:#6b7280;width:100px">Email</td><td>{{ client.email }}</td></tr>{% endif %}
-                {% if client.phone %}<tr><td style="color:#6b7280">Téléphone</td><td>{{ client.phone }}</td></tr>{% endif %}
-                {% if client.siret %}<tr><td style="color:#6b7280">SIRET</td><td>{{ client.siret }}</td></tr>{% endif %}
-                {% if client.address %}<tr><td style="color:#6b7280">Adresse</td><td>{{ client.fullAddress }}</td></tr>{% endif %}
-                <tr><td style="color:#6b7280">Client depuis</td><td>{{ client.createdAt|date('d/m/Y') }}</td></tr>
-            </table>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                {% if client.email %}
+                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Email</div><div style="font-size:13.5px;color:#374151;">{{ client.email }}</div></div>
+                {% endif %}
+                {% if client.phone %}
+                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Téléphone</div><div style="font-size:13.5px;color:#374151;">{{ client.phone }}</div></div>
+                {% endif %}
+                {% if client.siret %}
+                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">SIRET</div><div class="mono" style="font-size:13px;color:#374151;">{{ client.siret }}</div></div>
+                {% endif %}
+                {% if client.address %}
+                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Adresse</div><div style="font-size:13.5px;color:#374151;">{{ client.fullAddress }}</div></div>
+                {% endif %}
+                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Client depuis</div><div style="font-size:13.5px;color:#374151;">{{ client.createdAt|date('d/m/Y') }}</div></div>
+            </div>
         </div>
     </div>
 
@@ -49,11 +57,11 @@
                             <td>{{ invoice.issuedAt|date('d/m/Y') }}</td>
                             <td>{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</td>
                             <td>
-                                {% if invoice.status == 'paid' %}<span class="badge badge-green">Payée</span>
-                                {% elseif invoice.status == 'sent' %}<span class="badge badge-blue">Envoyée</span>
-                                {% elseif invoice.status == 'overdue' %}<span class="badge badge-red">En retard</span>
-                                {% elseif invoice.status == 'draft' %}<span class="badge badge-gray">Brouillon</span>
-                                {% else %}<span class="badge badge-gray">{{ invoice.status }}</span>{% endif %}
+                                {% if invoice.status == 'paid' %}<span class="st-badge st-paid">Payée</span>
+                                {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
+                                {% elseif invoice.status == 'overdue' %}<span class="st-badge st-late">En retard</span>
+                                {% elseif invoice.status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
+                                {% else %}<span class="st-badge st-draft">{{ invoice.status }}</span>{% endif %}
                             </td>
                         </tr>
                         {% endfor %}

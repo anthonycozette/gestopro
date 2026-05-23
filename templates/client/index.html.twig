@@ -14,6 +14,7 @@
 <div class="card">
     {% if clients is empty %}
         <div class="empty-state">
+            <div class="empty-state-icon">👤</div>
             <p>Aucun client pour l'instant.</p>
             <a href="{{ path('app_client_new') }}" class="btn btn-primary">Ajouter mon premier client</a>
         </div>
@@ -24,7 +25,7 @@
                     <th>Nom</th>
                     <th>Email</th>
                     <th>Ville</th>
-                    <th>Factures</th>
+                    <th style="text-align:center">Factures</th>
                     <th>Ajouté le</th>
                     <th></th>
                 </tr>
@@ -32,11 +33,11 @@
             <tbody>
                 {% for client in clients %}
                 <tr>
-                    <td><a href="{{ path('app_client_show', {id: client.id}) }}"><strong>{{ client.name }}</strong></a></td>
-                    <td>{{ client.email ?? '—' }}</td>
-                    <td>{{ client.city ?? '—' }}</td>
-                    <td>{{ client.invoices|length }}</td>
-                    <td>{{ client.createdAt|date('d/m/Y') }}</td>
+                    <td><a href="{{ path('app_client_show', {id: client.id}) }}">{{ client.name }}</a></td>
+                    <td style="color:#6b7280;font-size:13px;">{{ client.email ?? '—' }}</td>
+                    <td style="color:#6b7280;font-size:13px;">{{ client.city ?? '—' }}</td>
+                    <td style="text-align:center;font-weight:600;color:#374151;">{{ client.invoices|length }}</td>
+                    <td style="color:#9ca3af;font-size:13px;">{{ client.createdAt|date('d/m/Y') }}</td>
                     <td style="text-align:right; white-space:nowrap;">
                         <a href="{{ path('app_client_edit', {id: client.id}) }}" class="btn btn-secondary btn-sm">Modifier</a>
                         <form method="post" action="{{ path('app_client_delete', {id: client.id}) }}" style="display:inline"

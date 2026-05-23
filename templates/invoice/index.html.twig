@@ -3,58 +3,59 @@
 
 {% block topbar %}
 <div class="topbar">
-    <h1>Factures</h1>
-    <div class="topbar-actions">
-        <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">+ Nouvelle facture</a>
-    </div>
+  <h1>Factures</h1>
+  <div class="topbar-actions">
+    <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">+ Nouvelle facture</a>
+  </div>
 </div>
 {% endblock %}
 
 {% block body %}
 <div class="card">
-    {% if invoices is empty %}
-        <div class="empty-state">
-            <p>Aucune facture pour l'instant.</p>
-            <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">Créer ma première facture</a>
-        </div>
-    {% else %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Numéro</th>
-                    <th>Client</th>
-                    <th>Date</th>
-                    <th>Échéance</th>
-                    <th>Montant TTC</th>
-                    <th>Statut</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for invoice in invoices %}
-                <tr>
-                    <td><a href="{{ path('app_invoice_show', {id: invoice.id}) }}"><strong>{{ invoice.number }}</strong></a></td>
-                    <td>{{ invoice.client.name }}</td>
-                    <td>{{ invoice.issuedAt|date('d/m/Y') }}</td>
-                    <td>{{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}</td>
-                    <td><strong>{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</strong></td>
-                    <td>{{ _self.statusBadge(invoice.status) }}</td>
-                    <td style="text-align:right">
-                        <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
+  {% if invoices is empty %}
+    <div class="empty-state">
+      <div class="empty-state-icon">🧾</div>
+      <p>Aucune facture pour l'instant.</p>
+      <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">Créer ma première facture</a>
+    </div>
+  {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th>Numéro</th>
+          <th>Client</th>
+          <th>Date</th>
+          <th>Échéance</th>
+          <th style="text-align:right">Montant TTC</th>
+          <th>Statut</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in invoices %}
+        <tr>
+          <td><a href="{{ path('app_invoice_show', {id: invoice.id}) }}">{{ invoice.number }}</a></td>
+          <td style="color:#6b7280">{{ invoice.client.name }}</td>
+          <td style="color:#6b7280; font-size:13px">{{ invoice.issuedAt|date('d/m/Y') }}</td>
+          <td style="color:#6b7280; font-size:13px">{{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}</td>
+          <td style="text-align:right"><span class="mono">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span></td>
+          <td>{{ _self.statusBadge(invoice.status) }}</td>
+          <td style="text-align:right">
+            <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
 </div>
 
 {% macro statusBadge(status) %}
-    {% if status == 'paid' %}<span class="badge badge-green">Payée</span>
-    {% elseif status == 'sent' %}<span class="badge badge-blue">Envoyée</span>
-    {% elseif status == 'overdue' %}<span class="badge badge-red">En retard</span>
-    {% elseif status == 'draft' %}<span class="badge badge-gray">Brouillon</span>
-    {% elseif status == 'cancelled' %}<span class="badge badge-orange">Annulée</span>
-    {% else %}<span class="badge badge-gray">{{ status }}</span>{% endif %}
+  {% if status == 'paid' %}<span class="st-badge st-paid">Payée</span>
+  {% elseif status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
+  {% elseif status == 'overdue' %}<span class="st-badge st-late">En retard</span>
+  {% elseif status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
+  {% elseif status == 'cancelled' %}<span class="st-badge st-cancel">Annulée</span>
+  {% else %}<span class="st-badge st-draft">{{ status }}</span>{% endif %}
 {% endmacro %}
 {% endblock %}

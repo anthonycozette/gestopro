@@ -1,158 +1,408 @@
 <!DOCTYPE html>
 <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}GestoPro{% endblock %}</title>
-        <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; color: #111827; }
-            a { color: #2563eb; text-decoration: none; }
-            a:hover { text-decoration: underline; }
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GestoPro{% endblock %}</title>
 
-            /* Sidebar */
-            .layout { display: flex; min-height: 100vh; }
-            .sidebar { width: 220px; background: #1e293b; color: #cbd5e1; flex-shrink: 0; display: flex; flex-direction: column; }
-            .sidebar-brand { padding: 20px 16px; font-size: 20px; font-weight: 700; color: #fff; border-bottom: 1px solid #334155; }
-            .sidebar-brand span { color: #60a5fa; }
-            .sidebar-nav { flex: 1; padding: 12px 0; }
-            .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: #94a3b8; font-size: 14px; transition: all .15s; }
-            .sidebar-nav a:hover, .sidebar-nav a.active { background: #334155; color: #fff; text-decoration: none; }
-            .sidebar-nav .nav-section { padding: 16px 16px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #475569; }
-            .sidebar-footer { padding: 12px 16px; border-top: 1px solid #334155; font-size: 13px; }
-            .sidebar-footer a { color: #94a3b8; }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-            /* Main */
-            .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-            .topbar { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
-            .topbar h1 { font-size: 18px; font-weight: 600; color: #111827; }
-            .topbar-actions { display: flex; gap: 8px; align-items: center; }
-            .content { flex: 1; padding: 24px; overflow-y: auto; }
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+      --accent:      #2563eb;
+      --accent-50:   #eff6ff;
+      --accent-100:  #dbeafe;
+      --accent-700:  #1d4ed8;
+      --radius:    10px;
+      --radius-sm:  6px;
+      --radius-lg: 14px;
+      /* status */
+      --st-draft-bg: #f1f3f6;  --st-draft-fg: #6b7280;
+      --st-sent-bg:  #eff6ff;  --st-sent-fg:  #1d4ed8;
+      --st-paid-bg:  #dcfce7;  --st-paid-fg:  #15803d;
+      --st-late-bg:  #fee2e2;  --st-late-fg:  #b91c1c;
+      --st-cancel-bg:#fef3c7;  --st-cancel-fg:#b45309;
+      --st-acc-bg:   #dcfce7;  --st-acc-fg:   #15803d;
+      --st-dec-bg:   #fee2e2;  --st-dec-fg:   #b91c1c;
+    }
 
-            /* Cards */
-            .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-            .card-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+    /* ── RESET ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: #f5f6f8;
+      color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    svg { display: block; }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input[type=number] { -moz-appearance: textfield; }
 
-            /* Table */
-            table { width: 100%; border-collapse: collapse; font-size: 14px; }
-            th { text-align: left; padding: 10px 12px; background: #f9fafb; border-bottom: 2px solid #e5e7eb; font-weight: 600; color: #374151; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-            td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
-            tr:last-child td { border-bottom: none; }
-            tr:hover td { background: #f9fafb; }
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    .layout { display: flex; min-height: 100vh; }
 
-            /* Buttons */
-            .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: .15s; text-decoration: none; }
-            .btn-primary { background: #2563eb; color: #fff; }
-            .btn-primary:hover { background: #1d4ed8; text-decoration: none; color: #fff; }
-            .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
-            .btn-secondary:hover { background: #e5e7eb; text-decoration: none; color: #374151; }
-            .btn-danger { background: #ef4444; color: #fff; }
-            .btn-danger:hover { background: #dc2626; text-decoration: none; color: #fff; }
-            .btn-sm { padding: 4px 10px; font-size: 12px; }
-            .btn-success { background: #16a34a; color: #fff; }
-            .btn-success:hover { background: #15803d; text-decoration: none; color: #fff; }
+    /* ── SIDEBAR ────────────────────────────────────────── */
+    .sidebar {
+      width: 220px;
+      background: #0f172a;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-brand {
+      padding: 20px 16px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .sidebar-brand .brand-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.025em;
+    }
+    .sidebar-brand .brand-name span { color: #60a5fa; }
+    .sidebar-brand .brand-tag {
+      font-size: 10px;
+      font-weight: 500;
+      color: #334155;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .sidebar-nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+    .nav-section {
+      padding: 14px 14px 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #334155;
+    }
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 14px;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      margin: 1px 6px;
+      transition: background .1s, color .1s;
+      text-decoration: none;
+    }
+    .sidebar-nav a:hover { background: rgba(255,255,255,.05); color: #cbd5e1; text-decoration: none; }
+    .sidebar-nav a.active { background: rgba(37,99,235,.18); color: #93c5fd; }
+    .nav-icon { width: 15px; height: 15px; flex-shrink: 0; opacity: .8; }
+    .sidebar-footer {
+      padding: 12px 14px;
+      border-top: 1px solid rgba(255,255,255,.06);
+    }
+    .plan-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      margin-bottom: 8px;
+    }
+    .plan-free   { background: #1e293b; color: #475569; }
+    .plan-pro    { background: rgba(37,99,235,.25);  color: #93c5fd; }
+    .plan-expert { background: rgba(124,58,237,.25); color: #c4b5fd; }
+    .footer-user { color: #cbd5e1; font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+    .footer-links a { color: #475569; font-size: 11.5px; }
+    .footer-links a:hover { color: #64748b; }
 
-            /* Forms */
-            .form-group { margin-bottom: 16px; }
-            .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; color: #374151; }
-            .form-control { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #111827; }
-            .form-control:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
-            .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-            .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    /* ── MAIN ────────────────────────────────────────────── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
-            /* Badges */
-            .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-            .badge-green { background: #dcfce7; color: #166534; }
-            .badge-blue { background: #dbeafe; color: #1e40af; }
-            .badge-yellow { background: #fef9c3; color: #854d0e; }
-            .badge-red { background: #fee2e2; color: #991b1b; }
-            .badge-gray { background: #f3f4f6; color: #374151; }
-            .badge-orange { background: #ffedd5; color: #9a3412; }
+    /* ── TOPBAR ──────────────────────────────────────────── */
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid #e8eaed;
+      padding: 13px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .topbar h1 { font-size: 15px; font-weight: 600; color: #0f172a; letter-spacing: -.01em; }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
 
-            /* Alerts */
-            .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
-            .alert-success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-            .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-            .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    /* ── CONTENT ─────────────────────────────────────────── */
+    .content { flex: 1; padding: 24px; overflow-y: auto; }
 
-            /* Empty state */
-            .empty-state { text-align: center; padding: 48px 24px; color: #6b7280; }
-            .empty-state p { margin-bottom: 16px; }
-        </style>
-        {% block stylesheets %}{% endblock %}
-    </head>
-    <body>
-        {% if app.user %}
-        <div class="layout">
-            <aside class="sidebar">
-                <div class="sidebar-brand">Gesto<span>Pro</span></div>
-                <nav class="sidebar-nav">
-                    <div class="nav-section">Principal</div>
-                    <a href="{{ path('app_dashboard') }}" {% if app.request.attributes.get('_route') == 'app_dashboard' %}class="active"{% endif %}>
-                        Tableau de bord
-                    </a>
+    /* ── CARDS ───────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border: 1px solid #e8eaed;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
 
-                    <div class="nav-section">Comptabilité</div>
-                    <a href="{{ path('app_clients') }}" {% if app.request.attributes.get('_route') starts with 'app_client' %}class="active"{% endif %}>
-                        Clients
-                    </a>
-                    <a href="{{ path('app_invoices') }}" {% if app.request.attributes.get('_route') starts with 'app_invoice' %}class="active"{% endif %}>
-                        Factures
-                    </a>
-                    <a href="{{ path('app_quotes') }}" {% if app.request.attributes.get('_route') starts with 'app_quote' %}class="active"{% endif %}>
-                        Devis
-                    </a>
-                    <a href="{{ path('app_expenses') }}" {% if app.request.attributes.get('_route') starts with 'app_expense' %}class="active"{% endif %}>
-                        Dépenses
-                    </a>
-                    <a href="{{ path('app_urssaf') }}" {% if app.request.attributes.get('_route') starts with 'app_urssaf' %}class="active"{% endif %}>
-                        URSSAF
-                    </a>
+    /* ── TABLE ───────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th {
+      text-align: left;
+      padding: 9px 12px;
+      background: #f8f9fb;
+      border-bottom: 1px solid #e8eaed;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      white-space: nowrap;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid #f1f3f5; vertical-align: middle; color: #374151; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbfc; }
+    td a { color: #0f172a; font-weight: 600; }
+    td a:hover { color: var(--accent); text-decoration: none; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
 
-                    {% if app.user.isExpert() %}
-                    <div class="nav-section">Expert Comptable</div>
-                    <a href="{{ path('app_balance_sheets') }}" {% if app.request.attributes.get('_route') starts with 'app_balance_sheet' %}class="active"{% endif %}>
-                        Bilans comptables
-                    </a>
-                    {% else %}
-                    <a href="{{ path('app_subscription_manage') }}"
-                       style="opacity:.5;font-style:italic;"
-                       title="Réservé au plan Expert">
-                        🔒 Bilans (Expert)
-                    </a>
-                    {% endif %}
-                </nav>
-                <div class="sidebar-footer">
-                    <div style="margin-bottom:8px;">
-                        {% if app.user.plan == 'pro' %}
-                            <span style="font-size:11px;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:99px;font-weight:600;">PRO</span>
-                        {% elseif app.user.plan == 'expert' %}
-                            <span style="font-size:11px;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:99px;font-weight:600;">EXPERT</span>
-                        {% else %}
-                            <span style="font-size:11px;background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:99px;font-weight:600;">GRATUIT</span>
-                        {% endif %}
-                    </div>
-                    {{ app.user.firstName }} {{ app.user.lastName }}<br>
-                    <a href="{{ path('app_subscription_manage') }}" style="font-size:12px;">Mon abonnement</a> ·
-                    <a href="{{ path('app_logout') }}">Déconnexion</a>
-                </div>
-            </aside>
-            <div class="main">
-                {% block topbar %}{% endblock %}
-                <div class="content">
-                    {% for msg in app.flashes('success') %}
-                        <div class="alert alert-success">{{ msg }}</div>
-                    {% endfor %}
-                    {% for msg in app.flashes('error') %}
-                        <div class="alert alert-error">{{ msg }}</div>
-                    {% endfor %}
-                    {% block body %}{% endblock %}
-                </div>
-            </div>
-        </div>
-        {% else %}
-            {% block body_public %}{% endblock %}
-        {% endif %}
-        {% block javascripts %}{% endblock %}
-    </body>
+    /* ── BUTTONS ─────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background .12s, border-color .12s, color .12s;
+      text-decoration: none;
+      white-space: nowrap;
+      font-family: var(--font-sans);
+      line-height: 1;
+    }
+    .btn:hover { text-decoration: none; }
+    .btn-primary   { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-700); border-color: var(--accent-700); color: #fff; }
+    .btn-secondary { background: #fff; color: #374151; border-color: #d1d5db; }
+    .btn-secondary:hover { background: #f9fafb; color: #111827; }
+    .btn-danger    { background: #ef4444; color: #fff; border-color: #ef4444; }
+    .btn-danger:hover { background: #dc2626; color: #fff; }
+    .btn-success   { background: #16a34a; color: #fff; border-color: #16a34a; }
+    .btn-success:hover { background: #15803d; color: #fff; }
+    .btn-sm { padding: 4px 10px; font-size: 11.5px; }
+
+    /* ── STATUS BADGES (dot indicator) ───────────────────── */
+    .st-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: .01em;
+      white-space: nowrap;
+    }
+    .st-badge::before {
+      content: "";
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .9;
+      flex-shrink: 0;
+    }
+    .st-draft    { background: var(--st-draft-bg);  color: var(--st-draft-fg); }
+    .st-sent     { background: var(--st-sent-bg);   color: var(--st-sent-fg); }
+    .st-paid     { background: var(--st-paid-bg);   color: var(--st-paid-fg); }
+    .st-late     { background: var(--st-late-bg);   color: var(--st-late-fg); }
+    .st-cancel   { background: var(--st-cancel-bg); color: var(--st-cancel-fg); }
+    .st-accepted { background: var(--st-acc-bg);    color: var(--st-acc-fg); }
+    .st-declined { background: var(--st-dec-bg);    color: var(--st-dec-fg); }
+    .st-expired  { background: var(--st-cancel-bg); color: var(--st-cancel-fg); }
+
+    /* legacy compat */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge-green  { background: #dcfce7; color: #166534; }
+    .badge-blue   { background: #dbeafe; color: #1e40af; }
+    .badge-red    { background: #fee2e2; color: #991b1b; }
+    .badge-gray   { background: #f1f3f6; color: #6b7280; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+
+    /* ── FORMS ───────────────────────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: #374151;
+    }
+    .form-control {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid #d1d5db;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      color: #0f172a;
+      font-family: var(--font-sans);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
+    textarea.form-control { resize: vertical; }
+    .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    /* ── ALERTS ──────────────────────────────────────────── */
+    .alert {
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+      font-size: 13.5px;
+      border-width: 1px;
+      border-style: solid;
+    }
+    .alert-success { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .alert-error   { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+    .alert-info    { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+
+    /* ── EMPTY STATE ─────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 56px 24px; color: #9ca3af; }
+    .empty-state p { margin-bottom: 16px; font-size: 14px; }
+    .empty-state-icon { font-size: 32px; margin-bottom: 12px; opacity: .4; }
+  </style>
+  {% block stylesheets %}{% endblock %}
+</head>
+<body>
+{% if app.user %}
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Gesto<span>Pro</span></div>
+      <div class="brand-tag">Gestion · Comptabilité</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <a href="{{ path('app_dashboard') }}"
+         {% if app.request.attributes.get('_route') == 'app_dashboard' %}class="active"{% endif %}>
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="1" y="1" width="6.5" height="6.5" rx="1.5"/><rect x="8.5" y="1" width="6.5" height="6.5" rx="1.5" opacity=".5"/><rect x="1" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".5"/><rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".5"/>
+        </svg>
+        Tableau de bord
+      </a>
+
+      <div class="nav-section">Comptabilité</div>
+      <a href="{{ path('app_clients') }}"
+         {% if app.request.attributes.get('_route') starts with 'app_client' %}class="active"{% endif %}>
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5 6a1 1 0 0 1-1-1c0-2.5 2.7-4 6-4s6 1.5 6 4a1 1 0 0 1-1 1H3Z"/>
+        </svg>
+        Clients
+      </a>
+      <a href="{{ path('app_invoices') }}"
+         {% if app.request.attributes.get('_route') starts with 'app_invoice' %}class="active"{% endif %}>
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4Zm1 4h6v1H5V4Zm0 3h6v1H5V7Zm0 3h4v1H5v-1Z"/>
+        </svg>
+        Factures
+      </a>
+      <a href="{{ path('app_quotes') }}"
+         {% if app.request.attributes.get('_route') starts with 'app_quote' %}class="active"{% endif %}>
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4Zm1 4h3v1H5V4Zm5 0h-1v1h1V4ZM5 7h6v1H5V7Zm0 3h4v1H5v-1Z"/>
+        </svg>
+        Devis
+      </a>
+      <a href="{{ path('app_expenses') }}"
+         {% if app.request.attributes.get('_route') starts with 'app_expense' %}class="active"{% endif %}>
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm.5 3v.6a1.5 1.5 0 0 1 .1 3l-1 .3a.5.5 0 1 0 0 1H9a.5.5 0 0 0 .5-.5h1A1.5 1.5 0 0 1 9 10.4V11H7v-.6a1.5 1.5 0 0 1-.1-3l1-.3a.5.5 0 1 0 0-1H7a.5.5 0 0 0-.5.5h-1A1.5 1.5 0 0 1 7 5.6V5h1.5Z"/>
+        </svg>
+        Dépenses
+      </a>
+      <a href="{{ path('app_urssaf') }}"
+         {% if app.request.attributes.get('_route') starts with 'app_urssaf' %}class="active"{% endif %}>
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4Zm0 5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V9Zm1 4a1 1 0 0 0 0 2h7a1 1 0 0 0 0-2H2Z"/>
+        </svg>
+        URSSAF
+      </a>
+
+      {% if app.user.isExpert() %}
+      <div class="nav-section">Expert Comptable</div>
+      <a href="{{ path('app_balance_sheets') }}"
+         {% if app.request.attributes.get('_route') starts with 'app_balance_sheet' %}class="active"{% endif %}>
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M3 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H3Zm2 4h6v1H5V5Zm0 3h6v1H5V8Zm0 3h4v1H5v-1Z"/>
+        </svg>
+        Bilans comptables
+      </a>
+      {% else %}
+      <div class="nav-section">Expert Comptable</div>
+      <a href="{{ path('app_subscription_manage') }}" style="opacity:.35;" title="Réservé au plan Expert">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3v9h10V6h-1.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5H6V4.5a2 2 0 1 1 4 0V6Z"/>
+        </svg>
+        Bilans (Expert)
+      </a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      {% if app.user.plan == 'pro' %}
+        <div class="plan-chip plan-pro">PRO</div>
+      {% elseif app.user.plan == 'expert' %}
+        <div class="plan-chip plan-expert">EXPERT</div>
+      {% else %}
+        <div class="plan-chip plan-free">GRATUIT</div>
+      {% endif %}
+      <div class="footer-user">{{ app.user.firstName }} {{ app.user.lastName }}</div>
+      <div class="footer-links">
+        <a href="{{ path('app_subscription_manage') }}">Abonnement</a>
+        <span style="color:#334155"> · </span>
+        <a href="{{ path('app_logout') }}">Déconnexion</a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    {% block topbar %}{% endblock %}
+    <div class="content">
+      {% for msg in app.flashes('success') %}
+        <div class="alert alert-success">{{ msg }}</div>
+      {% endfor %}
+      {% for msg in app.flashes('error') %}
+        <div class="alert alert-error">{{ msg }}</div>
+      {% endfor %}
+      {% block body %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% else %}
+  {% block body_public %}{% endblock %}
+{% endif %}
+{% block javascripts %}{% endblock %}
+</body>
 </html>
