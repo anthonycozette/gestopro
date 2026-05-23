@@ -17,9 +17,22 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/bilans', name: 'app_balance_sheet')]
 class BalanceSheetController extends AbstractController
 {
+    private function requireExpertPlan(): ?Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        if (!$user->isExpert()) {
+            $this->addFlash('error', 'Les bilans comptables sont réservés au plan Expert.');
+            return $this->redirectToRoute('app_subscription_manage');
+        }
+        return null;
+    }
+
     #[Route('', name: 's')]
     public function index(BalanceSheetRepository $repo): Response
     {
+        if ($redirect = $this->requireExpertPlan()) return $redirect;
+
         return $this->render('balance_sheet/index.html.twig', [
             'sheets' => $repo->findByUser($this->getUser()),
         ]);
@@ -33,6 +46,8 @@ class BalanceSheetController extends AbstractController
         ExpenseRepository $expenseRepo,
         UrssafDeclarationRepository $urssafRepo,
     ): Response {
+        if ($redirect = $this->requireExpertPlan()) return $redirect;
+
         $preview = null;
         $error   = null;
 

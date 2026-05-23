@@ -105,9 +105,19 @@
                     <a href="{{ path('app_urssaf') }}" {% if app.request.attributes.get('_route') starts with 'app_urssaf' %}class="active"{% endif %}>
                         URSSAF
                     </a>
+
+                    {% if app.user.isExpert() %}
+                    <div class="nav-section">Expert Comptable</div>
                     <a href="{{ path('app_balance_sheets') }}" {% if app.request.attributes.get('_route') starts with 'app_balance_sheet' %}class="active"{% endif %}>
-                        Bilans
+                        Bilans comptables
                     </a>
+                    {% else %}
+                    <a href="{{ path('app_subscription_manage') }}"
+                       style="opacity:.5;font-style:italic;"
+                       title="Réservé au plan Expert">
+                        🔒 Bilans (Expert)
+                    </a>
+                    {% endif %}
                 </nav>
                 <div class="sidebar-footer">
                     <div style="margin-bottom:8px;">
