@@ -1,0 +1,80 @@
+{% extends 'base.html.twig' %}
+{% block title %}Dépenses — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Dépenses</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_expense_new') }}" class="btn btn-primary">+ Nouvelle dépense</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="card">
+    {% if expenses is empty %}
+        <div class="empty-state">
+            <p>Aucune dépense enregistrée.</p>
+            <a href="{{ path('app_expense_new') }}" class="btn btn-primary">Ajouter ma première dépense</a>
+        </div>
+    {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Fournisseur</th>
+                    <th>Catégorie</th>
+                    <th style="text-align:right">Montant TTC</th>
+                    <th style="text-align:right">TVA</th>
+                    <th>Déductible</th>
+                    <th>Paiement</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.date|date('d/m/Y') }}</td>
+                    <td><a href="{{ path('app_expense_show', {id: expense.id}) }}"><strong>{{ expense.vendor }}</strong></a></td>
+                    <td>
+                        {% if expense.category %}
+                            <span class="badge badge-gray">{{ expense.category.label }}</span>
+                        {% else %}
+                            <span style="color:#9ca3af">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right"><strong>{{ expense.amountTtc|number_format(2, ',', ' ') }} €</strong></td>
+                    <td style="text-align:right">{{ expense.tvaRate }} %</td>
+                    <td>
+                        {% if expense.deductible %}
+                            <span class="badge badge-green">Oui</span>
+                        {% else %}
+                            <span class="badge badge-gray">Non</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ expense.paymentMethod ?: '—' }}</td>
+                    <td style="text-align:right">
+                        <a href="{{ path('app_expense_show', {id: expense.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="margin-top:16px; padding-top:12px; border-top:1px solid #e5e7eb; display:flex; gap:32px;">
+            <div style="font-size:13px; color:#6b7280;">
+                Total TTC :
+                <strong style="color:#111827; font-size:15px;">
+                    {{ expenses|reduce((carry, e) => carry + e.amountTtc, 0)|number_format(2, ',', ' ') }} €
+                </strong>
+            </div>
+            <div style="font-size:13px; color:#6b7280;">
+                Total déductible :
+                <strong style="color:#111827; font-size:15px;">
+                    {{ expenses|filter(e => e.deductible)|reduce((carry, e) => carry + e.amountHt, 0)|number_format(2, ',', ' ') }} € HT
+                </strong>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

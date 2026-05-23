@@ -1,0 +1,147 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ title }} — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>{{ title }}</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_expenses') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<form method="post">
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
+
+        <div>
+            <div class="card">
+                <div class="card-title">Informations de la dépense</div>
+
+                <div class="form-group">
+                    <label>Fournisseur <span style="color:#ef4444">*</span></label>
+                    <input type="text" name="vendor" class="form-control"
+                           value="{{ expense.vendor }}" placeholder="Ex : SNCF, Amazon, Leclerc…" required autofocus>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Date <span style="color:#ef4444">*</span></label>
+                        <input type="date" name="date" class="form-control"
+                               value="{{ expense.date ? expense.date|date('Y-m-d') : 'now'|date('Y-m-d') }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Catégorie</label>
+                        <select name="category_id" class="form-control">
+                            <option value="">— Sans catégorie —</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}"
+                                    {% if expense.category and expense.category.id == cat.id %}selected{% endif %}>
+                                    {{ cat.label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" class="form-control" rows="2"
+                              placeholder="Détails, numéro de facture fournisseur…">{{ expense.notes }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <div class="card-title">Montant</div>
+
+                <div class="form-group">
+                    <label>Montant TTC <span style="color:#ef4444">*</span></label>
+                    <div style="position:relative;">
+                        <input type="number" name="amount_ttc" id="amount-ttc" class="form-control"
+                               value="{{ expense.amountTtc != '0.00' ? expense.amountTtc : '' }}"
+                               min="0" step="0.01" placeholder="0,00" oninput="recalc()" required
+                               style="padding-right:32px;">
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#6b7280;">€</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Taux de TVA</label>
+                    <select name="tva_rate" id="tva-rate" class="form-control" onchange="recalc()">
+                        <option value="0"   {% if expense.tvaRate == '0.00' or expense.tvaRate == '0' %}selected{% endif %}>0 % (exonéré)</option>
+                        <option value="5.5" {% if expense.tvaRate == '5.50' %}selected{% endif %}>5,5 %</option>
+                        <option value="10"  {% if expense.tvaRate == '10.00' %}selected{% endif %}>10 %</option>
+                        <option value="20"  {% if expense.tvaRate == '20.00' or (expense.id is null) %}selected{% endif %}>20 %</option>
+                    </select>
+                </div>
+
+                <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:12px; margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
+                        <span style="color:#6b7280;">Montant HT</span>
+                        <span id="display-ht">{{ expense.amountHt|number_format(2, ',', ' ') }} €</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
+                        <span style="color:#6b7280;">TVA</span>
+                        <span id="display-tva">{{ expense.tva|number_format(2, ',', ' ') }} €</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:700; padding-top:8px; border-top:1px solid #e5e7eb;">
+                        <span>Total TTC</span>
+                        <span id="display-ttc">{{ expense.amountTtc|number_format(2, ',', ' ') }} €</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mode de paiement</label>
+                    <select name="payment_method" class="form-control">
+                        <option value="">— Non précisé —</option>
+                        <option value="carte"    {% if expense.paymentMethod == 'carte' %}selected{% endif %}>Carte bancaire</option>
+                        <option value="especes"  {% if expense.paymentMethod == 'especes' %}selected{% endif %}>Espèces</option>
+                        <option value="virement" {% if expense.paymentMethod == 'virement' %}selected{% endif %}>Virement</option>
+                        <option value="cheque"   {% if expense.paymentMethod == 'cheque' %}selected{% endif %}>Chèque</option>
+                        <option value="prelevement" {% if expense.paymentMethod == 'prelevement' %}selected{% endif %}>Prélèvement</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" name="deductible" value="1"
+                               {% if expense.id is null or expense.deductible %}checked{% endif %}
+                               style="width:16px;height:16px;">
+                        Dépense déductible
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:4px;">
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+
+    </div>
+</form>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function recalc() {
+    const ttc     = parseFloat(document.getElementById('amount-ttc').value) || 0;
+    const tvaRate = parseFloat(document.getElementById('tva-rate').value)   || 0;
+    const ht      = ttc / (1 + tvaRate / 100);
+    const tva     = ttc - ht;
+
+    document.getElementById('display-ht').textContent  = fmt(ht);
+    document.getElementById('display-tva').textContent = fmt(tva);
+    document.getElementById('display-ttc').textContent = fmt(ttc);
+}
+
+function fmt(n) {
+    return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+recalc();
+</script>
+{% endblock %}
