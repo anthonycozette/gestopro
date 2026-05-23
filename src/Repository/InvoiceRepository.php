@@ -29,4 +29,138 @@ class InvoiceRepository extends ServiceEntityRepository
 
         return $result ? $result['number'] : null;
     }
+
+    public function getYearRevenue(User $user, int $year): float
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('SUM(i.totalHt) as total')
+            ->where('i.user = :user')
+            ->andWhere('i.status = :status')
+            ->andWhere('YEAR(i.issuedAt) = :year')
+            ->setParameter('user', $user)
+            ->setParameter('status', Invoice::STATUS_PAID)
+            ->setParameter('year', $year)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
+    public function getMonthRevenue(User $user, int $year, int $month): float
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('SUM(i.totalHt) as total')
+            ->where('i.user = :user')
+            ->andWhere('i.status = :status')
+            ->andWhere('YEAR(i.issuedAt) = :year')
+            ->andWhere('MONTH(i.issuedAt) = :month')
+            ->setParameter('user', $user)
+            ->setParameter('status', Invoice::STATUS_PAID)
+            ->setParameter('year', $year)
+            ->setParameter('month', $month)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
+    /** @return array<int, float> index 1–12 => montant HT */
+    public function getMonthlyRevenue(User $user, int $year): array
+    {
+        $rows = $this->createQueryBuilder('i')
+            ->select('MONTH(i.issuedAt) as m, SUM(i.totalHt) as total')
+            ->where('i.user = :user')
+            ->andWhere('i.status = :status')
+            ->andWhere('YEAR(i.issuedAt) = :year')
+            ->setParameter('user', $user)
+            ->setParameter('status', Invoice::STATUS_PAID)
+            ->setParameter('year', $year)
+            ->groupBy('m')
+            ->getQuery()
+            ->getArrayResult();
+
+        $data = array_fill(1, 12, 0.0);
+        foreach ($rows as $row) {
+            $data[(int) $row['m']] = (float) $row['total'];
+        }
+
+        return $data;
+    }
+
+    /** @return array{count: int, amount: float} */
+    public function getPendingStats(User $user): array
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('COUNT(i.id) as cnt, SUM(i.totalTtc) as amount')
+            ->where('i.user = :user')
+            ->andWhere('i.status IN (:statuses)')
+            ->setParameter('user', $user)
+            ->setParameter('statuses', [Invoice::STATUS_SENT, Invoice::STATUS_OVERDUE])
+            ->getQuery()
+            ->getSingleResult();
+
+        return ['count' => (int) $result['cnt'], 'amount' => (float) ($result['amount'] ?? 0)];
+    }
+
+    public function countOverdue(User $user): int
+    {
+        return (int) $this->createQueryBuilder('i')
+            ->select('COUNT(i.id)')
+            ->where('i.user = :user')
+            ->andWhere('i.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', Invoice::STATUS_OVERDUE)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function getRecoveryRate(User $user, int $year): float
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('COUNT(i.id) as total, SUM(CASE WHEN i.status = :paid THEN 1 ELSE 0 END) as paid')
+            ->where('i.user = :user')
+            ->andWhere('i.status IN (:statuses)')
+            ->andWhere('YEAR(i.issuedAt) = :year')
+            ->setParameter('user', $user)
+            ->setParameter('paid', Invoice::STATUS_PAID)
+            ->setParameter('statuses', [Invoice::STATUS_PAID, Invoice::STATUS_SENT, Invoice::STATUS_OVERDUE])
+            ->setParameter('year', $year)
+            ->getQuery()
+            ->getSingleResult();
+
+        if ((int) $result['total'] === 0) {
+            return 0.0;
+        }
+
+        return round((float) $result['paid'] / (float) $result['total'] * 100, 1);
+    }
+
+    /** @return array<array{name: string, total: float}> */
+    public function getTopClients(User $user, int $limit = 5): array
+    {
+        return $this->createQueryBuilder('i')
+            ->select('c.name, SUM(i.totalHt) as total')
+            ->join('i.client', 'c')
+            ->where('i.user = :user')
+            ->andWhere('i.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', Invoice::STATUS_PAID)
+            ->groupBy('c.id')
+            ->orderBy('total', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    /** @return Invoice[] */
+    public function findRecentByUser(User $user, int $limit = 5): array
+    {
+        return $this->createQueryBuilder('i')
+            ->where('i.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('i.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

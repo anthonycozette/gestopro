@@ -1,20 +1,239 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Dashboard — GestoPro{% endblock %}
 
-{% block body %}
-<div style="max-width:800px;margin:40px auto;font-family:sans-serif;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">
-        <h1>GestoPro</h1>
-        <div>
-            Bonjour, {{ app.user.firstName }} {{ app.user.lastName }}
-            &nbsp;|&nbsp;
-            <a href="{{ path('app_logout') }}">Déconnexion</a>
-        </div>
-    </div>
-
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:24px;border-radius:8px;color:#1e40af;">
-        Dashboard en construction — Phase 3.
+{% block topbar %}
+<div class="topbar">
+    <h1>Tableau de bord</h1>
+    <div style="font-size:13px; color:#6b7280;">
+        Bonjour, <strong>{{ app.user.firstName }}</strong> · {{ 'now'|date('d/m/Y') }}
     </div>
 </div>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; }
+.kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin-bottom: 6px; }
+.kpi-value { font-size: 22px; font-weight: 700; color: #111827; }
+.kpi-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+.kpi-danger .kpi-value { color: #ef4444; }
+.kpi-warning .kpi-value { color: #f97316; }
+.kpi-blue .kpi-value { color: #2563eb; }
+.kpi-green .kpi-value { color: #16a34a; }
+.charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.progress-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 8px; margin-top: 6px; }
+.progress-bar { height: 8px; border-radius: 99px; background: #2563eb; }
+</style>
+{% endblock %}
+
+{% block body %}
+
+{# Alertes #}
+{% if overdueCount > 0 %}
+<div class="alert alert-error" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <span style="font-size:18px;">⚠️</span>
+    <div>
+        <strong>{{ overdueCount }} facture{{ overdueCount > 1 ? 's' : '' }} en retard</strong> —
+        <a href="{{ path('app_invoices') }}" style="color:inherit;text-decoration:underline;">Voir les factures</a>
+    </div>
+</div>
+{% endif %}
+{% if caYear >= tvaThreshold * 0.9 %}
+<div class="alert alert-error" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <span style="font-size:18px;">⚠️</span>
+    <div>
+        <strong>Seuil de franchise TVA approché</strong> — CA {{ year }} : {{ caYear|number_format(0, ',', ' ') }} € /
+        seuil {{ tvaThreshold|number_format(0, ',', ' ') }} €
+    </div>
+</div>
+{% endif %}
+
+{# KPIs #}
+<div class="kpi-grid">
+    <div class="kpi kpi-blue">
+        <div class="kpi-label">CA du mois</div>
+        <div class="kpi-value">{{ caMonth|number_format(0, ',', ' ') }} €</div>
+        <div class="kpi-sub">{{ caYear|number_format(0, ',', ' ') }} € sur {{ year }}</div>
+    </div>
+    <div class="kpi {% if overdueCount > 0 %}kpi-danger{% elseif pending.count > 0 %}kpi-warning{% endif %}">
+        <div class="kpi-label">Factures en attente</div>
+        <div class="kpi-value">{{ pending.amount|number_format(0, ',', ' ') }} €</div>
+        <div class="kpi-sub">
+            {{ pending.count }} facture{{ pending.count != 1 ? 's' : '' }}
+            {% if overdueCount > 0 %} · {{ overdueCount }} en retard{% endif %}
+        </div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label">Dépenses du mois</div>
+        <div class="kpi-value">{{ expensesMonth|number_format(0, ',', ' ') }} €</div>
+        <div class="kpi-sub">{{ expensesYear|number_format(0, ',', ' ') }} € sur {{ year }}</div>
+    </div>
+    <div class="kpi {% if nextUrssaf %}kpi-warning{% else %}kpi-green{% endif %}">
+        <div class="kpi-label">Cotisations {{ year }}</div>
+        <div class="kpi-value">{{ urssafYear|number_format(0, ',', ' ') }} €</div>
+        <div class="kpi-sub">
+            {% if nextUrssaf %}
+                À déclarer : {{ nextUrssaf.periodLabel }}
+            {% else %}
+                Tout est déclaré ✓
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Graphiques #}
+<div class="charts-grid">
+    <div class="card" style="margin-bottom:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div class="card-title" style="margin-bottom:0;">CA vs Dépenses — {{ year }}</div>
+            <div style="display:flex;gap:16px;font-size:12px;">
+                <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#2563eb;border-radius:2px;display:inline-block;"></span>CA encaissé</span>
+                <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#f97316;border-radius:2px;display:inline-block;"></span>Dépenses</span>
+            </div>
+        </div>
+        <canvas id="chart-monthly" height="90"></canvas>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+        <div class="card-title">Dépenses par catégorie</div>
+        {% if chartCatData != '[]' %}
+            <canvas id="chart-categories" height="160"></canvas>
+        {% else %}
+            <div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:13px;">Aucune dépense enregistrée</div>
+        {% endif %}
+    </div>
+</div>
+
+<div style="margin-bottom:20px;"></div>
+
+{# Taux de recouvrement + URSSAF prochaine #}
+<div class="bottom-grid">
+    <div class="card">
+        <div class="card-title">Taux de recouvrement {{ year }}</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
+            <span style="font-size:32px;font-weight:700;color:{% if recoveryRate >= 80 %}#16a34a{% elseif recoveryRate >= 50 %}#f97316{% else %}#ef4444{% endif %}">
+                {{ recoveryRate }} %
+            </span>
+            <span style="font-size:13px;color:#6b7280;">des factures payées</span>
+        </div>
+        <div class="progress-bar-wrap">
+            <div class="progress-bar" style="width:{{ recoveryRate }}%; background:{% if recoveryRate >= 80 %}#16a34a{% elseif recoveryRate >= 50 %}#f97316{% else %}#ef4444{% endif %};"></div>
+        </div>
+
+        {% if topClients %}
+        <div style="margin-top:20px;">
+            <div style="font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Top clients</div>
+            {% set maxVal = topClients[0].total %}
+            {% for c in topClients %}
+            <div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;">
+                    <span>{{ c.name }}</span>
+                    <strong>{{ c.total|number_format(0, ',', ' ') }} €</strong>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar" style="width:{{ maxVal > 0 ? (c.total / maxVal * 100)|round : 0 }}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-title">Factures récentes</div>
+        {% if recentInvoices is empty %}
+            <div style="text-align:center;color:#9ca3af;padding:24px 0;font-size:13px;">Aucune facture</div>
+        {% else %}
+            {% for invoice in recentInvoices %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6;">
+                <div>
+                    <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" style="font-weight:600;font-size:13px;color:#111827;">
+                        {{ invoice.number }}
+                    </a>
+                    <div style="font-size:11px;color:#9ca3af;">{{ invoice.client.name }} · {{ invoice.issuedAt|date('d/m/Y') }}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:13px;font-weight:600;">{{ invoice.totalTtc|number_format(0, ',', ' ') }} €</div>
+                    <div>
+                        {% if invoice.status == 'paid' %}<span class="badge badge-green" style="font-size:10px;">Payée</span>
+                        {% elseif invoice.status == 'sent' %}<span class="badge badge-blue" style="font-size:10px;">Envoyée</span>
+                        {% elseif invoice.status == 'overdue' %}<span class="badge badge-red" style="font-size:10px;">En retard</span>
+                        {% else %}<span class="badge badge-gray" style="font-size:10px;">Brouillon</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            <div style="margin-top:12px;text-align:center;">
+                <a href="{{ path('app_invoices') }}" style="font-size:13px;color:#2563eb;">Toutes les factures →</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const months   = {{ monthLabels|raw }};
+const revenues = {{ chartRevenues|raw }};
+const expenses = {{ chartExpenses|raw }};
+
+new Chart(document.getElementById('chart-monthly'), {
+    type: 'bar',
+    data: {
+        labels: months,
+        datasets: [
+            {
+                label: 'CA encaissé (€)',
+                data: revenues,
+                backgroundColor: 'rgba(37,99,235,0.8)',
+                borderRadius: 4,
+                borderSkipped: false,
+            },
+            {
+                label: 'Dépenses (€)',
+                data: expenses,
+                backgroundColor: 'rgba(249,115,22,0.7)',
+                borderRadius: 4,
+                borderSkipped: false,
+            },
+        ],
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('fr-FR') + ' €' } },
+            x: { grid: { display: false } },
+        },
+    },
+});
+
+{% if chartCatData != '[]' %}
+const catColors = ['#2563eb','#7c3aed','#db2777','#ea580c','#ca8a04','#16a34a','#0891b2','#64748b','#9333ea','#e11d48','#0284c7'];
+new Chart(document.getElementById('chart-categories'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ chartCatLabels|raw }},
+        datasets: [{
+            data: {{ chartCatData|raw }},
+            backgroundColor: catColors.slice(0, {{ chartCatLabels|raw }}.length),
+            borderWidth: 2,
+            borderColor: '#fff',
+        }],
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'right', labels: { font: { size: 11 }, padding: 8, boxWidth: 12 } },
+            tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.toLocaleString('fr-FR', {minimumFractionDigits:2}) + ' €' } },
+        },
+        cutout: '60%',
+    },
+});
+{% endif %}
+</script>
 {% endblock %}
