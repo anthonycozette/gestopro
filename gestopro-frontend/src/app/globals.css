@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@theme {
+    /* Couleurs personnalisées GestoPro */
+    --color-brand-blue: #3b82f6;
+    --color-brand-turquoise: #06b6d4;
+    --color-brand-purple: #8b5cf6;
+    --color-brand-dark: #0f172a;
+
+    /* Animations personnalisées */
+    --animate-float: float 3s ease-in-out infinite;
+    --animate-glow: glow 2s ease-in-out infinite;
+    --animate-shimmer: shimmer 2s infinite linear;
+
+    /* Radius */
+    --radius: 0.5rem;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+/* Classes utilitaires personnalisées */
+@layer utilities {
+
+    /* Glass effect pour design moderne */
+    .glass {
+        background-color: rgb(255 255 255 / 0.1);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgb(255 255 255 / 0.2);
+    }
+
+    .glass-dark {
+        background-color: rgb(0 0 0 / 0.1);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgb(0 0 0 / 0.2);
+    }
+
+    /* Gradient text brand GestoPro */
+    .text-gradient {
+        background: linear-gradient(to right, #3b82f6, #06b6d4, #8b5cf6);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    /* Gradient background brand */
+    .bg-gradient-brand {
+        background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #8b5cf6 100%);
+    }
+
+    /* Neumorphism léger */
+    .neo-light {
+        box-shadow:
+            8px 8px 16px rgba(163, 177, 198, 0.6),
+            -8px -8px 16px rgba(255, 255, 255, 0.5);
+    }
+
+    .neo-dark {
+        box-shadow:
+            8px 8px 16px rgba(0, 0, 0, 0.4),
+            -8px -8px 16px rgba(255, 255, 255, 0.05);
+    }
+
+    /* Glow effect pour boutons */
+    .glow-blue {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+
+    .glow-purple {
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+    }
+
+    /* Smooth transitions */
+    .transition-smooth {
+        transition: all 0.3s ease-in-out;
+    }
+
+    /* Animation classes */
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .animate-glow {
+        animation: glow 2s ease-in-out infinite;
+    }
+
+    .animate-shimmer {
+        animation: shimmer 2s infinite linear;
+        background: linear-gradient(to right,
+                transparent 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                transparent 100%);
+        background-size: 1000px 100%;
+    }
+}
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #8b5cf6 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #0891b2 50%, #7c3aed 100%);
+}
+
+/* Base styles */
+* {
+    border-color: hsl(214.3 31.8% 91.4%);
+}
+
+body {
+    font-feature-settings: "rlig" 1, "calt" 1;
+}
