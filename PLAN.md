@@ -112,15 +112,16 @@ Accountant ────────────────┘
 
 ---
 
-## Phase 3 — Dashboard & Statistiques ⬜
+## Phase 3 — Dashboard & Statistiques ✅
 
-- [ ] CA mensuel / annuel (graphique)
-- [ ] Dépenses vs revenus (graphique)
-- [ ] Taux de recouvrement (factures payées / émises)
-- [ ] Cotisations URSSAF à venir (widget)
-- [ ] Top clients par CA
+- [x] CA mensuel / annuel (graphique barres)
+- [x] Dépenses vs revenus (graphique barres superposé)
+- [x] Taux de recouvrement (factures payées / émises)
+- [x] Cotisations URSSAF à venir (widget)
+- [x] Top clients par CA (barres de progression)
+- [x] Alertes : factures en retard, seuil TVA
+- [x] Graphique donut dépenses par catégorie
 - [ ] Prévisionnel (trend linéaire)
-- [ ] Alertes : factures en retard, seuil TVA
 
 ---
 
