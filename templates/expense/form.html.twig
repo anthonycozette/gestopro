@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ title }} — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/expenses.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>{{ title }}</h1>
@@ -23,7 +27,7 @@
                 <div class="form-group">
                     <label>Fournisseur <span style="color:#ef4444">*</span></label>
                     <input type="text" name="vendor" class="form-control"
-                           value="{{ expense.vendor }}" placeholder="Ex : SNCF, Amazon, Leclerc…" required autofocus>
+                           value="{{ expense.vendor }}" placeholder="Ex : SNCF, Amazon, Adobe…" required autofocus>
                 </div>
 
                 <div class="form-grid">
@@ -51,6 +55,18 @@
                     <textarea name="notes" class="form-control" rows="2"
                               placeholder="Détails, numéro de facture fournisseur…">{{ expense.notes }}</textarea>
                 </div>
+
+                <div class="form-group">
+                    <label>Mode de paiement</label>
+                    <select name="payment_method" class="form-control">
+                        <option value="">— Non précisé —</option>
+                        <option value="carte"       {% if expense.paymentMethod == 'carte' %}selected{% endif %}>Carte bancaire</option>
+                        <option value="especes"     {% if expense.paymentMethod == 'especes' %}selected{% endif %}>Espèces</option>
+                        <option value="virement"    {% if expense.paymentMethod == 'virement' %}selected{% endif %}>Virement</option>
+                        <option value="cheque"      {% if expense.paymentMethod == 'cheque' %}selected{% endif %}>Chèque</option>
+                        <option value="prelevement" {% if expense.paymentMethod == 'prelevement' %}selected{% endif %}>Prélèvement</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -64,8 +80,8 @@
                         <input type="number" name="amount_ttc" id="amount-ttc" class="form-control"
                                value="{{ expense.amountTtc != '0.00' ? expense.amountTtc : '' }}"
                                min="0" step="0.01" placeholder="0,00" oninput="recalc()" required
-                               style="padding-right:32px;">
-                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#6b7280;">€</span>
+                               style="padding-right:32px; font-family:'JetBrains Mono',monospace;">
+                        <span style="position:absolute;right:11px;top:50%;transform:translateY(-50%);color:#6b7280;font-size:13px;">€</span>
                     </div>
                 </div>
 
@@ -79,43 +95,31 @@
                     </select>
                 </div>
 
-                <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:12px; margin-bottom:16px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
-                        <span style="color:#6b7280;">Montant HT</span>
-                        <span id="display-ht">{{ expense.amountHt|number_format(2, ',', ' ') }} €</span>
+                <div class="expense-totals">
+                    <div class="expense-totals-row">
+                        <span>Montant HT</span>
+                        <span id="display-ht" class="mono">{{ expense.amountHt|number_format(2, ',', ' ') }} €</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
-                        <span style="color:#6b7280;">TVA</span>
-                        <span id="display-tva">{{ expense.tva|number_format(2, ',', ' ') }} €</span>
+                    <div class="expense-totals-row">
+                        <span>TVA</span>
+                        <span id="display-tva" class="mono" style="color:#2563eb;">{{ expense.tva|number_format(2, ',', ' ') }} €</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:700; padding-top:8px; border-top:1px solid #e5e7eb;">
+                    <div class="expense-totals-row">
                         <span>Total TTC</span>
-                        <span id="display-ttc">{{ expense.amountTtc|number_format(2, ',', ' ') }} €</span>
+                        <span id="display-ttc" class="mono">{{ expense.amountTtc|number_format(2, ',', ' ') }} €</span>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Mode de paiement</label>
-                    <select name="payment_method" class="form-control">
-                        <option value="">— Non précisé —</option>
-                        <option value="carte"    {% if expense.paymentMethod == 'carte' %}selected{% endif %}>Carte bancaire</option>
-                        <option value="especes"  {% if expense.paymentMethod == 'especes' %}selected{% endif %}>Espèces</option>
-                        <option value="virement" {% if expense.paymentMethod == 'virement' %}selected{% endif %}>Virement</option>
-                        <option value="cheque"   {% if expense.paymentMethod == 'cheque' %}selected{% endif %}>Chèque</option>
-                        <option value="prelevement" {% if expense.paymentMethod == 'prelevement' %}selected{% endif %}>Prélèvement</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <div class="form-group" style="margin-bottom:4px;">
+                    <label style="display:flex; align-items:center; gap:9px; cursor:pointer; font-size:13px;">
                         <input type="checkbox" name="deductible" value="1"
                                {% if expense.id is null or expense.deductible %}checked{% endif %}
-                               style="width:16px;height:16px;">
-                        Dépense déductible
+                               style="width:16px;height:16px;accent-color:#2563eb;">
+                        <span>Dépense déductible</span>
                     </label>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:4px;">
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;">
                     Enregistrer
                 </button>
             </div>
@@ -126,22 +130,5 @@
 {% endblock %}
 
 {% block javascripts %}
-<script>
-function recalc() {
-    const ttc     = parseFloat(document.getElementById('amount-ttc').value) || 0;
-    const tvaRate = parseFloat(document.getElementById('tva-rate').value)   || 0;
-    const ht      = ttc / (1 + tvaRate / 100);
-    const tva     = ttc - ht;
-
-    document.getElementById('display-ht').textContent  = fmt(ht);
-    document.getElementById('display-tva').textContent = fmt(tva);
-    document.getElementById('display-ttc').textContent = fmt(ttc);
-}
-
-function fmt(n) {
-    return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-}
-
-recalc();
-</script>
+<script src="{{ asset('js/expense-form.js') }}"></script>
 {% endblock %}

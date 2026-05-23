@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}Dépenses — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/expenses.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>Dépenses</h1>
@@ -11,49 +15,128 @@
 {% endblock %}
 
 {% block body %}
+
+{% if expenses is not empty %}
+
+{# Stats calculées #}
+{% set totalTtc = expenses|reduce((carry, e) => carry + e.amountTtc, 0) %}
+{% set totalTva = expenses|filter(e => e.deductible)|reduce((carry, e) => carry + e.tva, 0) %}
+{% set toVerify = expenses|filter(e => e.ocrConfidence is not null and e.ocrConfidence < 80)|length %}
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-card-label">Total dépenses</div>
+        <div class="stat-card-value">{{ totalTtc|number_format(0, ',', ' ') }} €</div>
+        <div class="stat-card-sub">{{ expenses|length }} dépense{{ expenses|length != 1 ? 's' : '' }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">TVA déductible</div>
+        <div class="stat-card-value" style="color:#16a34a;">{{ totalTva|number_format(2, ',', ' ') }} €</div>
+        <div class="stat-card-sub">récupérable</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">À vérifier (OCR)</div>
+        <div class="stat-card-value" style="color:{% if toVerify > 0 %}#d97706{% else %}#16a34a{% endif %};">{{ toVerify }}</div>
+        <div class="stat-card-sub">{% if toVerify == 0 %}tout est validé ✓{% else %}confiance OCR faible{% endif %}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Déductibles</div>
+        <div class="stat-card-value">{{ expenses|filter(e => e.deductible)|length }}</div>
+        <div class="stat-card-sub">sur {{ expenses|length }} dépenses</div>
+    </div>
+</div>
+
+{% endif %}
+
 <div class="card">
     {% if expenses is empty %}
         <div class="empty-state">
+            <div class="empty-state-icon">🧾</div>
             <p>Aucune dépense enregistrée.</p>
             <a href="{{ path('app_expense_new') }}" class="btn btn-primary">Ajouter ma première dépense</a>
         </div>
     {% else %}
+        <div class="toolbar">
+            <div class="tab-bar">
+                <button class="tab-btn active">Toutes <span class="tab-count">{{ expenses|length }}</span></button>
+                <button class="tab-btn">Déductibles <span class="tab-count">{{ expenses|filter(e => e.deductible)|length }}</span></button>
+                {% if toVerify > 0 %}
+                <button class="tab-btn" style="color:#d97706;">À vérifier <span class="tab-count">{{ toVerify }}</span></button>
+                {% endif %}
+            </div>
+            <div style="flex:1;"></div>
+            <a href="{{ path('app_expense_new') }}" class="btn btn-primary btn-sm">+ Nouvelle dépense</a>
+        </div>
+
         <table>
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Fournisseur</th>
+                    <th style="width:36px;"></th>
+                    <th>Libellé</th>
                     <th>Catégorie</th>
-                    <th style="text-align:right">Montant TTC</th>
+                    <th>Date</th>
+                    <th style="text-align:right">TTC</th>
                     <th style="text-align:right">TVA</th>
                     <th>Déductible</th>
-                    <th>Paiement</th>
+                    {% if expenses|filter(e => e.ocrConfidence is not null)|length > 0 %}
+                    <th>Confiance OCR</th>
+                    {% endif %}
                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for expense in expenses %}
-                <tr>
-                    <td>{{ expense.date|date('d/m/Y') }}</td>
-                    <td><a href="{{ path('app_expense_show', {id: expense.id}) }}"><strong>{{ expense.vendor }}</strong></a></td>
+                {% set ocr = expense.ocrConfidence %}
+                {% set ocrClass = ocr is not null ? (ocr >= 80 ? 'ok' : (ocr >= 50 ? 'warn' : 'bad')) : null %}
+                <tr {% if ocr is not null and ocr < 50 %}style="background:#fff9f5;"{% endif %}>
+                    <td><div class="receipt-thumb"></div></td>
+                    <td>
+                        <a href="{{ path('app_expense_show', {id: expense.id}) }}" style="font-weight:600;font-size:13px;color:#1c1a17;">
+                            {{ expense.vendor }}
+                        </a>
+                        {% if expense.notes %}
+                        <div style="font-size:11px;color:#9ca3af;margin-top:1px;">{{ expense.notes|slice(0,60) }}{% if expense.notes|length > 60 %}…{% endif %}</div>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if expense.category %}
-                            <span class="badge badge-gray">{{ expense.category.label }}</span>
+                            {% set catSlug = expense.category.label|lower|replace({' ': '-', 'é': 'e', 'è': 'e', 'ê': 'e', 'à': 'a', 'î': 'i', 'ô': 'o', 'û': 'u'}) %}
+                            <span class="cat-chip cat-{{ catSlug }}">{{ expense.category.label }}</span>
                         {% else %}
-                            <span style="color:#9ca3af">—</span>
+                            <span style="color:#9ca3af;font-size:13px;">—</span>
                         {% endif %}
                     </td>
-                    <td style="text-align:right"><strong>{{ expense.amountTtc|number_format(2, ',', ' ') }} €</strong></td>
-                    <td style="text-align:right">{{ expense.tvaRate }} %</td>
+                    <td style="color:#6b7280;font-size:13px;" class="mono">{{ expense.date|date('d/m/Y') }}</td>
+                    <td style="text-align:right;">
+                        <span class="mono" style="font-weight:700;">{{ expense.amountTtc|number_format(2, ',', ' ') }} €</span>
+                    </td>
+                    <td style="text-align:right;">
+                        {% if expense.tva > 0 %}
+                        <span class="mono" style="color:#2563eb;font-weight:600;">{{ expense.tva|number_format(2, ',', ' ') }} €</span>
+                        {% else %}
+                        <span style="color:#d1d5db;">—</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if expense.deductible %}
-                            <span class="badge badge-green">Oui</span>
+                            <span class="st-badge st-paid" style="font-size:10px;">Oui</span>
                         {% else %}
-                            <span class="badge badge-gray">Non</span>
+                            <span class="st-badge st-draft" style="font-size:10px;">Non</span>
                         {% endif %}
                     </td>
-                    <td>{{ expense.paymentMethod ?: '—' }}</td>
-                    <td style="text-align:right">
+                    {% if expenses|filter(e => e.ocrConfidence is not null)|length > 0 %}
+                    <td>
+                        {% if ocr is not null %}
+                        <div class="ocr-meter">
+                            <div class="ocr-bar"><div class="ocr-fill ocr-fill-{{ ocrClass }}" style="width:{{ ocr }}%;"></div></div>
+                            <span class="ocr-score ocr-score-{{ ocrClass }}">{{ ocr }}%</span>
+                        </div>
+                        {% else %}
+                        <span style="color:#d1d5db;font-size:12px;">—</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                    <td style="text-align:right;">
                         <a href="{{ path('app_expense_show', {id: expense.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
                     </td>
                 </tr>
@@ -61,17 +144,18 @@
             </tbody>
         </table>
 
-        <div style="margin-top:16px; padding-top:12px; border-top:1px solid #e5e7eb; display:flex; gap:32px;">
-            <div style="font-size:13px; color:#6b7280;">
+        {# Totaux footer #}
+        <div style="padding:14px 12px 2px;border-top:1px solid #f0f2f5;display:flex;gap:32px;font-size:13px;">
+            <div>
                 Total TTC :
-                <strong style="color:#111827; font-size:15px;">
-                    {{ expenses|reduce((carry, e) => carry + e.amountTtc, 0)|number_format(2, ',', ' ') }} €
+                <strong class="mono" style="color:#1c1a17;font-size:15px;margin-left:6px;">
+                    {{ totalTtc|number_format(2, ',', ' ') }} €
                 </strong>
             </div>
-            <div style="font-size:13px; color:#6b7280;">
-                Total déductible :
-                <strong style="color:#111827; font-size:15px;">
-                    {{ expenses|filter(e => e.deductible)|reduce((carry, e) => carry + e.amountHt, 0)|number_format(2, ',', ' ') }} € HT
+            <div>
+                TVA déductible :
+                <strong class="mono" style="color:#2563eb;font-size:15px;margin-left:6px;">
+                    {{ totalTva|number_format(2, ',', ' ') }} €
                 </strong>
             </div>
         </div>

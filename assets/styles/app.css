@@ -244,3 +244,89 @@ textarea.form-control { resize: vertical; }
 .empty-state { text-align: center; padding: 56px 24px; color: #9ca3af; }
 .empty-state p { margin-bottom: 16px; font-size: 14px; }
 .empty-state-icon { font-size: 32px; margin-bottom: 12px; opacity: .4; }
+
+/* ── STAT GRID ───────────────────────────────────────────────────── */
+.stat-grid   { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.stat-card {
+  background: #fff; border: 1px solid #e6e8ee; border-radius: 14px;
+  padding: 16px 18px; position: relative; overflow: hidden;
+}
+.stat-card-label { font-size: 11.5px; font-weight: 600; color: #5b6573; margin-bottom: 8px; }
+.stat-card-value {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 22px; font-weight: 700; letter-spacing: -.5px; color: #1c1a17; line-height: 1;
+}
+.stat-card-sub { font-size: 11.5px; color: #8a93a3; margin-top: 6px; }
+
+/* ── TOOLBAR ─────────────────────────────────────────────────────── */
+.toolbar {
+  background: #fff; border: 1px solid #e6e8ee; border-radius: 14px;
+  padding: 10px 14px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+
+/* ── TAB PILLS ───────────────────────────────────────────────────── */
+.tab-bar { display: flex; gap: 3px; }
+.tab-btn {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid transparent;
+  background: transparent; color: #1c1a17; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px;
+  transition: all .1s;
+}
+.tab-btn.active { background: rgba(37,99,235,.1); border-color: rgba(37,99,235,.18); color: #2563eb; }
+.tab-count { font-size: 11px; color: inherit; opacity: .65; }
+
+/* ── UNDERLINE TABS ──────────────────────────────────────────────── */
+.tabs-ul { display: flex; gap: 2px; border-bottom: 1px solid #e6e8ee; margin-bottom: 20px; }
+.tab-ul {
+  padding: 10px 14px; border: none; background: transparent; color: #5b6573;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.tab-ul.active { color: #2563eb; border-bottom-color: #2563eb; }
+.tab-ul .tab-count {
+  background: rgba(37,99,235,.12); color: #2563eb;
+  padding: 1px 7px; border-radius: 99px; font-size: 11px; font-weight: 600;
+}
+
+/* ── AVATAR ──────────────────────────────────────────────────────── */
+.avatar {
+  border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; flex-shrink: 0; color: #fff; font-family: var(--font-sans);
+}
+.avatar-sm { width: 30px; height: 30px; font-size: 11px; letter-spacing: .3px; }
+.avatar-md { width: 44px; height: 44px; font-size: 15px; }
+.avatar-lg { width: 72px; height: 72px; font-size: 26px; }
+
+/* ── PANEL ───────────────────────────────────────────────────────── */
+.panel { background: #fff; border: 1px solid #e6e8ee; border-radius: 14px; padding: 18px 20px; }
+.panel + .panel { margin-top: 16px; }
+.panel-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.panel-title  { font-size: 13.5px; font-weight: 700; letter-spacing: -.2px; color: #1c1a17; }
+.panel-sub    { font-size: 11.5px; color: #5b6573; margin-top: 2px; }
+.panel-action { font-size: 12px; font-weight: 600; color: #2563eb; cursor: pointer; text-decoration: none; }
+.panel-action:hover { text-decoration: underline; }
+
+/* ── INFO ROWS ───────────────────────────────────────────────────── */
+.info-rows { display: flex; flex-direction: column; gap: 10px; }
+.info-row  { display: grid; grid-template-columns: 90px 1fr; gap: 12px; font-size: 12.5px; align-items: baseline; }
+.info-label { color: #8a93a3; font-weight: 500; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; }
+.info-value { color: #1c1a17; font-weight: 500; }
+.info-value.mono { font-family: var(--font-mono); font-size: 12px; }
+.info-value.link { color: #2563eb; }
+
+/* ── AI INSIGHT CARD ─────────────────────────────────────────────── */
+.ai-card {
+  padding: 14px 16px; border-radius: 12px;
+  background: linear-gradient(135deg, rgba(37,99,235,.04), rgba(234,88,12,.04));
+  border: 1px solid #e6e8ee; display: flex; gap: 10px; align-items: flex-start;
+}
+.ai-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, oklch(64% 0.14 50));
+  color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-size: 13px;
+}
+.ai-text { font-size: 12px; line-height: 1.55; color: #5b6573; }

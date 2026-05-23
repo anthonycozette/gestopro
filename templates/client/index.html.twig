@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}Clients — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/clients.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>Clients</h1>
@@ -11,6 +15,34 @@
 {% endblock %}
 
 {% block body %}
+
+{% if clients is not empty %}
+{# Stats #}
+{% set totalInvoices = clients|reduce((carry, c) => carry + c.invoices|length, 0) %}
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-card-label">Clients actifs</div>
+        <div class="stat-card-value">{{ clients|length }}</div>
+        <div class="stat-card-sub">au total</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Factures émises</div>
+        <div class="stat-card-value">{{ totalInvoices }}</div>
+        <div class="stat-card-sub">sur tous les clients</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Avec email</div>
+        <div class="stat-card-value">{{ clients|filter(c => c.email)|length }}</div>
+        <div class="stat-card-sub">contacts joignables</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Avec SIRET</div>
+        <div class="stat-card-value">{{ clients|filter(c => c.siret)|length }}</div>
+        <div class="stat-card-sub">entreprises identifiées</div>
+    </div>
+</div>
+{% endif %}
+
 <div class="card">
     {% if clients is empty %}
         <div class="empty-state">
@@ -19,11 +51,22 @@
             <a href="{{ path('app_client_new') }}" class="btn btn-primary">Ajouter mon premier client</a>
         </div>
     {% else %}
+        {# Toolbar #}
+        <div class="toolbar">
+            <div class="tab-bar">
+                <button class="tab-btn active">Tous <span class="tab-count">{{ clients|length }}</span></button>
+                <button class="tab-btn">Avec factures <span class="tab-count">{{ clients|filter(c => c.invoices|length > 0)|length }}</span></button>
+                <button class="tab-btn">Sans facture <span class="tab-count">{{ clients|filter(c => c.invoices|length == 0)|length }}</span></button>
+            </div>
+            <div style="flex:1;"></div>
+            <a href="{{ path('app_client_new') }}" class="btn btn-primary btn-sm">+ Nouveau client</a>
+        </div>
+
         <table>
             <thead>
                 <tr>
-                    <th>Nom</th>
-                    <th>Email</th>
+                    <th>Client</th>
+                    <th>Contact</th>
                     <th>Ville</th>
                     <th style="text-align:center">Factures</th>
                     <th>Ajouté le</th>
@@ -31,14 +74,40 @@
                 </tr>
             </thead>
             <tbody>
+                {% set avatarColors = ['#2563eb','#7c3aed','#16a34a','#ea580c','#0891b2','#db2777','#ca8a04'] %}
                 {% for client in clients %}
                 <tr>
-                    <td><a href="{{ path('app_client_show', {id: client.id}) }}">{{ client.name }}</a></td>
+                    <td>
+                        <div class="client-cell">
+                            <span class="avatar avatar-sm"
+                                  style="background:{{ avatarColors[loop.index0 % 7] }};">
+                                {{ client.name|first|upper }}
+                            </span>
+                            <div>
+                                <div class="client-cell-name">
+                                    <a href="{{ path('app_client_show', {id: client.id}) }}" style="color:inherit;">{{ client.name }}</a>
+                                </div>
+                                {% if client.siret %}
+                                    <div class="client-cell-sub">SIRET {{ client.siret|slice(0,9) }}…</div>
+                                {% elseif client.email %}
+                                    <div class="client-cell-sub">{{ client.email }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
                     <td style="color:#6b7280;font-size:13px;">{{ client.email ?? '—' }}</td>
                     <td style="color:#6b7280;font-size:13px;">{{ client.city ?? '—' }}</td>
-                    <td style="text-align:center;font-weight:600;color:#374151;">{{ client.invoices|length }}</td>
+                    <td style="text-align:center;">
+                        {% set count = client.invoices|length %}
+                        {% if count > 0 %}
+                            <span style="font-weight:700;color:#1c1a17;">{{ count }}</span>
+                        {% else %}
+                            <span style="color:#d1d5db;">—</span>
+                        {% endif %}
+                    </td>
                     <td style="color:#9ca3af;font-size:13px;">{{ client.createdAt|date('d/m/Y') }}</td>
-                    <td style="text-align:right; white-space:nowrap;">
+                    <td style="text-align:right;white-space:nowrap;">
+                        <a href="{{ path('app_client_show', {id: client.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
                         <a href="{{ path('app_client_edit', {id: client.id}) }}" class="btn btn-secondary btn-sm">Modifier</a>
                         <form method="post" action="{{ path('app_client_delete', {id: client.id}) }}" style="display:inline"
                               onsubmit="return confirm('Supprimer ce client ?')">

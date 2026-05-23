@@ -1,10 +1,15 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ client.name }} — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/clients.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>{{ client.name }}</h1>
     <div class="topbar-actions">
+        <a href="{{ path('app_invoice_new') }}?client={{ client.id }}" class="btn btn-primary">+ Nouvelle facture</a>
         <a href="{{ path('app_client_edit', {id: client.id}) }}" class="btn btn-secondary">Modifier</a>
         <a href="{{ path('app_clients') }}" class="btn btn-secondary">Retour</a>
     </div>
@@ -12,56 +17,124 @@
 {% endblock %}
 
 {% block body %}
-<div style="display:grid; grid-template-columns:1fr 2fr; gap:20px;">
 
-    <div>
-        <div class="card">
-            <div class="card-title">Informations</div>
-            <div style="display:flex;flex-direction:column;gap:12px;">
-                {% if client.email %}
-                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Email</div><div style="font-size:13.5px;color:#374151;">{{ client.email }}</div></div>
+{# Calculer les stats depuis les factures #}
+{% set invoices = client.invoices %}
+{% set invoiceCount = invoices|length %}
+{% set paidInvoices = invoices|filter(i => i.status == 'paid') %}
+{% set paidCA = paidInvoices|reduce((carry, i) => carry + i.totalTtc, 0) %}
+{% set paymentRate = invoiceCount > 0 ? (paidInvoices|length / invoiceCount * 100)|round : 0 %}
+
+{# Hero card #}
+{% set avatarColors = ['#2563eb','#7c3aed','#16a34a','#ea580c','#0891b2','#db2777','#ca8a04'] %}
+{% set avatarBg = avatarColors[client.name|length % 7] %}
+
+<div class="profile-hero">
+    <div class="profile-hero-inner">
+        <span class="avatar avatar-lg" style="background:{{ avatarBg }};">
+            {{ client.name|first|upper }}
+        </span>
+        <div class="profile-hero-info">
+            <h2>{{ client.name }}</h2>
+            <div class="profile-hero-chips">
+                {% if invoiceCount > 0 %}
+                <span class="fidelite-badge">
+                    <span class="fidelite-dot"></span>
+                    Client depuis {{ client.createdAt|date('Y') }}
+                </span>
                 {% endif %}
-                {% if client.phone %}
-                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Téléphone</div><div style="font-size:13.5px;color:#374151;">{{ client.phone }}</div></div>
-                {% endif %}
+            </div>
+            <div class="profile-hero-meta">
                 {% if client.siret %}
-                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">SIRET</div><div class="mono" style="font-size:13px;color:#374151;">{{ client.siret }}</div></div>
+                    <span>SIRET {{ client.siret }}</span>
                 {% endif %}
-                {% if client.address %}
-                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Adresse</div><div style="font-size:13.5px;color:#374151;">{{ client.fullAddress }}</div></div>
+                {% if client.city %}
+                    <span>{{ client.city }}</span>
                 {% endif %}
-                <div><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Client depuis</div><div style="font-size:13.5px;color:#374151;">{{ client.createdAt|date('d/m/Y') }}</div></div>
+                {% if client.email %}
+                    <span>{{ client.email }}</span>
+                {% endif %}
             </div>
         </div>
     </div>
 
+    {# Stat strip #}
+    <div class="stat-strip">
+        <div class="stat-strip-item">
+            <div class="stat-strip-label">CA encaissé</div>
+            <div class="stat-strip-value" style="color:#2563eb;">{{ paidCA|number_format(0, ',', ' ') }} €</div>
+            <div class="stat-strip-sub">factures payées</div>
+        </div>
+        <div class="stat-strip-item">
+            <div class="stat-strip-label">Factures émises</div>
+            <div class="stat-strip-value">{{ invoiceCount }}</div>
+            <div class="stat-strip-sub">{{ paidInvoices|length }} payée{{ paidInvoices|length != 1 ? 's' : '' }}</div>
+        </div>
+        <div class="stat-strip-item">
+            <div class="stat-strip-label">Taux de paiement</div>
+            <div class="stat-strip-value" style="color:{% if paymentRate >= 80 %}#16a34a{% elseif paymentRate >= 50 %}#d97706{% else %}#dc2626{% endif %};">
+                {{ paymentRate }} %
+            </div>
+            <div class="stat-strip-sub">{% if paymentRate == 100 %}aucune impayée ✓{% else %}{{ (invoices|filter(i => i.status == 'overdue'))|length }} en retard{% endif %}</div>
+        </div>
+        <div class="stat-strip-item">
+            <div class="stat-strip-label">Client depuis</div>
+            <div class="stat-strip-value" style="font-size:16px;">{{ client.createdAt|date('d/m/Y') }}</div>
+            <div class="stat-strip-sub">{{ client.createdAt|date('Y') }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="profile-layout">
+    {# Main column — factures #}
     <div>
-        <div class="card">
-            <div class="card-title">Factures ({{ client.invoices|length }})</div>
-            {% if client.invoices is empty %}
-                <p style="color:#6b7280; font-size:14px;">Aucune facture pour ce client.</p>
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">Factures</div>
+                    <div class="panel-sub">{{ invoiceCount }} facture{{ invoiceCount != 1 ? 's' : '' }} émise{{ invoiceCount != 1 ? 's' : '' }}</div>
+                </div>
+                <a href="{{ path('app_invoices') }}" class="panel-action">Toutes les factures →</a>
+            </div>
+
+            {% if invoices is empty %}
+                <div style="text-align:center;padding:28px 0;color:#9ca3af;font-size:13px;">
+                    Aucune facture pour ce client.
+                    <div style="margin-top:10px;">
+                        <a href="{{ path('app_invoice_new') }}" class="btn btn-primary btn-sm">Créer une facture</a>
+                    </div>
+                </div>
             {% else %}
-                <table>
+                <table style="margin-top:-8px;">
                     <thead>
                         <tr>
                             <th>Numéro</th>
                             <th>Date</th>
-                            <th>Montant TTC</th>
+                            <th>Échéance</th>
                             <th>Statut</th>
+                            <th style="text-align:right">Montant TTC</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for invoice in client.invoices %}
+                        {% for invoice in invoices %}
                         <tr>
-                            <td><a href="{{ path('app_invoice_show', {id: invoice.id}) }}">{{ invoice.number }}</a></td>
-                            <td>{{ invoice.issuedAt|date('d/m/Y') }}</td>
-                            <td>{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</td>
+                            <td>
+                                <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" style="font-family:'JetBrains Mono',monospace;font-size:12px;">
+                                    {{ invoice.number }}
+                                </a>
+                            </td>
+                            <td style="color:#6b7280;font-size:13px;">{{ invoice.issuedAt|date('d/m/Y') }}</td>
+                            <td style="color:#9ca3af;font-size:13px;">{{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}</td>
                             <td>
                                 {% if invoice.status == 'paid' %}<span class="st-badge st-paid">Payée</span>
                                 {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
                                 {% elseif invoice.status == 'overdue' %}<span class="st-badge st-late">En retard</span>
                                 {% elseif invoice.status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
-                                {% else %}<span class="st-badge st-draft">{{ invoice.status }}</span>{% endif %}
+                                {% else %}<span class="st-badge st-cancel">{{ invoice.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align:right;">
+                                <span class="mono" style="font-weight:600;">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span>
                             </td>
                         </tr>
                         {% endfor %}
@@ -69,6 +142,83 @@
                 </table>
             {% endif %}
         </div>
+    </div>
+
+    {# Right sidebar #}
+    <div class="profile-aside">
+
+        {# Contact #}
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Contact</div>
+                <a href="{{ path('app_client_edit', {id: client.id}) }}" class="panel-action">Modifier</a>
+            </div>
+            <div class="info-rows">
+                {% if client.email %}
+                <div class="info-row">
+                    <span class="info-label">Email</span>
+                    <span class="info-value link">{{ client.email }}</span>
+                </div>
+                {% endif %}
+                {% if client.phone %}
+                <div class="info-row">
+                    <span class="info-label">Téléphone</span>
+                    <span class="info-value mono">{{ client.phone }}</span>
+                </div>
+                {% endif %}
+                {% if client.address %}
+                <div class="info-row">
+                    <span class="info-label">Adresse</span>
+                    <span class="info-value">{{ client.fullAddress }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Infos légales #}
+        {% if client.siret %}
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Informations légales</div>
+            </div>
+            <div class="info-rows">
+                <div class="info-row">
+                    <span class="info-label">SIRET</span>
+                    <span class="info-value mono">{{ client.siret }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# AI insight #}
+        {% if invoiceCount > 0 %}
+        <div class="ai-card">
+            <div class="ai-icon">✦</div>
+            <div class="ai-text">
+                <strong style="color:#1c1a17;">Analyse · </strong>
+                {% if paymentRate == 100 %}
+                    Ce client règle toutes ses factures. Excellent partenaire commercial.
+                {% elseif paymentRate >= 80 %}
+                    Bon historique de paiement — {{ paymentRate }} % des factures réglées.
+                {% else %}
+                    Taux de recouvrement de <strong style="color:#1c1a17;">{{ paymentRate }} %</strong>. Penser à relancer les factures impayées.
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Danger zone #}
+        <div class="panel" style="border-color:#fee2e2;">
+            <div class="panel-header" style="margin-bottom:10px;">
+                <div class="panel-title" style="color:#dc2626;font-size:12px;">Zone de danger</div>
+            </div>
+            <form method="post" action="{{ path('app_client_delete', {id: client.id}) }}"
+                  onsubmit="return confirm('Supprimer ce client et toutes ses données ?')">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_client_' ~ client.id) }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer ce client</button>
+            </form>
+        </div>
+
     </div>
 </div>
 {% endblock %}

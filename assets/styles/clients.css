@@ -1,0 +1,72 @@
+/* ── PROFILE HERO ────────────────────────────────────────────────── */
+.profile-hero {
+  background: #fff; border: 1px solid #e6e8ee; border-radius: 16px;
+  padding: 24px; position: relative; overflow: hidden; margin-bottom: 20px;
+}
+.profile-hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(50% 80% at 100% 0%, rgba(37,99,235,.08), transparent 60%),
+    radial-gradient(40% 60% at 0% 100%, rgba(234,88,12,.06), transparent 60%);
+  pointer-events: none;
+}
+.profile-hero-inner { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 18px; }
+.profile-hero-info  { flex: 1; min-width: 0; }
+.profile-hero h2 {
+  margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.4px;
+  color: #1c1a17; line-height: 1.2;
+}
+.profile-hero-chips { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.profile-hero-meta  { font-size: 12.5px; color: #5b6573; margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; }
+.profile-hero-meta span { display: flex; align-items: center; gap: 4px; }
+.profile-hero-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── STAT STRIP ──────────────────────────────────────────────────── */
+.stat-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: rgba(255,255,255,.7); border-radius: 12px; border: 1px solid #e6e8ee;
+  margin-top: 20px; position: relative; z-index: 1;
+}
+.stat-strip-item { padding: 14px 16px; }
+.stat-strip-item + .stat-strip-item { border-left: 1px solid #e6e8ee; }
+.stat-strip-label {
+  font-size: 10.5px; font-weight: 600; color: #8a93a3;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.stat-strip-value {
+  font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums;
+  font-size: 20px; font-weight: 700; letter-spacing: -.4px; margin-top: 4px; line-height: 1;
+}
+.stat-strip-sub { font-size: 11px; color: #8a93a3; margin-top: 3px; }
+
+/* ── TYPE CHIPS ──────────────────────────────────────────────────── */
+.type-chip { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.type-societe     { background: rgba(37,99,235,.1);  color: #1d4ed8; }
+.type-public      { background: rgba(124,58,237,.1); color: #6d28d9; }
+.type-particulier { background: #f1f3f6;             color: #5b6573; }
+.type-artisan     { background: rgba(234,88,12,.1);  color: #c2410c; }
+.type-commerce    { background: rgba(22,163,74,.1);  color: #15803d; }
+.type-restaurant  { background: rgba(234,88,12,.1);  color: #c2410c; }
+
+/* ── FIDELITE BADGE ──────────────────────────────────────────────── */
+.fidelite-badge {
+  padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: rgba(22,163,74,.1); color: #15803d;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.fidelite-dot { width: 5px; height: 5px; border-radius: 50%; background: #16a34a; }
+
+/* ── CLIENT TABLE CELL ───────────────────────────────────────────── */
+.client-cell { display: flex; align-items: center; gap: 10px; }
+.client-cell-name { font-weight: 600; font-size: 13px; color: #1c1a17; }
+.client-cell-sub  { font-size: 10.5px; color: #8a93a3; font-family: "JetBrains Mono", monospace; margin-top: 1px; font-variant-numeric: tabular-nums; }
+
+/* ── DELAY COLORS ────────────────────────────────────────────────── */
+.delay-ok   { color: #15803d; font-weight: 600; }
+.delay-warn { color: #d97706; font-weight: 600; }
+.delay-late { color: #dc2626; font-weight: 600; }
+
+/* ── PROFILE TABS ────────────────────────────────────────────────── */
+.profile-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
+.profile-aside  { display: flex; flex-direction: column; gap: 16px; }

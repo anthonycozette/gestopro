@@ -1,0 +1,65 @@
+/* ── OCR METER ───────────────────────────────────────────────────── */
+.ocr-meter { display: flex; align-items: center; gap: 8px; min-width: 110px; }
+.ocr-bar   { flex: 1; height: 4px; border-radius: 99px; background: #f1f3f6; overflow: hidden; }
+.ocr-fill  { height: 100%; border-radius: 99px; }
+.ocr-fill-ok   { background: #16a34a; }
+.ocr-fill-warn { background: #d97706; }
+.ocr-fill-bad  { background: #dc2626; }
+.ocr-score     { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; font-size: 11.5px; font-weight: 700; min-width: 32px; text-align: right; }
+.ocr-score-ok   { color: #15803d; }
+.ocr-score-warn { color: #d97706; }
+.ocr-score-bad  { color: #dc2626; }
+
+/* ── RECEIPT THUMBNAIL ───────────────────────────────────────────── */
+.receipt-thumb {
+  width: 30px; height: 36px; border-radius: 4px; flex-shrink: 0;
+  background: repeating-linear-gradient(90deg, #fef3c7 0, #fef3c7 4px, #fde68a 4px, #fde68a 8px);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), 0 2px 4px rgba(20,40,80,.06);
+}
+
+/* ── CATEGORY CHIP ───────────────────────────────────────────────── */
+.cat-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.cat-transport   { background: #fef3c7; color: #92400e; }
+.cat-logiciel    { background: #ede9fe; color: #6d28d9; }
+.cat-materiel    { background: #dbeafe; color: #1d4ed8; }
+.cat-repas       { background: #fef9c3; color: #854d0e; }
+.cat-hebergement { background: #fce7f3; color: #9d174d; }
+.cat-formation   { background: #dcfce7; color: #15803d; }
+.cat-marketing   { background: #fce7f3; color: #9d174d; }
+.cat-telecoms    { background: #dbeafe; color: #1d4ed8; }
+.cat-default     { background: #f1f3f6; color: #5b6573; }
+
+/* ── EXPENSE TOTALS BOX ──────────────────────────────────────────── */
+.expense-totals { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; margin: 4px 0 16px; }
+.expense-totals-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6b7280; margin-bottom: 7px; }
+.expense-totals-row:last-child { margin-bottom: 0; font-size: 15px; font-weight: 700; color: #111827; padding-top: 9px; border-top: 1px solid #e5e7eb; }
+
+/* ── OCR BADGE (inline in table) ─────────────────────────────────── */
+.ocr-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; font-family: "JetBrains Mono", monospace;
+}
+.ocr-badge-ok   { background: #dcfce7; color: #15803d; }
+.ocr-badge-warn { background: #fef3c7; color: #92400e; }
+.ocr-badge-bad  { background: #fee2e2; color: #b91c1c; }
+.ocr-badge-dot  { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* ── FORM CONFIDENCE LABEL ───────────────────────────────────────── */
+.field-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+.field-confidence {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .02em;
+}
+.field-confidence-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.fc-ok   { color: #16a34a; }
+.fc-warn { color: #d97706; }
+.fc-bad  { color: #dc2626; }
+
+/* ── SEGMENT CONTROL (TVA rate) ──────────────────────────────────── */
+.segment { display: flex; padding: 3px; background: #f3f5f8; border-radius: 8px; gap: 2px; }
+.segment-btn {
+  flex: 1; padding: 6px 10px; border: none; cursor: pointer; font-family: inherit;
+  background: transparent; color: #5b6573; font-size: 12px; font-weight: 600; border-radius: 6px;
+}
+.segment-btn.active { background: #fff; color: #1c1a17; box-shadow: 0 1px 2px rgba(20,40,80,.08); }
