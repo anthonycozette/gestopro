@@ -51,9 +51,9 @@ class StripeService
             'line_items' => [['price' => $priceId, 'quantity' => 1]],
             'success_url' => $this->router->generate(
                 'app_subscription_success',
-                ['session_id' => '{CHECKOUT_SESSION_ID}'],
+                [],
                 UrlGeneratorInterface::ABSOLUTE_URL,
-            ),
+            ) . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $this->router->generate(
                 'app_subscription_manage',
                 [],
