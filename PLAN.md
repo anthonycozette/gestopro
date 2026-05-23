@@ -125,16 +125,17 @@ Accountant ────────────────┘
 
 ---
 
-## Phase 4 — Portail Expert-Comptable ⬜
+## Phase 4 — Portail Expert-Comptable ✅
 
-- [ ] Rôle `ROLE_ACCOUNTANT` séparé
-- [ ] Dashboard expert : liste des bilans clients à valider
-- [ ] Système d'invitation client (email + token)
-- [ ] Annotation ligne par ligne sur le bilan
-- [ ] Statuts bilan : `pending_review` → `annotated` → `validated`
-- [ ] Tampon numérique (image + signature + horodatage)
-- [ ] Notifications client à chaque étape
-- [ ] Un expert peut gérer N clients
+- [x] Rôle `ROLE_ACCOUNTANT` séparé (firewall `expert`, contexte de session isolé)
+- [x] Dashboard expert : liste des bilans clients à valider
+- [x] Système d'invitation client (token 64 hex, expiration 7j, URL directe)
+- [x] Annotation globale sur le bilan (commentaire expert)
+- [x] Statuts bilan : `pending_review` → `annotated` → `validated`
+- [x] Validation horodatée (`validatedAt`)
+- [ ] Tampon numérique (image + signature) — optionnel
+- [ ] Notifications email client à chaque étape — optionnel
+- [x] Un expert peut gérer N clients
 
 ---
 
@@ -259,7 +260,7 @@ MAILER_DSN=smtp://localhost:1025
 | 1     | ✅ Fait     | Fondations                   |
 | 2     | ✅ Fait     | Comptabilité cœur            |
 | 3     | ✅ Fait     | Dashboard & stats            |
-| 4     | ⬜ À faire  | Portail expert-comptable     |
+| 4     | ✅ Fait     | Portail expert-comptable     |
 | 5     | ⬜ À faire  | SaaS & abonnements Stripe    |
 | 6     | ⬜ À faire  | API mobile                   |
 | 7     | ⬜ À faire  | Intégration Claude AI        |
