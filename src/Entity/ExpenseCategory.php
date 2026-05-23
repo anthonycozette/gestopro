@@ -2,9 +2,17 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
 use App\Repository\ExpenseCategoryRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['expense_category:read']],
+    security: "is_granted('ROLE_USER')",
+    operations: [new GetCollection()],
+)]
 #[ORM\Entity(repositoryClass: ExpenseCategoryRepository::class)]
 #[ORM\Table(name: 'expense_categories')]
 class ExpenseCategory
@@ -29,12 +37,15 @@ class ExpenseCategory
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['expense_category:read', 'expense:read'])]
     private ?string $slug = null;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['expense_category:read', 'expense:read'])]
     private ?string $label = null;
 
     #[ORM\Column(options: ['default' => true])]
+    #[Groups(['expense_category:read', 'expense:read'])]
     private bool $deductible = true;
 
     public function getId(): ?int { return $this->id; }

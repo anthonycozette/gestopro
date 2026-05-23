@@ -2,13 +2,32 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use App\Repository\InvoiceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['invoice:read']],
+    denormalizationContext: ['groups' => ['invoice:write']],
+    security: "is_granted('ROLE_USER')",
+    operations: [
+        new GetCollection(),
+        new Post(),
+        new Get(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+        new Patch(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+        new Delete(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+    ],
+)]
 #[ORM\Entity(repositoryClass: InvoiceRepository::class)]
 #[ORM\Table(name: 'invoices')]
 class Invoice
@@ -33,40 +52,52 @@ class Invoice
     private ?int $id = null;
 
     #[ORM\Column(length: 30, unique: true)]
+    #[Groups(['invoice:read'])]
     private ?string $number = null;
 
     #[ORM\Column(length: 20, options: ['default' => self::STATUS_DRAFT])]
+    #[Groups(['invoice:read', 'invoice:write'])]
     private string $status = self::STATUS_DRAFT;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     #[Assert\NotBlank]
+    #[Groups(['invoice:read', 'invoice:write'])]
     private ?\DateTimeImmutable $issuedAt = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
+    #[Groups(['invoice:read', 'invoice:write'])]
     private ?\DateTimeImmutable $dueAt = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
+    #[Groups(['invoice:read', 'invoice:write'])]
     private ?\DateTimeImmutable $paidAt = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Groups(['invoice:read'])]
     private string $totalHt = '0.00';
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Groups(['invoice:read'])]
     private string $totalTva = '0.00';
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Groups(['invoice:read'])]
     private string $totalTtc = '0.00';
 
     #[ORM\Column(length: 3, options: ['default' => 'EUR'])]
+    #[Groups(['invoice:read', 'invoice:write'])]
     private string $currency = 'EUR';
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['invoice:read', 'invoice:write'])]
     private ?string $notes = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['invoice:read'])]
     private ?string $pdfPath = null;
 
     #[ORM\Column]
+    #[Groups(['invoice:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'invoices')]
@@ -75,10 +106,12 @@ class Invoice
 
     #[ORM\ManyToOne(targetEntity: Client::class, inversedBy: 'invoices')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['invoice:read', 'invoice:write'])]
     private ?Client $client = null;
 
     #[ORM\OneToMany(targetEntity: InvoiceLine::class, mappedBy: 'invoice', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['position' => 'ASC'])]
+    #[Groups(['invoice:read', 'invoice:write'])]
     private Collection $lines;
 
     public function __construct()

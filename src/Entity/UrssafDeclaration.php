@@ -2,11 +2,30 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use App\Repository\UrssafDeclarationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['urssaf:read']],
+    denormalizationContext: ['groups' => ['urssaf:write']],
+    security: "is_granted('ROLE_USER')",
+    operations: [
+        new GetCollection(),
+        new Post(),
+        new Get(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+        new Patch(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+        new Delete(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+    ],
+)]
 #[ORM\Entity(repositoryClass: UrssafDeclarationRepository::class)]
 #[ORM\Table(name: 'urssaf_declarations')]
 class UrssafDeclaration

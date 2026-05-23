@@ -2,11 +2,30 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use App\Repository\AiConversationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['ai_conversation:read']],
+    denormalizationContext: ['groups' => ['ai_conversation:write']],
+    security: "is_granted('ROLE_USER')",
+    operations: [
+        new GetCollection(),
+        new Post(),
+        new Get(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+        new Patch(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+        new Delete(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+    ],
+)]
 #[ORM\Entity(repositoryClass: AiConversationRepository::class)]
 #[ORM\Table(name: 'ai_conversations')]
 class AiConversation
@@ -17,12 +36,15 @@ class AiConversation
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['ai_conversation:read', 'ai_conversation:write'])]
     private ?string $title = null;
 
     #[ORM\Column]
+    #[Groups(['ai_conversation:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['ai_conversation:read'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'aiConversations')]
@@ -31,6 +53,7 @@ class AiConversation
 
     #[ORM\OneToMany(targetEntity: AiMessage::class, mappedBy: 'conversation', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['createdAt' => 'ASC'])]
+    #[Groups(['ai_conversation:read'])]
     private Collection $messages;
 
     public function __construct()

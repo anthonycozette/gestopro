@@ -2,12 +2,31 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use App\Repository\ClientRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['client:read']],
+    denormalizationContext: ['groups' => ['client:write']],
+    security: "is_granted('ROLE_USER')",
+    operations: [
+        new GetCollection(),
+        new Post(),
+        new Get(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+        new Patch(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+        new Delete(security: "is_granted('ROLE_USER') and object.getUser() == user"),
+    ],
+)]
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 #[ORM\Table(name: 'clients')]
 class Client
@@ -19,31 +38,40 @@ class Client
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
+    #[Groups(['client:read', 'client:write'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 14, nullable: true)]
+    #[Groups(['client:read', 'client:write'])]
     private ?string $siret = null;
 
     #[ORM\Column(length: 180, nullable: true)]
     #[Assert\Email]
+    #[Groups(['client:read', 'client:write'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 20, nullable: true)]
+    #[Groups(['client:read', 'client:write'])]
     private ?string $phone = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client:read', 'client:write'])]
     private ?string $address = null;
 
     #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['client:read', 'client:write'])]
     private ?string $postalCode = null;
 
     #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['client:read', 'client:write'])]
     private ?string $city = null;
 
     #[ORM\Column(length: 2, options: ['default' => 'FR'])]
+    #[Groups(['client:read', 'client:write'])]
     private string $country = 'FR';
 
     #[ORM\Column]
+    #[Groups(['client:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'clients')]

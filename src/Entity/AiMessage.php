@@ -2,10 +2,19 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Post;
 use App\Repository\AiMessageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['ai_message:read']],
+    denormalizationContext: ['groups' => ['ai_message:write']],
+    security: "is_granted('ROLE_USER')",
+    operations: [new Post()],
+)]
 #[ORM\Entity(repositoryClass: AiMessageRepository::class)]
 #[ORM\Table(name: 'ai_messages')]
 class AiMessage
@@ -19,23 +28,28 @@ class AiMessage
     private ?int $id = null;
 
     #[ORM\Column(length: 20)]
+    #[Groups(['ai_message:read', 'ai_message:write', 'ai_conversation:read'])]
     private string $role = self::ROLE_USER;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['ai_message:read', 'ai_message:write', 'ai_conversation:read'])]
     private ?string $content = null;
 
-    // Tokens utilisés (pour monitoring coût API)
     #[ORM\Column(nullable: true)]
+    #[Groups(['ai_message:read', 'ai_conversation:read'])]
     private ?int $inputTokens = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['ai_message:read', 'ai_conversation:read'])]
     private ?int $outputTokens = null;
 
     #[ORM\Column]
+    #[Groups(['ai_message:read', 'ai_conversation:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\ManyToOne(targetEntity: AiConversation::class, inversedBy: 'messages')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['ai_message:read', 'ai_message:write'])]
     private ?AiConversation $conversation = null;
 
     public function __construct()

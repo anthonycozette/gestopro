@@ -1,7 +1,15 @@
 api_platform:
-    title: Hello API Platform
+    title: GestoPro API
+    description: API REST pour l'application mobile GestoPro
     version: 1.0.0
     defaults:
         stateless: true
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
+    formats:
+        json: ['application/json']
+        jsonld: ['application/ld+json']
+    docs_formats:
+        json: ['application/json']
+        jsonld: ['application/ld+json']
+        html: ['text/html']
