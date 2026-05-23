@@ -3,12 +3,12 @@ function addLine() {
     const tr = document.createElement('tr');
     tr.className = 'line-row';
     tr.innerHTML = `
-        <td><input type="text" name="description[]" class="form-control" placeholder="Description" oninput="recalculate()" required></td>
-        <td><input type="number" name="quantity[]" class="form-control line-qty" value="1" min="0.01" step="0.01" oninput="recalculate()"></td>
-        <td><input type="number" name="unit_price[]" class="form-control line-price" value="0.00" min="0" step="0.01" oninput="recalculate()"></td>
-        <td><input type="number" name="tva_rate[]" class="form-control line-tva" value="20" min="0" max="100" step="0.1" oninput="recalculate()"></td>
-        <td><span class="line-total" style="font-weight:500;">0,00 €</span></td>
-        <td><button type="button" onclick="removeLine(this)" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:16px;">✕</button></td>
+        <td><input type="text" name="description[]" class="form-control" placeholder="Description de la prestation" oninput="recalculate()" required></td>
+        <td><input type="number" name="quantity[]" class="form-control line-qty" value="1" min="0.01" step="0.01" oninput="recalculate()" style="text-align:right;"></td>
+        <td><input type="number" name="unit_price[]" class="form-control line-price" value="0.00" min="0" step="0.01" oninput="recalculate()" style="text-align:right;"></td>
+        <td><input type="number" name="tva_rate[]" class="form-control line-tva" value="20" min="0" max="100" step="0.1" oninput="recalculate()" style="text-align:right;"></td>
+        <td class="line-total-cell"><span class="line-total">0,00 €</span></td>
+        <td><button type="button" onclick="removeLine(this)" class="btn-remove-line">✕</button></td>
     `;
     tbody.appendChild(tr);
     recalculate();

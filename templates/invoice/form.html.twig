@@ -1,9 +1,16 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ title }} — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/invoices.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
-    <h1>{{ title }}</h1>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <h1 style="margin:0;">{{ title }}</h1>
+        <span class="status-chip draft">Brouillon</span>
+    </div>
     <div class="topbar-actions">
         <a href="{{ path('app_invoices') }}" class="btn btn-secondary">Annuler</a>
     </div>
@@ -14,21 +21,64 @@
 <form method="post" id="invoice-form">
     {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
 
-    <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
+    <div class="inv-form-layout">
 
+        {# Left: form sections #}
         <div>
-            <!-- Lignes de prestation -->
-            <div class="card">
-                <div class="card-title">Prestations</div>
-                <table id="lines-table" style="margin-bottom:12px;">
+
+            {# Informations #}
+            <div class="inv-section">
+                <div class="inv-section-title">Informations</div>
+
+                <div class="form-group">
+                    <label>Client <span style="color:#ef4444">*</span></label>
+                    <select name="client_id" class="form-control" required>
+                        <option value="">— Sélectionner un client —</option>
+                        {% for client in clients %}
+                            <option value="{{ client.id }}" {% if invoice.client and invoice.client.id == client.id %}selected{% endif %}>
+                                {{ client.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Date d'émission</label>
+                        <input type="date" name="issued_at" class="form-control"
+                               value="{{ invoice.issuedAt ? invoice.issuedAt|date('Y-m-d') : 'now'|date('Y-m-d') }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Date d'échéance</label>
+                        <input type="date" name="due_at" class="form-control"
+                               value="{{ invoice.dueAt ? invoice.dueAt|date('Y-m-d') : '' }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Statut</label>
+                    <select name="status" class="form-control">
+                        <option value="draft"     {% if invoice.status == 'draft' %}selected{% endif %}>Brouillon</option>
+                        <option value="sent"      {% if invoice.status == 'sent' %}selected{% endif %}>Envoyée</option>
+                        <option value="paid"      {% if invoice.status == 'paid' %}selected{% endif %}>Payée</option>
+                        <option value="cancelled" {% if invoice.status == 'cancelled' %}selected{% endif %}>Annulée</option>
+                    </select>
+                </div>
+            </div>
+
+            {# Prestations #}
+            <div class="inv-section">
+                <div class="inv-section-title">Prestations</div>
+
+                <table class="lines-table" id="lines-table">
                     <thead>
                         <tr>
                             <th>Description</th>
-                            <th style="width:80px">Qté</th>
-                            <th style="width:110px">Prix unit. HT</th>
-                            <th style="width:80px">TVA %</th>
-                            <th style="width:100px">Total HT</th>
-                            <th style="width:36px"></th>
+                            <th style="width:72px;text-align:right">Qté</th>
+                            <th style="width:110px;text-align:right">PU HT</th>
+                            <th style="width:72px;text-align:right">TVA %</th>
+                            <th style="width:100px;text-align:right">Total HT</th>
+                            <th style="width:32px;"></th>
                         </tr>
                     </thead>
                     <tbody id="lines-body">
@@ -41,87 +91,98 @@
                         {% endif %}
                     </tbody>
                 </table>
+
                 <button type="button" onclick="addLine()" class="btn btn-secondary btn-sm">+ Ajouter une ligne</button>
             </div>
 
-            <!-- Notes -->
-            <div class="card">
-                <div class="form-group">
-                    <label>Notes / conditions de paiement</label>
-                    <textarea name="notes" class="form-control" rows="3">{{ invoice.notes }}</textarea>
+            {# Notes #}
+            <div class="inv-section">
+                <div class="inv-section-title">Notes & conditions</div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <textarea name="notes" class="form-control" rows="3"
+                              placeholder="Conditions de paiement, mentions légales, remerciements…">{{ invoice.notes }}</textarea>
                 </div>
             </div>
+
         </div>
 
+        {# Right sidebar #}
         <div>
-            <!-- Infos facture -->
-            <div class="card">
-                <div class="card-title">Informations</div>
 
-                <div class="form-group">
-                    <label>Client <span style="color:#ef4444">*</span></label>
-                    <select name="client_id" class="form-control" required>
-                        <option value="">— Sélectionner —</option>
-                        {% for client in clients %}
-                            <option value="{{ client.id }}" {% if invoice.client and invoice.client.id == client.id %}selected{% endif %}>
-                                {{ client.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
+            {# Totaux #}
+            <div class="inv-totals-panel">
+                <div class="inv-panel-title">Totaux</div>
+                <div class="form-totals-row">
+                    <span>Total HT</span>
+                    <span class="val" id="total-ht">0,00 €</span>
                 </div>
-
-                <div class="form-group">
-                    <label>Date d'émission</label>
-                    <input type="date" name="issued_at" class="form-control"
-                           value="{{ invoice.issuedAt ? invoice.issuedAt|date('Y-m-d') : 'now'|date('Y-m-d') }}">
+                <div class="form-totals-row">
+                    <span>TVA</span>
+                    <span class="val" id="total-tva" style="color:#2563eb;">0,00 €</span>
                 </div>
-
-                <div class="form-group">
-                    <label>Date d'échéance</label>
-                    <input type="date" name="due_at" class="form-control"
-                           value="{{ invoice.dueAt ? invoice.dueAt|date('Y-m-d') : '' }}">
+                <div class="form-totals-row grand">
+                    <span>Total TTC</span>
+                    <span class="val" id="total-ttc">0,00 €</span>
                 </div>
-
-                <div class="form-group">
-                    <label>Statut</label>
-                    <select name="status" class="form-control">
-                        <option value="draft" {% if invoice.status == 'draft' %}selected{% endif %}>Brouillon</option>
-                        <option value="sent" {% if invoice.status == 'sent' %}selected{% endif %}>Envoyée</option>
-                        <option value="paid" {% if invoice.status == 'paid' %}selected{% endif %}>Payée</option>
-                        <option value="cancelled" {% if invoice.status == 'cancelled' %}selected{% endif %}>Annulée</option>
-                    </select>
-                </div>
-
-                <!-- Totaux -->
-                <div style="border-top:1px solid #e5e7eb; padding-top:12px; margin-top:4px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
-                        <span style="color:#6b7280">Total HT</span>
-                        <span id="total-ht">0,00 €</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
-                        <span style="color:#6b7280">TVA</span>
-                        <span id="total-tva">0,00 €</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:700; padding-top:8px; border-top:1px solid #e5e7eb;">
-                        <span>Total TTC</span>
-                        <span id="total-ttc">0,00 €</span>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:16px;">Enregistrer</button>
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;">
+                    Enregistrer
+                </button>
             </div>
+
+            {# PDF preview #}
+            <div class="pdf-preview-card">
+                <div class="pdf-preview-title">Aperçu PDF</div>
+                <div class="pdf-thumb">📄</div>
+                {% if invoice.id %}
+                <a href="{{ path('app_invoice_pdf', {id: invoice.id}) }}" class="btn btn-secondary btn-sm" style="width:100%;">
+                    ↓ Télécharger
+                </a>
+                {% else %}
+                <p style="font-size:11px;color:#9ca3af;text-align:center;margin:0;">
+                    Disponible après enregistrement
+                </p>
+                {% endif %}
+            </div>
+
+            {# AI tip #}
+            <div class="inv-ai-card">
+                <div class="inv-ai-icon">✦</div>
+                <div class="inv-ai-text">
+                    <strong>Conseil ·</strong>
+                    Pensez à vérifier l'exactitude du SIRET client avant d'envoyer la facture — c'est obligatoire pour les professionnels.
+                </div>
+            </div>
+
         </div>
     </div>
 </form>
 
 {% macro lineRow(i, desc, qty, price, tva) %}
 <tr class="line-row">
-    <td><input type="text" name="description[]" class="form-control" value="{{ desc }}" placeholder="Description de la prestation" oninput="recalculate()" required></td>
-    <td><input type="number" name="quantity[]" class="form-control line-qty" value="{{ qty }}" min="0.01" step="0.01" oninput="recalculate()"></td>
-    <td><input type="number" name="unit_price[]" class="form-control line-price" value="{{ price }}" min="0" step="0.01" oninput="recalculate()"></td>
-    <td><input type="number" name="tva_rate[]" class="form-control line-tva" value="{{ tva }}" min="0" max="100" step="0.1" oninput="recalculate()"></td>
-    <td><span class="line-total" style="font-weight:500;">0,00 €</span></td>
-    <td><button type="button" onclick="removeLine(this)" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:16px;">✕</button></td>
+    <td>
+        <input type="text" name="description[]" class="form-control"
+               value="{{ desc }}" placeholder="Description de la prestation"
+               oninput="recalculate()" required>
+    </td>
+    <td>
+        <input type="number" name="quantity[]" class="form-control line-qty"
+               value="{{ qty }}" min="0.01" step="0.01" oninput="recalculate()"
+               style="text-align:right;">
+    </td>
+    <td>
+        <input type="number" name="unit_price[]" class="form-control line-price"
+               value="{{ price }}" min="0" step="0.01" oninput="recalculate()"
+               style="text-align:right;">
+    </td>
+    <td>
+        <input type="number" name="tva_rate[]" class="form-control line-tva"
+               value="{{ tva }}" min="0" max="100" step="0.1" oninput="recalculate()"
+               style="text-align:right;">
+    </td>
+    <td class="line-total-cell"><span class="line-total">0,00 €</span></td>
+    <td>
+        <button type="button" onclick="removeLine(this)" class="btn-remove-line">✕</button>
+    </td>
 </tr>
 {% endmacro %}
 {% endblock %}

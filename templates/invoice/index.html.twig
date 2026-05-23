@@ -1,61 +1,167 @@
 {% extends 'base.html.twig' %}
 {% block title %}Factures — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/invoices.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
-  <h1>Factures</h1>
-  <div class="topbar-actions">
-    <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">+ Nouvelle facture</a>
-  </div>
+    <h1>Factures</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">+ Nouvelle facture</a>
+    </div>
 </div>
 {% endblock %}
 
 {% block body %}
-<div class="card">
-  {% if invoices is empty %}
-    <div class="empty-state">
-      <div class="empty-state-icon">🧾</div>
-      <p>Aucune facture pour l'instant.</p>
-      <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">Créer ma première facture</a>
+
+{% if invoices is not empty %}
+
+{# Stats #}
+{% set totalEmis    = invoices|reduce((carry, i) => carry + i.totalTtc, 0) %}
+{% set totalPaid    = invoices|filter(i => i.status == 'paid')|reduce((carry, i) => carry + i.totalTtc, 0) %}
+{% set totalPending = invoices|filter(i => i.status == 'sent')|reduce((carry, i) => carry + i.totalTtc, 0) %}
+{% set countLate    = invoices|filter(i => i.status == 'overdue')|length %}
+
+<div class="inv-stat-grid">
+    <div class="inv-stat-card">
+        <div class="inv-stat-label">Total émis</div>
+        <div class="inv-stat-value" style="font-size:20px;">{{ totalEmis|number_format(0, ',', ' ') }} €</div>
+        <div class="inv-stat-sub">{{ invoices|length }} facture{{ invoices|length != 1 ? 's' : '' }}</div>
     </div>
-  {% else %}
-    <table>
-      <thead>
-        <tr>
-          <th>Numéro</th>
-          <th>Client</th>
-          <th>Date</th>
-          <th>Échéance</th>
-          <th style="text-align:right">Montant TTC</th>
-          <th>Statut</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for invoice in invoices %}
-        <tr>
-          <td><a href="{{ path('app_invoice_show', {id: invoice.id}) }}">{{ invoice.number }}</a></td>
-          <td style="color:#6b7280">{{ invoice.client.name }}</td>
-          <td style="color:#6b7280; font-size:13px">{{ invoice.issuedAt|date('d/m/Y') }}</td>
-          <td style="color:#6b7280; font-size:13px">{{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}</td>
-          <td style="text-align:right"><span class="mono">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span></td>
-          <td>{{ _self.statusBadge(invoice.status) }}</td>
-          <td style="text-align:right">
-            <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+    <div class="inv-stat-card">
+        <div class="inv-stat-label">Encaissé</div>
+        <div class="inv-stat-value" style="font-size:20px;color:#16a34a;">{{ totalPaid|number_format(0, ',', ' ') }} €</div>
+        <div class="inv-stat-sub">{{ invoices|filter(i => i.status == 'paid')|length }} payée{{ invoices|filter(i => i.status == 'paid')|length != 1 ? 's' : '' }}</div>
+    </div>
+    <div class="inv-stat-card">
+        <div class="inv-stat-label">En attente</div>
+        <div class="inv-stat-value" style="font-size:20px;color:#2563eb;">{{ totalPending|number_format(0, ',', ' ') }} €</div>
+        <div class="inv-stat-sub">{{ invoices|filter(i => i.status == 'sent')|length }} envoyée{{ invoices|filter(i => i.status == 'sent')|length != 1 ? 's' : '' }}</div>
+    </div>
+    <div class="inv-stat-card{% if countLate > 0 %} alert-glow{% endif %}">
+        <div class="inv-stat-label">En retard</div>
+        <div class="inv-stat-value" style="font-size:20px;color:{% if countLate > 0 %}#dc2626{% else %}#9ca3af{% endif %};">{{ countLate }}</div>
+        <div class="inv-stat-sub">{% if countLate == 0 %}aucune impayée ✓{% else %}à relancer{% endif %}</div>
+    </div>
 </div>
 
-{% macro statusBadge(status) %}
-  {% if status == 'paid' %}<span class="st-badge st-paid">Payée</span>
-  {% elseif status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
-  {% elseif status == 'overdue' %}<span class="st-badge st-late">En retard</span>
-  {% elseif status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
-  {% elseif status == 'cancelled' %}<span class="st-badge st-cancel">Annulée</span>
-  {% else %}<span class="st-badge st-draft">{{ status }}</span>{% endif %}
-{% endmacro %}
+{% endif %}
+
+<div class="card">
+    {% if invoices is empty %}
+        <div class="empty-state">
+            <div class="empty-state-icon">🧾</div>
+            <p>Aucune facture pour l'instant.</p>
+            <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">Créer ma première facture</a>
+        </div>
+    {% else %}
+
+        <div class="toolbar">
+            <div class="inv-tabs">
+                <button class="inv-tab active">
+                    <span class="dot dot-all"></span>Toutes
+                    <span class="inv-tab-count">{{ invoices|length }}</span>
+                </button>
+                <button class="inv-tab">
+                    <span class="dot dot-paid"></span>Payées
+                    <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'paid')|length }}</span>
+                </button>
+                <button class="inv-tab">
+                    <span class="dot dot-sent"></span>Envoyées
+                    <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'sent')|length }}</span>
+                </button>
+                <button class="inv-tab">
+                    <span class="dot dot-draft"></span>Brouillons
+                    <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'draft')|length }}</span>
+                </button>
+                {% if invoices|filter(i => i.status == 'overdue')|length > 0 %}
+                <button class="inv-tab">
+                    <span class="dot dot-late"></span>En retard
+                    <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'overdue')|length }}</span>
+                </button>
+                {% endif %}
+            </div>
+            <div style="flex:1;"></div>
+            <a href="{{ path('app_invoice_new') }}" class="btn btn-primary btn-sm">+ Nouvelle facture</a>
+        </div>
+
+        {% set avatarColors = ['#2563eb','#7c3aed','#16a34a','#ea580c','#0891b2','#db2777','#ca8a04'] %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Numéro</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Échéance</th>
+                    <th style="text-align:right">Montant TTC</th>
+                    <th>Statut</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                {% set isLate = invoice.status == 'overdue' %}
+                <tr {% if isLate %}style="background:#fff9f9;"{% endif %}>
+                    <td>
+                        <a href="{{ path('app_invoice_show', {id: invoice.id}) }}"
+                           style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#1c1a17;">
+                            {{ invoice.number }}
+                        </a>
+                    </td>
+                    <td>
+                        <div class="inv-client-cell">
+                            <span class="avatar avatar-sm"
+                                  style="background:{{ avatarColors[loop.index0 % 7] }};">
+                                {{ invoice.client.name|first|upper }}
+                            </span>
+                            <div>
+                                <div class="inv-client-name">{{ invoice.client.name }}</div>
+                                {% if invoice.client.email %}
+                                <div class="inv-client-sub">{{ invoice.client.email }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="color:#6b7280;font-size:13px;" class="mono">{{ invoice.issuedAt|date('d/m/Y') }}</td>
+                    <td class="{% if isLate %}overdue-date{% else %}mono{% endif %}" style="font-size:13px;">
+                        {{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}
+                    </td>
+                    <td style="text-align:right;">
+                        <span class="mono" style="font-weight:700;color:#1c1a17;">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span>
+                    </td>
+                    <td>
+                        {% if invoice.status == 'paid' %}<span class="st-badge st-paid">Payée</span>
+                        {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
+                        {% elseif invoice.status == 'overdue' %}<span class="st-badge st-late">En retard</span>
+                        {% elseif invoice.status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
+                        {% elseif invoice.status == 'cancelled' %}<span class="st-badge st-cancel">Annulée</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right;">
+                        <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="padding:14px 12px 2px;border-top:1px solid #f0f2f5;display:flex;gap:32px;font-size:13px;">
+            <div>
+                Total émis :
+                <strong class="mono" style="color:#1c1a17;font-size:15px;margin-left:6px;">
+                    {{ invoices|reduce((carry, i) => carry + i.totalTtc, 0)|number_format(2, ',', ' ') }} €
+                </strong>
+            </div>
+            <div>
+                Encaissé :
+                <strong class="mono" style="color:#16a34a;font-size:15px;margin-left:6px;">
+                    {{ invoices|filter(i => i.status == 'paid')|reduce((carry, i) => carry + i.totalTtc, 0)|number_format(2, ',', ' ') }} €
+                </strong>
+            </div>
+        </div>
+
+    {% endif %}
+</div>
 {% endblock %}
