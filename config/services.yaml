@@ -26,5 +26,12 @@ services:
             $secretKey:     '%env(STRIPE_SECRET_KEY)%'
             $webhookSecret: '%env(STRIPE_WEBHOOK_SECRET)%'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    App\Service\ReceiptScannerService:
+        arguments:
+            $apiKey: '%env(ANTHROPIC_API_KEY)%'
+
+    App\EventListener\JwtLoginSuccessListener:
+        arguments:
+            $ttl: 2592000
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }

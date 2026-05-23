@@ -158,16 +158,16 @@ Accountant ────────────────┘
 
 ---
 
-## Phase 6 — API Mobile ⬜
+## Phase 6 — API Mobile ✅
 
 > API Platform expose tout automatiquement depuis la Phase 1–2.
 
-- [ ] Tous les endpoints CRUD via API Platform (faits en Phase 1–2)
-- [ ] Endpoint `POST /api/expenses/scan` (upload photo reçu)
-- [ ] Endpoint dashboard summary (`GET /api/dashboard`)
-- [ ] JWT refresh token
-- [ ] Rate limiting
-- [ ] Documentation OpenAPI auto-générée (Swagger UI)
+- [x] Tous les endpoints CRUD via API Platform (faits en Phase 1–2)
+- [x] Endpoint `POST /api/expenses/scan` (upload photo reçu, OCR Claude Vision)
+- [x] Endpoint dashboard summary (`GET /api/dashboard`)
+- [x] JWT refresh token (gesdinet/jwt-refresh-token-bundle, 30 jours)
+- [x] Rate limiting (`login_throttling` : 5 tentatives / 15 min sur `/api/login`)
+- [x] Documentation OpenAPI auto-générée (Swagger UI via API Platform)
 - [ ] Push notifications (optionnel)
 
 ---
@@ -265,6 +265,6 @@ MAILER_DSN=smtp://localhost:1025
 | 3     | ✅ Fait     | Dashboard & stats            |
 | 4     | ✅ Fait     | Portail expert-comptable     |
 | 5     | ✅ Fait     | SaaS & abonnements Stripe    |
-| 6     | ⬜ À faire  | API mobile                   |
+| 6     | ✅ Fait     | API mobile                   |
 | 7     | ⬜ À faire  | Intégration Claude AI        |
 | 8     | ⬜ À faire  | Sécurité, tests, prod        |
