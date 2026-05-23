@@ -69,22 +69,22 @@ Accountant ────────────────┘
 
 ---
 
-## Phase 2 — Gestion comptable cœur ⬜
+## Phase 2 — Gestion comptable cœur ✅ (en cours)
 
 > Fonctionnalités métier essentielles.
 
 ### Clients
 
-- [ ] CRUD complet (web + API)
-- [ ] Historique des factures par client
+- [x] CRUD complet (web)
+- [x] Historique des factures par client
 - [ ] Import CSV clients
 
 ### Factures
 
-- [ ] Création avec lignes de prestation (qty × tarif unitaire)
-- [ ] Numérotation automatique (`FAC-2026-0042`)
-- [ ] Statuts : `draft` → `sent` → `paid` / `overdue` / `cancelled`
-- [ ] Génération PDF (Twig → wkhtmltopdf)
+- [x] Création avec lignes de prestation (qty × tarif unitaire)
+- [x] Numérotation automatique (`FAC-2026-0042`)
+- [x] Statuts : `draft` → `sent` → `paid` / `overdue` / `cancelled`
+- [x] Génération PDF (Twig → wkhtmltopdf)
 - [ ] Envoi par email (Symfony Mailer, pièce jointe PDF)
 - [ ] Suivi paiement manuel
 - [ ] Rappels automatiques (Symfony Messenger)
