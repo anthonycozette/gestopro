@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Client;
+use App\Entity\User;
 use App\Repository\ClientRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,8 +23,16 @@ class ClientController extends AbstractController
     }
 
     #[Route('/new', name: '_new')]
-    public function new(Request $request, EntityManagerInterface $em): Response
+    public function new(Request $request, EntityManagerInterface $em, ClientRepository $repo): Response
     {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($user->getPlan() === User::PLAN_FREE && count($repo->findBy(['user' => $user])) >= 5) {
+            $this->addFlash('error', 'Limite de 5 clients atteinte sur le plan gratuit. Passez au plan Pro pour continuer.');
+            return $this->redirectToRoute('app_clients');
+        }
+
         $client = new Client();
         $error  = $this->handleForm($request, $client, $em);
 

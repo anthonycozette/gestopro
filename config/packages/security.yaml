@@ -71,6 +71,8 @@ security:
         - { path: ^/expert/login, roles: PUBLIC_ACCESS }
         - { path: ^/expert/register, roles: PUBLIC_ACCESS }
         - { path: ^/expert, roles: ROLE_ACCOUNTANT }
+        - { path: ^/stripe/webhook, roles: PUBLIC_ACCESS }
+        - { path: ^/pricing, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }

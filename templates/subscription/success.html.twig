@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+{% block title %}Abonnement activé — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Abonnement activé</h1>
+</div>
+{% endblock %}
+
+{% block body %}
+<div style="max-width:480px;margin:60px auto;text-align:center;">
+    <div class="card" style="padding:48px 32px;">
+        <div style="font-size:56px;margin-bottom:20px;">🎉</div>
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:12px;">Bienvenue dans le plan {{ app.user.plan|capitalize }} !</h2>
+        <p style="font-size:15px;color:#6b7280;line-height:1.7;margin-bottom:32px;">
+            Votre abonnement est actif. Toutes les fonctionnalités de votre plan sont maintenant disponibles.
+        </p>
+        <a href="{{ path('app_dashboard') }}" class="btn btn-primary" style="padding:12px 28px;font-size:15px;">
+            Aller au tableau de bord →
+        </a>
+    </div>
+</div>
+{% endblock %}

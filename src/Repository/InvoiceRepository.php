@@ -14,6 +14,22 @@ class InvoiceRepository extends ServiceEntityRepository
         parent::__construct($registry, Invoice::class);
     }
 
+    public function countThisMonth(User $user): int
+    {
+        $now = new \DateTimeImmutable();
+
+        return (int) $this->createQueryBuilder('i')
+            ->select('COUNT(i.id)')
+            ->where('i.user = :user')
+            ->andWhere('YEAR(i.issuedAt) = :year')
+            ->andWhere('MONTH(i.issuedAt) = :month')
+            ->setParameter('user', $user)
+            ->setParameter('year', (int) $now->format('Y'))
+            ->setParameter('month', (int) $now->format('n'))
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     public function findLastNumberForYear(User $user, int $year): ?string
     {
         $result = $this->createQueryBuilder('i')

@@ -110,7 +110,17 @@
                     </a>
                 </nav>
                 <div class="sidebar-footer">
+                    <div style="margin-bottom:8px;">
+                        {% if app.user.plan == 'pro' %}
+                            <span style="font-size:11px;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:99px;font-weight:600;">PRO</span>
+                        {% elseif app.user.plan == 'expert' %}
+                            <span style="font-size:11px;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:99px;font-weight:600;">EXPERT</span>
+                        {% else %}
+                            <span style="font-size:11px;background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:99px;font-weight:600;">GRATUIT</span>
+                        {% endif %}
+                    </div>
                     {{ app.user.firstName }} {{ app.user.lastName }}<br>
+                    <a href="{{ path('app_subscription_manage') }}" style="font-size:12px;">Mon abonnement</a> ·
                     <a href="{{ path('app_logout') }}">Déconnexion</a>
                 </div>
             </aside>

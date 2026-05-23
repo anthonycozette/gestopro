@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Invoice;
 use App\Entity\InvoiceLine;
+use App\Entity\User;
 use App\Repository\ClientRepository;
 use App\Repository\InvoiceRepository;
 use App\Service\InvoiceNumberService;
@@ -32,8 +33,17 @@ class InvoiceController extends AbstractController
         EntityManagerInterface $em,
         ClientRepository $clientRepo,
         InvoiceNumberService $numberService,
+        InvoiceRepository $invoiceRepo,
     ): Response {
-        $clients = $clientRepo->findBy(['user' => $this->getUser()], ['name' => 'ASC']);
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($user->getPlan() === User::PLAN_FREE && $invoiceRepo->countThisMonth($user) >= 10) {
+            $this->addFlash('error', 'Limite de 10 factures/mois atteinte sur le plan gratuit. Passez au plan Pro pour continuer.');
+            return $this->redirectToRoute('app_invoices');
+        }
+
+        $clients = $clientRepo->findBy(['user' => $user], ['name' => 'ASC']);
 
         if ($request->isMethod('POST')) {
             $result = $this->handleForm($request, new Invoice(), $em, $numberService, true);
