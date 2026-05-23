@@ -1,0 +1,212 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ title }} — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>{{ title }}</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_urssaf') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<form method="post">
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
+
+        <div>
+            <div class="card">
+                <div class="card-title">Période de déclaration</div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Périodicité</label>
+                        <select name="periodicity" id="periodicity" class="form-control" onchange="updatePeriod()">
+                            <option value="quarterly" {% if declaration.periodicity != 'monthly' %}selected{% endif %}>Trimestrielle</option>
+                            <option value="monthly"   {% if declaration.periodicity == 'monthly' %}selected{% endif %}>Mensuelle</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Année</label>
+                        <select id="period-year" class="form-control" onchange="updatePeriod()">
+                            {% for y in range(date('Y') - 2, date('Y')) %}
+                                <option value="{{ y }}" {% if y == date('Y') %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Période <span style="color:#ef4444">*</span></label>
+                    <select id="period-slot" class="form-control" onchange="fillPeriod()"></select>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Début de période</label>
+                        <input type="date" name="period_start" id="period-start" class="form-control"
+                               value="{{ declaration.periodStart ? declaration.periodStart|date('Y-m-d') : '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fin de période</label>
+                        <input type="date" name="period_end" id="period-end" class="form-control"
+                               value="{{ declaration.periodEnd ? declaration.periodEnd|date('Y-m-d') : '' }}" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Libellé de période <span style="color:#ef4444">*</span></label>
+                    <input type="text" name="period_label" id="period-label" class="form-control"
+                           value="{{ declaration.periodLabel }}" placeholder="Ex : 2025-T1 ou 2025-01" required>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <div class="card-title">Chiffre d'affaires & cotisations</div>
+
+                <div class="form-group">
+                    <label>Activité / taux de cotisation</label>
+                    <select name="cotisation_rate" id="cot-rate" class="form-control" onchange="recalc()">
+                        <option value="0.2120" {% if declaration.cotisationRate == '0.2120' or declaration.id is null %}selected{% endif %}>
+                            BNC / Services — 21,2 %
+                        </option>
+                        <option value="0.2180" {% if declaration.cotisationRate == '0.2180' %}selected{% endif %}>
+                            Libéral CIPAV — 21,8 %
+                        </option>
+                        <option value="0.1280" {% if declaration.cotisationRate == '0.1280' %}selected{% endif %}>
+                            BIC Commerce — 12,8 %
+                        </option>
+                        <option value="0.2120" {% if declaration.cotisationRate == '0.2120' %}selected{% endif %}>
+                            BIC Services — 21,2 %
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>CA déclaré (€) <span style="color:#ef4444">*</span></label>
+                    <div style="position:relative;">
+                        <input type="number" name="revenue" id="revenue" class="form-control"
+                               value="{{ declaration.revenue != '0.00' ? declaration.revenue : '' }}"
+                               min="0" step="0.01" placeholder="0,00" oninput="recalc()"
+                               style="padding-right:32px;" required>
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#6b7280;">€</span>
+                    </div>
+                </div>
+
+                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:12px; margin-bottom:16px;">
+                    <div style="font-size:12px; color:#1e40af; margin-bottom:6px; font-weight:600;">Cotisation calculée</div>
+                    <div style="font-size:24px; font-weight:700; color:#1e40af;" id="display-cotisation">
+                        {{ declaration.cotisationAmount|number_format(2, ',', ' ') }} €
+                    </div>
+                    <div style="font-size:11px; color:#6b7280; margin-top:4px;">
+                        = CA × taux de cotisation
+                    </div>
+                </div>
+
+                <div style="border-top:1px solid #e5e7eb; padding-top:12px; margin-bottom:16px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:10px;">
+                        <input type="checkbox" name="declared" value="1" id="declared-check"
+                               {% if declaration.declared %}checked{% endif %}
+                               onchange="toggleDeclaredDate()"
+                               style="width:16px;height:16px;">
+                        Déjà déclarée sur urssaf.fr
+                    </label>
+
+                    <div id="declared-date-wrap" style="display:{% if declaration.declared %}block{% else %}none{% endif %}">
+                        <label style="font-size:13px; color:#374151;">Date de déclaration</label>
+                        <input type="date" name="declared_at" class="form-control"
+                               value="{{ declaration.declaredAt ? declaration.declaredAt|date('Y-m-d') : 'now'|date('Y-m-d') }}">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;">Enregistrer</button>
+            </div>
+        </div>
+
+    </div>
+</form>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+const QUARTERS = {
+    'T1': { label: '1er trimestre (Jan–Mar)', start: '-01-01', end: '-03-31' },
+    'T2': { label: '2e trimestre (Avr–Jun)',  start: '-04-01', end: '-06-30' },
+    'T3': { label: '3e trimestre (Jul–Sep)',  start: '-07-01', end: '-09-30' },
+    'T4': { label: '4e trimestre (Oct–Déc)', start: '-10-01', end: '-12-31' },
+};
+const MONTHS = [
+    ['01','Janvier'],['02','Février'],['03','Mars'],['04','Avril'],
+    ['05','Mai'],['06','Juin'],['07','Juillet'],['08','Août'],
+    ['09','Septembre'],['10','Octobre'],['11','Novembre'],['12','Décembre'],
+];
+
+function updatePeriod() {
+    const type = document.getElementById('periodicity').value;
+    const year = document.getElementById('period-year').value;
+    const sel  = document.getElementById('period-slot');
+    sel.innerHTML = '';
+
+    if (type === 'quarterly') {
+        Object.entries(QUARTERS).forEach(([k, v]) => {
+            const opt = document.createElement('option');
+            opt.value = k;
+            opt.textContent = year + '-' + k + ' — ' + v.label;
+            sel.appendChild(opt);
+        });
+    } else {
+        MONTHS.forEach(([num, name]) => {
+            const opt = document.createElement('option');
+            opt.value = num;
+            opt.textContent = year + '-' + num + ' — ' + name;
+            sel.appendChild(opt);
+        });
+    }
+    fillPeriod();
+}
+
+function fillPeriod() {
+    const type = document.getElementById('periodicity').value;
+    const year = document.getElementById('period-year').value;
+    const slot = document.getElementById('period-slot').value;
+
+    if (!slot) return;
+
+    let start, end, label;
+    if (type === 'quarterly') {
+        start = year + QUARTERS[slot].start;
+        end   = year + QUARTERS[slot].end;
+        label = year + '-' + slot;
+    } else {
+        const lastDay = new Date(year, parseInt(slot), 0).getDate();
+        start = year + '-' + slot + '-01';
+        end   = year + '-' + slot + '-' + String(lastDay).padStart(2, '0');
+        label = year + '-' + slot;
+    }
+
+    document.getElementById('period-start').value = start;
+    document.getElementById('period-end').value   = end;
+    document.getElementById('period-label').value  = label;
+}
+
+function recalc() {
+    const revenue = parseFloat(document.getElementById('revenue').value) || 0;
+    const rate    = parseFloat(document.getElementById('cot-rate').value) || 0;
+    const cotis   = revenue * rate;
+    document.getElementById('display-cotisation').textContent =
+        cotis.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function toggleDeclaredDate() {
+    const checked = document.getElementById('declared-check').checked;
+    document.getElementById('declared-date-wrap').style.display = checked ? 'block' : 'none';
+}
+
+updatePeriod();
+recalc();
+</script>
+{% endblock %}

@@ -92,7 +92,7 @@ Accountant ────────────────┘
 
 ### Dépenses
 
-- [ ] Saisie manuelle (catégorie, montant HT/TTC, TVA, date)
+- [x] Saisie manuelle (catégorie, montant HT/TTC, TVA, date)
 - [ ] **Scan OCR via Claude Vision** :
   - [ ] Upload image/PDF du reçu (web) ou photo (mobile)
   - [ ] Service `ReceiptScannerService` → appel Claude Vision
