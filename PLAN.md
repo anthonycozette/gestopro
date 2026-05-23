@@ -125,7 +125,52 @@ Accountant ────────────────┘
 
 ---
 
-## Phase 4 — Intégration Claude AI ⬜
+## Phase 4 — Portail Expert-Comptable ⬜
+
+- [ ] Rôle `ROLE_ACCOUNTANT` séparé
+- [ ] Dashboard expert : liste des bilans clients à valider
+- [ ] Système d'invitation client (email + token)
+- [ ] Annotation ligne par ligne sur le bilan
+- [ ] Statuts bilan : `pending_review` → `annotated` → `validated`
+- [ ] Tampon numérique (image + signature + horodatage)
+- [ ] Notifications client à chaque étape
+- [ ] Un expert peut gérer N clients
+
+---
+
+## Phase 5 — SaaS & Abonnements ⬜
+
+| Plan    | Prix      | Limites                                      |
+|---------|-----------|----------------------------------------------|
+| Gratuit | 0 €/mois  | 5 clients, 10 factures/mois, pas d'IA        |
+| Pro     | 19 €/mois | Illimité, assistant IA, OCR reçus            |
+| Expert  | 49 €/mois | Pro + portail comptable, bilans IA illimités |
+
+- [ ] Stripe Checkout + webhooks
+- [ ] Gestion abonnement (upgrade, downgrade, résiliation)
+- [ ] Portail client Stripe (historique facturation)
+- [ ] Guards Symfony selon le plan actif
+- [ ] Page tarifs + landing page GestoPro
+
+---
+
+## Phase 6 — API Mobile ⬜
+
+> API Platform expose tout automatiquement depuis la Phase 1–2.
+
+- [ ] Tous les endpoints CRUD via API Platform (faits en Phase 1–2)
+- [ ] Endpoint `POST /api/expenses/scan` (upload photo reçu)
+- [ ] Endpoint dashboard summary (`GET /api/dashboard`)
+- [ ] JWT refresh token
+- [ ] Rate limiting
+- [ ] Documentation OpenAPI auto-générée (Swagger UI)
+- [ ] Push notifications (optionnel)
+
+---
+
+## Phase 7 — Intégration Claude AI ⬜
+
+> À intégrer une fois le produit complet et stable.
 
 ### Assistant comptable (chat)
 
@@ -142,54 +187,13 @@ Accountant ────────────────┘
 - [ ] Versioning par période (mensuel / annuel)
 - [ ] Statuts : `draft` → `pending_review` → `validated`
 
-### OCR reçus (lié Phase 2)
+### OCR reçus
 
 - [ ] `ReceiptScannerService` (Claude Vision + base64)
+- [ ] Upload image/PDF du reçu → extraction automatique
+- [ ] Score de confiance (badge vert/orange/rouge)
+- [ ] Formulaire pré-rempli → validation utilisateur
 - [ ] Endpoint `POST /api/expenses/scan`
-- [ ] Gestion des reçus illisibles (confidence < 0.75 → alerte)
-
----
-
-## Phase 5 — Portail Expert-Comptable ⬜
-
-- [ ] Rôle `ROLE_ACCOUNTANT` séparé
-- [ ] Dashboard expert : liste des bilans clients à valider
-- [ ] Système d'invitation client (email + token)
-- [ ] Annotation ligne par ligne sur le bilan IA
-- [ ] Statuts bilan : `pending_review` → `annotated` → `validated`
-- [ ] Tampon numérique (image + signature + horodatage)
-- [ ] Notifications client à chaque étape
-- [ ] Un expert peut gérer N clients
-
----
-
-## Phase 6 — SaaS & Abonnements ⬜
-
-| Plan    | Prix      | Limites                                      |
-|---------|-----------|----------------------------------------------|
-| Gratuit | 0 €/mois  | 5 clients, 10 factures/mois, pas d'IA        |
-| Pro     | 19 €/mois | Illimité, assistant IA, OCR reçus            |
-| Expert  | 49 €/mois | Pro + portail comptable, bilans IA illimités |
-
-- [ ] Stripe Checkout + webhooks
-- [ ] Gestion abonnement (upgrade, downgrade, résiliation)
-- [ ] Portail client Stripe (historique facturation)
-- [ ] Guards Symfony selon le plan actif
-- [ ] Page tarifs + landing page GestoPro
-
----
-
-## Phase 7 — API Mobile ⬜
-
-> En parallèle dès la Phase 2 — API Platform expose tout automatiquement.
-
-- [ ] Tous les endpoints CRUD via API Platform (faits en Phase 1–2)
-- [ ] Endpoint `POST /api/expenses/scan` (upload photo reçu)
-- [ ] Endpoint dashboard summary (`GET /api/dashboard`)
-- [ ] JWT refresh token
-- [ ] Rate limiting
-- [ ] Documentation OpenAPI auto-générée (Swagger UI)
-- [ ] Push notifications (optionnel)
 
 ---
 
@@ -206,16 +210,17 @@ Accountant ────────────────┘
 
 ---
 
-## Ordre de développement recommandé
+## Ordre de développement
 
 ```text
-Phase 1 (fondations)
-    → Phase 2 (comptabilité cœur)  ←→  Phase 7 (API mobile, en parallèle)
-        → Phase 3 (dashboard)
-            → Phase 4 (IA Claude)
-                → Phase 5 (expert-comptable)
-                    → Phase 6 (SaaS / Stripe)
-                        → Phase 8 (prod)
+Phase 1 (fondations) ✅
+    → Phase 2 (comptabilité cœur) ✅
+        → Phase 3 (dashboard & stats) ✅
+            → Phase 4 (portail expert-comptable)
+                → Phase 5 (SaaS / Stripe)
+                    → Phase 6 (API mobile)
+                        → Phase 7 (IA Claude) ← intégrée en dernier
+                            → Phase 8 (prod)
 ```
 
 ---
@@ -249,13 +254,13 @@ MAILER_DSN=smtp://localhost:1025
 
 ## Progression globale
 
-| Phase | Statut   | Description                  |
-|-------|----------|------------------------------|
-| 1     | Terminé  | Fondations                   |
-| 2     | A faire  | Comptabilité cœur + OCR      |
-| 3     | A faire  | Dashboard & stats            |
-| 4     | A faire  | Intégration Claude AI        |
-| 5     | A faire  | Portail expert-comptable     |
-| 6     | A faire  | SaaS & abonnements Stripe    |
-| 7     | A faire  | API mobile (en parallèle)    |
-| 8     | A faire  | Sécurité, tests, production  |
+| Phase | Statut      | Description                  |
+|-------|-------------|------------------------------|
+| 1     | ✅ Fait     | Fondations                   |
+| 2     | ✅ Fait     | Comptabilité cœur            |
+| 3     | ✅ Fait     | Dashboard & stats            |
+| 4     | ⬜ À faire  | Portail expert-comptable     |
+| 5     | ⬜ À faire  | SaaS & abonnements Stripe    |
+| 6     | ⬜ À faire  | API mobile                   |
+| 7     | ⬜ À faire  | Intégration Claude AI        |
+| 8     | ⬜ À faire  | Sécurité, tests, prod        |
