@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Service\StripeService;
+use Doctrine\ORM\EntityManagerInterface;
 use Stripe\Exception\ApiErrorException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,7 +28,7 @@ class SubscriptionController extends AbstractController
     }
 
     #[Route('/subscription/checkout/{plan}', name: 'app_subscription_checkout', methods: ['POST'])]
-    public function checkout(string $plan, Request $request, StripeService $stripe): Response
+    public function checkout(string $plan, Request $request, StripeService $stripe, EntityManagerInterface $em): Response
     {
         if (!$this->isCsrfTokenValid('subscription_checkout', $request->request->get('_token'))) {
             $this->addFlash('error', 'Token CSRF invalide.');
@@ -57,6 +58,20 @@ class SubscriptionController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
+        // Abonnement existant → mise à jour directe (pro → expert)
+        if ($user->getStripeSubscriptionId()) {
+            try {
+                $stripe->updateSubscription($user, $priceId);
+                $user->setPlan($plan);
+                $em->flush();
+                $this->addFlash('success', 'Votre abonnement a été mis à jour vers le plan ' . ucfirst($plan) . '.');
+            } catch (ApiErrorException $e) {
+                $this->addFlash('error', 'Erreur Stripe : ' . $e->getMessage());
+            }
+            return $this->redirectToRoute('app_subscription_manage');
+        }
+
+        // Pas encore d'abonnement → nouvelle session Checkout
         try {
             $session = $stripe->createCheckoutSession($user, $priceId, $plan);
         } catch (ApiErrorException $e) {

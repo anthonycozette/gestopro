@@ -80,6 +80,26 @@ class StripeService
         ]);
     }
 
+    public function updateSubscription(User $user, string $newPriceId): void
+    {
+        $subscriptionId = $user->getStripeSubscriptionId();
+        if (!$subscriptionId) {
+            throw new \RuntimeException('Aucun abonnement actif à mettre à jour.');
+        }
+
+        $subscription = \Stripe\Subscription::retrieve([
+            'id'     => $subscriptionId,
+            'expand' => ['items'],
+        ]);
+
+        $itemId = $subscription->items->data[0]->id;
+
+        \Stripe\Subscription::update($subscriptionId, [
+            'items'              => [['id' => $itemId, 'price' => $newPriceId]],
+            'proration_behavior' => 'create_prorations',
+        ]);
+    }
+
     public function constructWebhookEvent(string $payload, string $sigHeader): Event
     {
         return Webhook::constructEvent($payload, $sigHeader, $this->webhookSecret);
