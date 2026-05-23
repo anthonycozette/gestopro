@@ -46,7 +46,7 @@ Accountant ────────────────┘
 
 ---
 
-## Phase 1 — Fondations 🔄
+## Phase 1 — Fondations ✅
 
 > Socle technique : auth, entités de base, API Platform, JWT.
 
@@ -62,10 +62,10 @@ Accountant ────────────────┘
   - [x] `AiConversation` + `AiMessage` (historique assistant)
   - [x] `Accountant` + `AccountantInvitation` (portail expert)
 - [x] Migration Doctrine (26 tables créées)
-- [ ] Symfony Security : inscription, connexion, reset password
-- [ ] JWT (LexikJWT) pour authentification API mobile
-- [ ] API Platform : configuration de base + exposition des ressources
-- [ ] Fixtures de développement (Faker)
+- [x] Symfony Security : inscription, connexion web + provider Doctrine
+- [x] JWT (LexikJWT) pour authentification API mobile (`POST /api/login`)
+- [x] API Platform : 35 routes REST exposées avec multi-tenancy + groupes de serialisation
+- [x] Fixtures de développement (2 users, 5 clients, 5 factures, 6 dépenses, 3 URSSAF, 1 conv IA)
 
 ---
 
@@ -250,7 +250,7 @@ MAILER_DSN=smtp://localhost:1025
 
 | Phase | Statut   | Description                  |
 |-------|----------|------------------------------|
-| 1     | En cours | Fondations                   |
+| 1     | Terminé  | Fondations                   |
 | 2     | A faire  | Comptabilité cœur + OCR      |
 | 3     | A faire  | Dashboard & stats            |
 | 4     | A faire  | Intégration Claude AI        |
