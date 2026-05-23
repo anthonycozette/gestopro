@@ -93,12 +93,13 @@ Accountant ────────────────┘
 ### Dépenses
 
 - [x] Saisie manuelle (catégorie, montant HT/TTC, TVA, date)
-- [ ] **Scan OCR via Claude Vision** :
-  - [ ] Upload image/PDF du reçu (web) ou photo (mobile)
-  - [ ] Service `ReceiptScannerService` → appel Claude Vision
-  - [ ] Extraction automatique : fournisseur, date, montant, TVA, catégorie
-  - [ ] Score de confiance affiché (badge vert/orange/rouge)
-  - [ ] Formulaire pré-rempli → validation utilisateur
+- [x] **Scan OCR via Claude Vision** :
+  - [x] Upload image/PDF du reçu (web drag-and-drop) ou photo (mobile)
+  - [x] Service `ReceiptScannerService` → appel Claude Vision (`claude-opus-4-5`)
+  - [x] Extraction automatique : fournisseur, date, montant, TVA, catégorie
+  - [x] Score de confiance affiché (badge vert/orange/rouge)
+  - [x] Formulaire pré-rempli → validation utilisateur
+  - [x] Persistance `ocrData`, `ocrConfidence`, `ocrVerified` en base
   - [ ] Fichier attaché comme justificatif (VichUploader)
 - [ ] Déductibilité marquée
 - [ ] Catégorisation automatique suggérée par IA
@@ -191,13 +192,14 @@ Accountant ────────────────┘
 - [ ] Versioning par période (mensuel / annuel)
 - [ ] Statuts : `draft` → `pending_review` → `validated`
 
-### OCR reçus
+### OCR reçus ✅
 
-- [ ] `ReceiptScannerService` (Claude Vision + base64)
-- [ ] Upload image/PDF du reçu → extraction automatique
-- [ ] Score de confiance (badge vert/orange/rouge)
-- [ ] Formulaire pré-rempli → validation utilisateur
-- [ ] Endpoint `POST /api/expenses/scan`
+- [x] `ReceiptScannerService` (Claude Vision + base64, `claude-opus-4-5`)
+- [x] Upload image/PDF du reçu → extraction automatique (drag-and-drop web)
+- [x] Score de confiance (badge vert/orange/rouge)
+- [x] Formulaire pré-rempli → validation utilisateur
+- [x] Endpoint `POST /api/expenses/scan` (mobile JWT)
+- [x] Endpoint `POST /expenses/scan-receipt` (web session)
 
 ---
 

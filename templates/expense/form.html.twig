@@ -15,33 +15,86 @@
 {% endblock %}
 
 {% block body %}
-<form method="post">
+<form method="post" id="expense-form">
     {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
 
     <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
 
+        {# ── Colonne gauche ──────────────────────────────────────────────── #}
         <div>
+
+            {# Zone de scan OCR #}
+            {% if app.user.plan != 'free' %}
+            <div class="card ocr-card" id="ocr-card">
+                <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+                    Scan du reçu
+                    <span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:.5px;">IA</span>
+                </div>
+
+                <div class="ocr-dropzone" id="ocr-dropzone">
+                    <input type="file" id="ocr-file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" style="display:none">
+
+                    <div id="ocr-idle">
+                        <div class="ocr-drop-icon">📄</div>
+                        <div class="ocr-drop-label">Glissez votre reçu ici</div>
+                        <div class="ocr-drop-or">ou</div>
+                        <button type="button" class="btn btn-secondary" style="font-size:13px;padding:6px 16px;"
+                                onclick="document.getElementById('ocr-file').click()">
+                            Parcourir…
+                        </button>
+                        <div class="ocr-drop-hint">JPEG · PNG · WebP · PDF — max 10 Mo</div>
+                    </div>
+
+                    <div id="ocr-loading" style="display:none;text-align:center;padding:24px 0;">
+                        <div class="ocr-spinner"></div>
+                        <div style="margin-top:10px;color:#6b7280;font-size:13px;">Claude analyse le reçu…</div>
+                    </div>
+                </div>
+
+                <div id="ocr-result" style="display:none;margin-top:12px;">
+                    <div id="ocr-badge"></div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:6px;">
+                        Champs pré-remplis ci-dessous — vérifiez avant d'enregistrer.
+                    </div>
+                    <button type="button" class="ocr-retry-btn" onclick="resetOcr()">↺ Scanner un autre reçu</button>
+                </div>
+
+                <div id="ocr-error" style="display:none;margin-top:10px;">
+                    <div class="ocr-error-msg" id="ocr-error-msg"></div>
+                    <button type="button" class="ocr-retry-btn" onclick="resetOcr()">Réessayer</button>
+                </div>
+            </div>
+            {% else %}
+            <div class="card" style="background:#f9fafb;border:1px dashed #d1d5db;text-align:center;padding:28px;">
+                <div style="font-size:2rem;margin-bottom:8px;">📷</div>
+                <div style="font-weight:600;color:#374151;margin-bottom:4px;">Scan OCR disponible en Pro</div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">Photographiez vos reçus, Claude extrait les données automatiquement.</div>
+                <a href="{{ path('app_subscription_manage') }}" class="btn btn-primary" style="font-size:13px;">Passer au Pro</a>
+            </div>
+            {% endif %}
+
+            {# Formulaire principal #}
             <div class="card">
                 <div class="card-title">Informations de la dépense</div>
 
                 <div class="form-group">
                     <label>Fournisseur <span style="color:#ef4444">*</span></label>
-                    <input type="text" name="vendor" class="form-control"
+                    <input type="text" name="vendor" id="field-vendor" class="form-control"
                            value="{{ expense.vendor }}" placeholder="Ex : SNCF, Amazon, Adobe…" required autofocus>
                 </div>
 
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Date <span style="color:#ef4444">*</span></label>
-                        <input type="date" name="date" class="form-control"
+                        <input type="date" name="date" id="field-date" class="form-control"
                                value="{{ expense.date ? expense.date|date('Y-m-d') : 'now'|date('Y-m-d') }}" required>
                     </div>
                     <div class="form-group">
                         <label>Catégorie</label>
-                        <select name="category_id" class="form-control">
-                            <option value="">— Sans catégorie —</option>
+                        <select name="category_id" id="field-category" class="form-control">
+                            <option value="" data-slug="">— Sans catégorie —</option>
                             {% for cat in categories %}
-                                <option value="{{ cat.id }}"
+                                <option value="{{ cat.id }}" data-slug="{{ cat.slug }}"
                                     {% if expense.category and expense.category.id == cat.id %}selected{% endif %}>
                                     {{ cat.label }}
                                 </option>
@@ -52,7 +105,7 @@
 
                 <div class="form-group">
                     <label>Notes</label>
-                    <textarea name="notes" class="form-control" rows="2"
+                    <textarea name="notes" id="field-notes" class="form-control" rows="2"
                               placeholder="Détails, numéro de facture fournisseur…">{{ expense.notes }}</textarea>
                 </div>
 
@@ -70,6 +123,7 @@
             </div>
         </div>
 
+        {# ── Colonne droite ──────────────────────────────────────────────── #}
         <div>
             <div class="card">
                 <div class="card-title">Montant</div>
@@ -126,9 +180,124 @@
         </div>
 
     </div>
+
+    {# Champs cachés OCR — remplis par le JS après scan #}
+    <input type="hidden" name="ocr_confidence" id="ocr_confidence_field" value="">
+    <input type="hidden" name="ocr_data"       id="ocr_data_field"       value="">
 </form>
 {% endblock %}
 
 {% block javascripts %}
 <script src="{{ asset('js/expense-form.js') }}"></script>
+<script>
+{% if app.user.plan != 'free' %}
+const SCAN_URL = '{{ path('app_expense_scan_receipt') }}';
+
+const dropzone  = document.getElementById('ocr-dropzone');
+const fileInput = document.getElementById('ocr-file');
+
+dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', ()  => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) scanFile(e.dataTransfer.files[0]);
+});
+dropzone.addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') fileInput.click();
+});
+fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) scanFile(fileInput.files[0]);
+});
+
+async function scanFile(file) {
+    document.getElementById('ocr-idle').style.display    = 'none';
+    document.getElementById('ocr-loading').style.display = 'block';
+    document.getElementById('ocr-result').style.display  = 'none';
+    document.getElementById('ocr-error').style.display   = 'none';
+
+    const fd = new FormData();
+    fd.append('receipt', file);
+
+    try {
+        const resp = await fetch(SCAN_URL, { method: 'POST', body: fd });
+        const data = await resp.json();
+
+        document.getElementById('ocr-loading').style.display = 'none';
+
+        if (data.error) { showOcrError(data.error); return; }
+
+        fillFormFromOcr(data);
+        showOcrBadge(data.confidence);
+
+        document.getElementById('ocr_confidence_field').value = data.confidence;
+        document.getElementById('ocr_data_field').value       = JSON.stringify(data);
+        document.getElementById('ocr-result').style.display   = 'block';
+
+    } catch {
+        document.getElementById('ocr-loading').style.display = 'none';
+        showOcrError('Erreur de connexion. Vérifiez votre réseau.');
+    }
+}
+
+function fillFormFromOcr(data) {
+    if (data.vendor) document.getElementById('field-vendor').value = data.vendor;
+    if (data.date)   document.getElementById('field-date').value   = data.date;
+    if (data.notes)  document.getElementById('field-notes').value  = data.notes;
+
+    if (data.amount_ttc != null) {
+        document.getElementById('amount-ttc').value = data.amount_ttc;
+    }
+
+    if (data.tva_rate != null) {
+        const opts   = [0, 5.5, 10, 20];
+        const closest = opts.reduce((a, b) =>
+            Math.abs(b - data.tva_rate) < Math.abs(a - data.tva_rate) ? b : a
+        );
+        document.getElementById('tva-rate').value = closest;
+    }
+
+    if (data.category) {
+        const slug = data.category.toLowerCase().replace('telecoms', 'telecom');
+        const sel  = document.getElementById('field-category');
+        for (const opt of sel.options) {
+            if (opt.dataset.slug === slug) { sel.value = opt.value; break; }
+        }
+    }
+
+    recalc();
+
+    // Scroll doux vers le formulaire
+    document.getElementById('field-vendor').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function showOcrBadge(confidence) {
+    const badge = document.getElementById('ocr-badge');
+    let cls, icon, label;
+    if (confidence >= 85) {
+        cls = 'conf-high';   icon = '✓'; label = 'Confiance élevée';
+    } else if (confidence >= 65) {
+        cls = 'conf-medium'; icon = '⚠'; label = 'Confiance moyenne';
+    } else {
+        cls = 'conf-low';    icon = '⚠'; label = 'Confiance faible — vérifiez';
+    }
+    badge.innerHTML = `<span class="conf-badge ${cls}">${icon} ${label} — ${Math.round(confidence)} %</span>`;
+}
+
+function showOcrError(msg) {
+    document.getElementById('ocr-error-msg').textContent = msg;
+    document.getElementById('ocr-error').style.display   = 'block';
+}
+
+function resetOcr() {
+    fileInput.value = '';
+    document.getElementById('ocr_confidence_field').value = '';
+    document.getElementById('ocr_data_field').value       = '';
+    document.getElementById('ocr-idle').style.display     = 'block';
+    document.getElementById('ocr-loading').style.display  = 'none';
+    document.getElementById('ocr-result').style.display   = 'none';
+    document.getElementById('ocr-error').style.display    = 'none';
+}
+{% endif %}
+</script>
 {% endblock %}

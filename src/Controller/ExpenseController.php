@@ -3,10 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\Expense;
+use App\Entity\User;
 use App\Repository\ExpenseCategoryRepository;
 use App\Repository\ExpenseRepository;
+use App\Service\ReceiptScannerService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -14,6 +17,42 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/expenses', name: 'app_expense')]
 class ExpenseController extends AbstractController
 {
+    #[Route('/scan-receipt', name: '_scan_receipt', methods: ['POST'])]
+    public function scanReceipt(Request $request, ReceiptScannerService $scanner): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($user->getPlan() === 'free') {
+            return $this->json(['error' => 'Le scan OCR est réservé aux plans Pro et Expert.'], 403);
+        }
+
+        $file = $request->files->get('receipt');
+        if (!$file) {
+            return $this->json(['error' => 'Aucun fichier fourni.'], 400);
+        }
+
+        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+        if (!in_array($file->getMimeType(), $allowed, true)) {
+            return $this->json(['error' => 'Format non supporté (JPEG, PNG, WebP, PDF).'], 422);
+        }
+
+        if ($file->getSize() > 10 * 1024 * 1024) {
+            return $this->json(['error' => 'Fichier trop volumineux (max 10 Mo).'], 422);
+        }
+
+        try {
+            $result = $scanner->scan(
+                base64_encode(file_get_contents($file->getPathname())),
+                $file->getMimeType(),
+            );
+        } catch (\Throwable $e) {
+            return $this->json(['error' => 'Erreur lors de l\'analyse : ' . $e->getMessage()], 500);
+        }
+
+        return $this->json($result);
+    }
+
     #[Route('', name: 's')]
     public function index(ExpenseRepository $repo): Response
     {
@@ -130,6 +169,15 @@ class ExpenseController extends AbstractController
                 ->setNotes($request->request->get('notes') ?: null)
                 ->setCategory($category)
                 ->setUser($this->getUser());
+
+        // Données OCR (champs cachés remplis par le scan)
+        $ocrConfidenceRaw = $request->request->get('ocr_confidence', '');
+        if ($ocrConfidenceRaw !== '') {
+            $ocrDataJson = $request->request->get('ocr_data', '');
+            $expense->setOcrConfidence(number_format((float) $ocrConfidenceRaw / 100, 2, '.', ''))
+                    ->setOcrData($ocrDataJson ? json_decode($ocrDataJson, true) : null)
+                    ->setOcrVerified(true);
+        }
 
         $em->persist($expense);
         $em->flush();

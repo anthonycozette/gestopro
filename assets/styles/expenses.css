@@ -63,3 +63,63 @@
   background: transparent; color: #5b6573; font-size: 12px; font-weight: 600; border-radius: 6px;
 }
 .segment-btn.active { background: #fff; color: #1c1a17; box-shadow: 0 1px 2px rgba(20,40,80,.08); }
+
+/* ── OCR SCAN ZONE ───────────────────────────────────────────────── */
+.ocr-card { margin-bottom: 16px; }
+
+.ocr-dropzone {
+    border: 2px dashed #c7d2dd;
+    border-radius: 10px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    background: #f8fafc;
+}
+.ocr-dropzone:hover,
+.ocr-dropzone.drag-over {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+.ocr-dropzone.drag-over { box-shadow: 0 0 0 3px #bfdbfe; }
+
+.ocr-drop-icon  { font-size: 2rem; margin-bottom: 8px; }
+.ocr-drop-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+.ocr-drop-or    { font-size: 12px; color: #9ca3af; margin: 6px 0; }
+.ocr-drop-hint  { font-size: 11px; color: #9ca3af; margin-top: 10px; }
+
+/* Spinner */
+.ocr-spinner {
+    width: 32px; height: 32px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: ocr-spin .7s linear infinite;
+    margin: 0 auto;
+}
+@keyframes ocr-spin { to { transform: rotate(360deg); } }
+
+/* Confidence badges */
+.conf-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+}
+.conf-high   { background: #dcfce7; color: #15803d; }
+.conf-medium { background: #fef3c7; color: #92400e; }
+.conf-low    { background: #fee2e2; color: #b91c1c; }
+
+/* Retry / reset button */
+.ocr-retry-btn {
+    margin-top: 10px; background: none; border: 1px solid #d1d5db;
+    border-radius: 6px; padding: 4px 12px; font-size: 12px;
+    color: #6b7280; cursor: pointer;
+}
+.ocr-retry-btn:hover { border-color: #9ca3af; color: #374151; }
+
+/* Error message */
+.ocr-error-msg {
+    font-size: 13px; color: #b91c1c;
+    background: #fee2e2; border-radius: 6px;
+    padding: 8px 12px;
+}
