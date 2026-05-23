@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Service\StripeService;
+use Stripe\Exception\ApiErrorException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,13 +45,24 @@ class SubscriptionController extends AbstractController
 
         $priceId = $prices[$plan];
         if (empty($priceId)) {
-            $this->addFlash('error', 'Stripe n\'est pas configuré sur ce serveur (clé de prix manquante).');
+            $this->addFlash('error', 'Stripe n\'est pas configuré : STRIPE_PRICE_' . strtoupper($plan) . ' est vide dans .env.local.');
+            return $this->redirectToRoute('app_subscription_manage');
+        }
+
+        if (!str_starts_with($priceId, 'price_')) {
+            $this->addFlash('error', 'Configuration incorrecte : STRIPE_PRICE_' . strtoupper($plan) . ' doit être un ID de prix (price_xxx...), pas une URL de lien de paiement.');
             return $this->redirectToRoute('app_subscription_manage');
         }
 
         /** @var User $user */
         $user = $this->getUser();
-        $session = $stripe->createCheckoutSession($user, $priceId, $plan);
+
+        try {
+            $session = $stripe->createCheckoutSession($user, $priceId, $plan);
+        } catch (ApiErrorException $e) {
+            $this->addFlash('error', 'Erreur Stripe : ' . $e->getMessage());
+            return $this->redirectToRoute('app_subscription_manage');
+        }
 
         return $this->redirect($session->url);
     }
