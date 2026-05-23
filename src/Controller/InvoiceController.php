@@ -7,6 +7,7 @@ use App\Entity\InvoiceLine;
 use App\Entity\User;
 use App\Repository\ClientRepository;
 use App\Repository\InvoiceRepository;
+use App\Service\InvoiceMailer;
 use App\Service\InvoiceNumberService;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Bundle\SnappyBundle\Snappy\Response\PdfResponse;
@@ -34,6 +35,7 @@ class InvoiceController extends AbstractController
         ClientRepository $clientRepo,
         InvoiceNumberService $numberService,
         InvoiceRepository $invoiceRepo,
+        InvoiceMailer $mailer,
     ): Response {
         /** @var User $user */
         $user = $this->getUser();
@@ -48,6 +50,9 @@ class InvoiceController extends AbstractController
         if ($request->isMethod('POST')) {
             $result = $this->handleForm($request, new Invoice(), $em, $numberService, true);
             if ($result instanceof Invoice) {
+                if ($result->getStatus() === Invoice::STATUS_SENT) {
+                    $this->sendInvoiceEmail($result, $mailer);
+                }
                 $this->addFlash('success', 'Facture ' . $result->getNumber() . ' créée.');
                 return $this->redirectToRoute('app_invoices');
             }
@@ -104,7 +109,7 @@ class InvoiceController extends AbstractController
     }
 
     #[Route('/{id}/status/{status}', name: '_status', methods: ['POST'])]
-    public function changeStatus(Invoice $invoice, string $status, Request $request, EntityManagerInterface $em): Response
+    public function changeStatus(Invoice $invoice, string $status, Request $request, EntityManagerInterface $em, InvoiceMailer $mailer): Response
     {
         if ($invoice->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
@@ -115,11 +120,17 @@ class InvoiceController extends AbstractController
         }
 
         if ($this->isCsrfTokenValid('status_invoice_' . $invoice->getId(), $request->request->get('_token'))) {
+            $previousStatus = $invoice->getStatus();
             $invoice->setStatus($status);
             if ($status === Invoice::STATUS_PAID) {
                 $invoice->setPaidAt(new \DateTimeImmutable());
             }
             $em->flush();
+
+            if ($status === Invoice::STATUS_SENT && $previousStatus !== Invoice::STATUS_SENT) {
+                $this->sendInvoiceEmail($invoice, $mailer);
+            }
+
             $this->addFlash('success', 'Statut mis à jour.');
         }
 
@@ -140,6 +151,21 @@ class InvoiceController extends AbstractController
         }
 
         return $this->redirectToRoute('app_invoices');
+    }
+
+    private function sendInvoiceEmail(Invoice $invoice, InvoiceMailer $mailer): void
+    {
+        if (!$invoice->getClient()->getEmail()) {
+            $this->addFlash('error', 'Email non envoyé : le client n\'a pas d\'adresse email renseignée.');
+            return;
+        }
+
+        try {
+            $mailer->sendToClient($invoice);
+            $this->addFlash('success', 'Facture envoyée par email à ' . $invoice->getClient()->getEmail() . '.');
+        } catch (\Exception $e) {
+            $this->addFlash('error', 'Impossible d\'envoyer l\'email : ' . $e->getMessage());
+        }
     }
 
     private function handleForm(Request $request, Invoice $invoice, EntityManagerInterface $em, InvoiceNumberService $numberService, bool $isNew): Invoice|string
