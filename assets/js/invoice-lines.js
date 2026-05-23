@@ -42,4 +42,4 @@ function fmt(n) {
     return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
 
-document.addEventListener('DOMContentLoaded', recalculate);
+recalculate();
