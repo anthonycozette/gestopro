@@ -26,6 +26,22 @@ class UrssafDeclarationRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function getCotisationsForPeriod(User $user, \DateTimeImmutable $start, \DateTimeImmutable $end): float
+    {
+        $result = $this->createQueryBuilder('u')
+            ->select('SUM(u.cotisationAmount) as total')
+            ->where('u.user = :user')
+            ->andWhere('u.periodStart >= :start')
+            ->andWhere('u.periodEnd <= :end')
+            ->setParameter('user', $user)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
     public function getYearCotisation(User $user, int $year): float
     {
         $result = $this->createQueryBuilder('u')

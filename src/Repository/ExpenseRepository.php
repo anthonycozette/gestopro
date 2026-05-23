@@ -65,6 +65,22 @@ class ExpenseRepository extends ServiceEntityRepository
         return (float) ($result ?? 0);
     }
 
+    public function getTotalForPeriod(User $user, \DateTimeImmutable $start, \DateTimeImmutable $end): float
+    {
+        $result = $this->createQueryBuilder('e')
+            ->select('SUM(e.amountTtc) as total')
+            ->where('e.user = :user')
+            ->andWhere('e.date >= :start')
+            ->andWhere('e.date <= :end')
+            ->setParameter('user', $user)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
     /** @return array<array{label: string, total: float}> */
     public function getTotalsByCategory(User $user, int $year): array
     {

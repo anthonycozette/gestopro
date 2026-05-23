@@ -1,0 +1,117 @@
+{% extends 'base.html.twig' %}
+{% block title %}Nouveau bilan — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Nouveau bilan</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_balance_sheets') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div style="max-width:600px;">
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+    <div class="card">
+        <div class="card-title">Sélectionner la période</div>
+
+        <form method="post">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Type</label>
+                    <select name="period_type" id="period-type" class="form-control" onchange="toggleSelectors()">
+                        <option value="annual">Annuel</option>
+                        <option value="quarterly">Trimestriel</option>
+                        <option value="monthly">Mensuel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Année</label>
+                    <select name="year" class="form-control">
+                        {% for y in range(date('Y') - 3, date('Y')) %}
+                            <option value="{{ y }}" {% if y == date('Y') %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" id="quarter-wrap" style="display:none;">
+                    <label>Trimestre</label>
+                    <select name="quarter" class="form-control">
+                        <option value="T1">T1 (Jan–Mar)</option>
+                        <option value="T2">T2 (Avr–Jun)</option>
+                        <option value="T3">T3 (Jul–Sep)</option>
+                        <option value="T4">T4 (Oct–Déc)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="month-wrap" style="display:none;">
+                    <label>Mois</label>
+                    <select name="month" class="form-control">
+                        {% set monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] %}
+                        {% for i in 1..12 %}
+                            <option value="{{ '%02d'|format(i) }}">{{ monthNames[i-1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" name="action" value="preview" class="btn btn-secondary">
+                Calculer les données
+            </button>
+        </form>
+    </div>
+
+    {% if preview %}
+    <div class="card">
+        <div class="card-title">Résumé — {{ preview.label }}</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">
+            {{ preview.start|date('d/m/Y') }} → {{ preview.end|date('d/m/Y') }}
+        </div>
+
+        <table style="width:320px;margin-bottom:20px;">
+            <tr>
+                <td style="color:#6b7280;padding:7px 0;">Chiffre d'affaires HT</td>
+                <td style="text-align:right;font-weight:600;">{{ preview.revenue_ht|number_format(2, ',', ' ') }} €</td>
+            </tr>
+            <tr>
+                <td style="color:#6b7280;padding:7px 0;">Dépenses TTC</td>
+                <td style="text-align:right;color:#ef4444;">− {{ preview.expenses_ttc|number_format(2, ',', ' ') }} €</td>
+            </tr>
+            <tr>
+                <td style="color:#6b7280;padding:7px 0;">Cotisations URSSAF</td>
+                <td style="text-align:right;color:#ef4444;">− {{ preview.cotisations|number_format(2, ',', ' ') }} €</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="padding:0;height:2px;background:#e5e7eb;"></td>
+            </tr>
+            <tr>
+                <td style="font-weight:700;padding-top:10px;">Résultat net estimé</td>
+                <td style="text-align:right;font-weight:700;font-size:18px;padding-top:10px;color:{% if preview.net_result < 0 %}#ef4444{% else %}#16a34a{% endif %};">
+                    {{ preview.net_result|number_format(2, ',', ' ') }} €
+                </td>
+            </tr>
+        </table>
+
+        <form method="post">
+            <input type="hidden" name="action" value="save">
+            <input type="hidden" name="period_type" value="{{ app.request.request.get('period_type') }}">
+            <input type="hidden" name="year" value="{{ app.request.request.get('year') }}">
+            <input type="hidden" name="quarter" value="{{ app.request.request.get('quarter') }}">
+            <input type="hidden" name="month" value="{{ app.request.request.get('month') }}">
+            <button type="submit" class="btn btn-primary">Enregistrer ce bilan</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function toggleSelectors() {
+    const type = document.getElementById('period-type').value;
+    document.getElementById('quarter-wrap').style.display = type === 'quarterly' ? 'block' : 'none';
+    document.getElementById('month-wrap').style.display   = type === 'monthly'   ? 'block' : 'none';
+}
+toggleSelectors();
+</script>
+{% endblock %}

@@ -7,6 +7,10 @@ security:
             entity:
                 class: App\Entity\User
                 property: email
+        accountant_provider:
+            entity:
+                class: App\Entity\Accountant
+                property: email
 
     firewalls:
         dev:
@@ -25,7 +29,24 @@ security:
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
             jwt: ~
 
+        expert:
+            pattern: ^/expert
+            context: expert
+            lazy: true
+            provider: accountant_provider
+            form_login:
+                login_path: expert_login
+                check_path: expert_login
+                username_parameter: email
+                password_parameter: password
+                default_target_path: expert_dashboard
+                enable_csrf: true
+            logout:
+                path: expert_logout
+                target: expert_login
+
         main:
+            context: main
             lazy: true
             provider: app_user_provider
             form_login:
@@ -47,6 +68,9 @@ security:
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/expert/login, roles: PUBLIC_ACCESS }
+        - { path: ^/expert/register, roles: PUBLIC_ACCESS }
+        - { path: ^/expert, roles: ROLE_ACCOUNTANT }
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }

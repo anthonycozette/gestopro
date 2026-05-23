@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+{% block title %}Bilans — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Bilans comptables</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_balance_sheet_new') }}" class="btn btn-primary">+ Nouveau bilan</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="card">
+    {% if sheets is empty %}
+        <div class="empty-state">
+            <p>Aucun bilan créé pour l'instant.</p>
+            <a href="{{ path('app_balance_sheet_new') }}" class="btn btn-primary">Créer mon premier bilan</a>
+        </div>
+    {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Période</th>
+                    <th style="text-align:right">CA HT</th>
+                    <th style="text-align:right">Dépenses</th>
+                    <th style="text-align:right">Résultat net</th>
+                    <th>Statut</th>
+                    <th>Expert</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sheets %}
+                {% set fd = s.financialData %}
+                <tr>
+                    <td>
+                        <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}"><strong>{{ s.period }}</strong></a>
+                        <div style="font-size:11px;color:#9ca3af;">{{ s.periodStart|date('d/m/Y') }} → {{ s.periodEnd|date('d/m/Y') }}</div>
+                    </td>
+                    <td style="text-align:right">{{ fd.revenue_ht|number_format(2, ',', ' ') }} €</td>
+                    <td style="text-align:right;color:#ef4444;">{{ fd.expenses_ttc|number_format(2, ',', ' ') }} €</td>
+                    <td style="text-align:right;font-weight:600;color:{% if fd.net_result < 0 %}#ef4444{% else %}#16a34a{% endif %};">
+                        {{ fd.net_result|number_format(2, ',', ' ') }} €
+                    </td>
+                    <td>
+                        {% if s.status == 'validated' %}<span class="badge badge-green">Validé</span>
+                        {% elseif s.status == 'annotated' %}<span class="badge badge-blue">Annoté</span>
+                        {% elseif s.status == 'pending_review' %}<span class="badge badge-yellow">En révision</span>
+                        {% else %}<span class="badge badge-gray">Brouillon</span>{% endif %}
+                    </td>
+                    <td style="font-size:12px;color:#6b7280;">
+                        {% if s.accountant %}{{ s.accountant.fullName }}{% else %}—{% endif %}
+                    </td>
+                    <td style="text-align:right">
+                        <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

@@ -152,6 +152,24 @@ class InvoiceRepository extends ServiceEntityRepository
             ->getArrayResult();
     }
 
+    public function getRevenueForPeriod(User $user, \DateTimeImmutable $start, \DateTimeImmutable $end): float
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('SUM(i.totalHt) as total')
+            ->where('i.user = :user')
+            ->andWhere('i.status = :status')
+            ->andWhere('i.issuedAt >= :start')
+            ->andWhere('i.issuedAt <= :end')
+            ->setParameter('user', $user)
+            ->setParameter('status', Invoice::STATUS_PAID)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
     /** @return Invoice[] */
     public function findRecentByUser(User $user, int $limit = 5): array
     {
