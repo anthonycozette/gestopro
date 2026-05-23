@@ -530,3 +530,11 @@ td.overdue-date { color: #dc2626; font-weight: 600; }
 .status-chip.paid    { background: #dcfce7; color: #15803d; }
 .status-chip.overdue { background: #fee2e2; color: #dc2626; }
 .status-chip.cancelled { background: #f3f4f6; color: #9ca3af; }
+.status-chip.accepted  { background: #dcfce7; color: #15803d; }
+.status-chip.declined  { background: #fee2e2; color: #b91c1c; }
+.status-chip.expired   { background: #fef3c7; color: #b45309; }
+
+/* ── Quote dot colors ───────────────────────────────── */
+.dot-accepted { background: #16a34a; }
+.dot-declined { background: #dc2626; }
+.dot-expired  { background: #d97706; }

@@ -1,61 +1,193 @@
 {% extends 'base.html.twig' %}
 {% block title %}Devis — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/invoices.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
-  <h1>Devis</h1>
-  <div class="topbar-actions">
-    <a href="{{ path('app_quote_new') }}" class="btn btn-primary">+ Nouveau devis</a>
-  </div>
+    <h1>Devis</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_quote_new') }}" class="btn btn-primary">+ Nouveau devis</a>
+    </div>
 </div>
 {% endblock %}
 
 {% block body %}
-<div class="card">
-  {% if quotes is empty %}
-    <div class="empty-state">
-      <div class="empty-state-icon">📋</div>
-      <p>Aucun devis pour l'instant.</p>
-      <a href="{{ path('app_quote_new') }}" class="btn btn-primary">Créer mon premier devis</a>
+
+{% if quotes is not empty %}
+
+{# Stats #}
+{% set totalMontant = quotes|reduce((carry, q) => carry + q.totalTtc, 0) %}
+{% set countAccepted = quotes|filter(q => q.status == 'accepted')|length %}
+{% set countSent     = quotes|filter(q => q.status == 'sent')|length %}
+{% set countDeclined = quotes|filter(q => q.status == 'declined')|length %}
+
+<div class="inv-stat-grid">
+    <div class="inv-stat-card">
+        <div class="inv-stat-label">Total devis</div>
+        <div class="inv-stat-value" style="font-size:20px;">{{ totalMontant|number_format(0, ',', ' ') }} €</div>
+        <div class="inv-stat-sub">{{ quotes|length }} devis</div>
     </div>
-  {% else %}
-    <table>
-      <thead>
-        <tr>
-          <th>Numéro</th>
-          <th>Client</th>
-          <th>Date</th>
-          <th>Validité</th>
-          <th style="text-align:right">Montant TTC</th>
-          <th>Statut</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for quote in quotes %}
-        <tr>
-          <td><a href="{{ path('app_quote_show', {id: quote.id}) }}">{{ quote.number }}</a></td>
-          <td style="color:#6b7280">{{ quote.client.name }}</td>
-          <td style="color:#6b7280; font-size:13px">{{ quote.issuedAt|date('d/m/Y') }}</td>
-          <td style="color:#6b7280; font-size:13px">{{ quote.dueAt ? quote.dueAt|date('d/m/Y') : '—' }}</td>
-          <td style="text-align:right"><span class="mono">{{ quote.totalTtc|number_format(2, ',', ' ') }} €</span></td>
-          <td>{{ _self.statusBadge(quote.status) }}</td>
-          <td style="text-align:right">
-            <a href="{{ path('app_quote_show', {id: quote.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+    <div class="inv-stat-card">
+        <div class="inv-stat-label">Acceptés</div>
+        <div class="inv-stat-value" style="font-size:20px;color:#16a34a;">{{ countAccepted }}</div>
+        <div class="inv-stat-sub">
+            {{ quotes|filter(q => q.status == 'accepted')|reduce((carry, q) => carry + q.totalTtc, 0)|number_format(0, ',', ' ') }} € signés
+        </div>
+    </div>
+    <div class="inv-stat-card">
+        <div class="inv-stat-label">En attente</div>
+        <div class="inv-stat-value" style="font-size:20px;color:#2563eb;">{{ countSent }}</div>
+        <div class="inv-stat-sub">{{ countSent > 0 ? 'réponse attendue' : 'aucun en cours' }}</div>
+    </div>
+    <div class="inv-stat-card{% if countDeclined > 0 %} alert-glow{% endif %}">
+        <div class="inv-stat-label">Refusés</div>
+        <div class="inv-stat-value" style="font-size:20px;color:{% if countDeclined > 0 %}#dc2626{% else %}#9ca3af{% endif %};">{{ countDeclined }}</div>
+        <div class="inv-stat-sub">{% if countDeclined == 0 %}aucun refus ✓{% else %}à analyser{% endif %}</div>
+    </div>
 </div>
 
-{% macro statusBadge(status) %}
-  {% if status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
-  {% elseif status == 'sent' %}<span class="st-badge st-sent">Envoyé</span>
-  {% elseif status == 'accepted' %}<span class="st-badge st-accepted">Accepté</span>
-  {% elseif status == 'declined' %}<span class="st-badge st-declined">Refusé</span>
-  {% elseif status == 'expired' %}<span class="st-badge st-expired">Expiré</span>
-  {% else %}<span class="st-badge st-draft">{{ status }}</span>{% endif %}
-{% endmacro %}
+{% endif %}
+
+<div class="card">
+    {% if quotes is empty %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <p>Aucun devis pour l'instant.</p>
+            <a href="{{ path('app_quote_new') }}" class="btn btn-primary">Créer mon premier devis</a>
+        </div>
+    {% else %}
+
+        <div class="toolbar">
+            <div class="inv-tabs">
+                <button class="inv-tab active" data-filter="all">
+                    <span class="dot dot-all"></span>Tous
+                    <span class="inv-tab-count">{{ quotes|length }}</span>
+                </button>
+                <button class="inv-tab" data-filter="sent">
+                    <span class="dot dot-sent"></span>Envoyés
+                    <span class="inv-tab-count">{{ quotes|filter(q => q.status == 'sent')|length }}</span>
+                </button>
+                <button class="inv-tab" data-filter="accepted">
+                    <span class="dot dot-accepted"></span>Acceptés
+                    <span class="inv-tab-count">{{ quotes|filter(q => q.status == 'accepted')|length }}</span>
+                </button>
+                <button class="inv-tab" data-filter="draft">
+                    <span class="dot dot-draft"></span>Brouillons
+                    <span class="inv-tab-count">{{ quotes|filter(q => q.status == 'draft')|length }}</span>
+                </button>
+                {% if quotes|filter(q => q.status == 'declined')|length > 0 %}
+                <button class="inv-tab" data-filter="declined">
+                    <span class="dot dot-declined"></span>Refusés
+                    <span class="inv-tab-count">{{ quotes|filter(q => q.status == 'declined')|length }}</span>
+                </button>
+                {% endif %}
+                {% if quotes|filter(q => q.status == 'expired')|length > 0 %}
+                <button class="inv-tab" data-filter="expired">
+                    <span class="dot dot-expired"></span>Expirés
+                    <span class="inv-tab-count">{{ quotes|filter(q => q.status == 'expired')|length }}</span>
+                </button>
+                {% endif %}
+            </div>
+            <div style="flex:1;"></div>
+            <a href="{{ path('app_quote_new') }}" class="btn btn-primary btn-sm">+ Nouveau devis</a>
+        </div>
+
+        {% set avatarColors = ['#2563eb','#7c3aed','#16a34a','#ea580c','#0891b2','#db2777','#ca8a04'] %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Numéro</th>
+                    <th>Client</th>
+                    <th>Émis le</th>
+                    <th>Validité</th>
+                    <th style="text-align:right">Montant TTC</th>
+                    <th>Statut</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for quote in quotes %}
+                {% set isDeclined = quote.status == 'declined' %}
+                {% set isExpired  = quote.status == 'expired' %}
+                <tr data-status="{{ quote.status }}"
+                    {% if isDeclined %}style="background:#fff9f9;"
+                    {% elseif isExpired %}style="opacity:.7;"{% endif %}>
+                    <td>
+                        <a href="{{ path('app_quote_show', {id: quote.id}) }}"
+                           style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#1c1a17;">
+                            {{ quote.number }}
+                        </a>
+                    </td>
+                    <td>
+                        <div class="inv-client-cell">
+                            <span class="avatar avatar-sm"
+                                  style="background:{{ avatarColors[loop.index0 % 7] }};">
+                                {{ quote.client.name|first|upper }}
+                            </span>
+                            <div>
+                                <div class="inv-client-name">{{ quote.client.name }}</div>
+                                {% if quote.client.email %}
+                                <div class="inv-client-sub">{{ quote.client.email }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="color:#6b7280;font-size:13px;" class="mono">{{ quote.issuedAt|date('d/m/Y') }}</td>
+                    <td class="{% if isExpired %}overdue-date{% else %}mono{% endif %}" style="font-size:13px;">
+                        {{ quote.dueAt ? quote.dueAt|date('d/m/Y') : '—' }}
+                    </td>
+                    <td style="text-align:right;">
+                        <span class="mono" style="font-weight:700;color:#1c1a17;">{{ quote.totalTtc|number_format(2, ',', ' ') }} €</span>
+                    </td>
+                    <td>
+                        {% if quote.status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
+                        {% elseif quote.status == 'sent' %}<span class="st-badge st-sent">Envoyé</span>
+                        {% elseif quote.status == 'accepted' %}<span class="st-badge st-accepted">Accepté</span>
+                        {% elseif quote.status == 'declined' %}<span class="st-badge st-declined">Refusé</span>
+                        {% elseif quote.status == 'expired' %}<span class="st-badge st-expired">Expiré</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right;">
+                        <a href="{{ path('app_quote_show', {id: quote.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="padding:14px 12px 2px;border-top:1px solid #f0f2f5;display:flex;gap:32px;font-size:13px;">
+            <div>
+                Total émis :
+                <strong class="mono" style="color:#1c1a17;font-size:15px;margin-left:6px;">
+                    {{ totalMontant|number_format(2, ',', ' ') }} €
+                </strong>
+            </div>
+            <div>
+                Acceptés :
+                <strong class="mono" style="color:#16a34a;font-size:15px;margin-left:6px;">
+                    {{ quotes|filter(q => q.status == 'accepted')|reduce((carry, q) => carry + q.totalTtc, 0)|number_format(2, ',', ' ') }} €
+                </strong>
+            </div>
+        </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.querySelectorAll('.inv-tab[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.inv-tab[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('tbody tr[data-status]').forEach(row => {
+            row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+        });
+    });
+});
+</script>
 {% endblock %}
