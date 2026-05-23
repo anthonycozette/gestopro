@@ -31,8 +31,9 @@
                     <div class="form-group">
                         <label>Année</label>
                         <select id="period-year" class="form-control" onchange="updatePeriod()">
-                            {% for y in range(date('Y') - 2, date('Y')) %}
-                                <option value="{{ y }}" {% if y == date('Y') %}selected{% endif %}>{{ y }}</option>
+                            {% set currentYear = "now"|date('Y') %}
+                            {% for y in range(currentYear - 2, currentYear) %}
+                                <option value="{{ y }}" {% if y == currentYear %}selected{% endif %}>{{ y }}</option>
                             {% endfor %}
                         </select>
                     </div>
