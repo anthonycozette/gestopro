@@ -63,17 +63,17 @@ Accountant ────────────────┘
 | Envoi facture par email | Free | ✅ OK | 2 |
 | Suivi statut paiement | Free | ✅ OK | 2 |
 | Devis (DRAFT → SENT → CONVERTI) | Free | ✅ OK | 2 |
-| Export comptable basique | Free | ❌ À faire | 2 |
-| Relances automatiques tous les 7 jours | Pro | ❌ À faire | 2 |
+| Export comptable basique | Free | ✅ OK | 2 |
+| Relances automatiques tous les 7 jours | Pro | ✅ OK | 2 |
 | OCR reçus (photo → extraction IA) | Pro | ✅ OK | 7 |
 | Score de confiance OCR (vert/orange/rouge) | Pro | ✅ OK | 7 |
 | Assistant IA (chat, multi-tour) | Pro | ⚠️ Partiel | 7 |
 | Contexte financier injecté dans l'IA | Pro | ❌ À vérifier | 7 |
-| Calcul cotisations URSSAF automatique | Free | ❌ Manuel actuellement | 2 |
-| Rappels avant échéances URSSAF/TVA | Free | ❌ À faire | 2 |
-| Export justificatif déclaration URSSAF | Free | ❌ À faire | 2 |
-| Multi-devises (factures internationales) | Pro | ❌ À faire | 2 |
-| Export FEC complet | Pro | ❌ À faire | 2 |
+| Calcul cotisations URSSAF automatique | Free | ✅ OK | 2 |
+| Rappels avant échéances URSSAF/TVA | Free | ✅ OK | 2 |
+| Export justificatif déclaration URSSAF | Free | ✅ OK | 2 |
+| Multi-devises (factures internationales) | Pro | ✅ OK | 2 |
+| Export FEC complet | Pro | ✅ OK | 2 |
 | Portail expert-comptable | Expert | ✅ OK | 4 |
 | Messagerie client ↔ expert | Expert | ✅ OK | 4 |
 | Bilans IA mensuels (génération Claude) | Expert | ❌ À faire | 7 |
@@ -110,15 +110,15 @@ Accountant ────────────────┘
 
 ---
 
-## Phase 2 — Gestion comptable cœur 🔄 (partiellement fait)
+## Phase 2 — Gestion comptable cœur ✅
 
-> Fonctionnalités métier essentielles. Plusieurs items encore ouverts (voir tableau landing).
+> Fonctionnalités métier essentielles. Toutes les fonctionnalités promises sur la landing sont implémentées.
 
 ### Clients
 
 - [x] CRUD complet (web)
 - [x] Historique des factures par client
-- [ ] Import CSV clients
+- [x] Import CSV clients (page dédiée + modèle CSV téléchargeable)
 
 ### Factures
 
@@ -127,17 +127,17 @@ Accountant ────────────────┘
 - [x] Statuts : `draft` → `sent` → `paid` / `overdue` / `cancelled`
 - [x] Génération PDF (Twig → wkhtmltopdf)
 - [x] Envoi par email (Symfony Mailer, pièce jointe PDF) — `InvoiceMailer`
-- [ ] Relances automatiques tous les 7 jours (Symfony Scheduler) ← **promis sur la landing**
-- [ ] Multi-devises (€, $, £, CHF) ← **promis sur la landing (plan Pro)**
-- [ ] Export FEC complet (format Livre de Comptes) ← **promis sur la landing (plan Pro)**
-- [ ] Export CSV/Excel des factures
+- [x] Relances automatiques tous les 7 jours — `app:send-invoice-reminders` (Command Symfony)
+- [x] Multi-devises (€ EUR, $ USD, £ GBP, CHF, $ CAD)
+- [x] Export FEC complet (format DGFiP — `GET /export/fec.csv`)
+- [x] Export CSV factures (`GET /export/invoices.csv`)
 
 ### Devis
 
 - [x] CRUD complet + numérotation (`DEV-2026-0001`)
 - [x] Workflow : `draft` → `sent` → `accepted` / `declined` → `converted` (facture)
-- [x] Envoi par email + conversion en facture avec clonage des lignes
-- [ ] Relances automatiques sur devis en attente
+- [x] Envoi par email + conversion en facture avec clonage des lignes + devise propagée
+- [ ] Relances automatiques sur devis en attente (optionnel)
 - [ ] Signature électronique (optionnel)
 
 ### Dépenses
@@ -150,19 +150,19 @@ Accountant ────────────────┘
   - [x] Score de confiance affiché (badge vert/orange/rouge)
   - [x] Formulaire pré-rempli → validation utilisateur
   - [x] Persistance `ocrData`, `ocrConfidence`, `ocrVerified` en base
-  - [ ] Fichier attaché comme justificatif (VichUploader)
-- [ ] Export CSV dépenses
-- [ ] Export comptable basique (CSV normalisé) ← **promis sur la landing (plan Free)**
+  - [ ] Fichier attaché comme justificatif (VichUploader) — optionnel
+- [x] Export CSV dépenses (`GET /export/expenses.csv`)
+- [x] Export comptable basique inclus dans le FEC
 
 ### URSSAF auto-entrepreneur
 
 - [x] CRUD déclarations (période, CA, cotisation, périodicité)
 - [x] Suggestion CA depuis les factures payées (`ca-suggestion` endpoint)
-- [x] Taux de cotisation stocké sur la déclaration
-- [ ] Calcul automatique des cotisations selon taux AE (BIC/BNC/lib) ← **promis sur la landing**
-- [ ] Alertes : franchise TVA (34 400 €), seuil CA (176 200 € / 77 700 €)
-- [ ] Rappels avant échéance (J-7, J-3) ← **promis sur la landing**
-- [ ] Export déclaration prête à saisir sur urssaf.fr ← **promis sur la landing**
+- [x] Calcul automatique des cotisations selon taux AE (BIC/BNC/lib) — JS + entity
+- [x] Alertes : franchise TVA (seuil services) affichée dans la page URSSAF
+- [x] Rappels avant échéance (J-7, J-3) — `app:send-urssaf-reminders` (Command Symfony)
+- [x] Export déclaration CSV par période (`GET /urssaf/{id}/export-csv`)
+- [x] Export global toutes déclarations (`GET /export/urssaf.csv`)
 
 ---
 
@@ -303,12 +303,9 @@ Accountant ────────────────┘
 ## Prochaines priorités (ordre recommandé)
 
 1. **Vérifier `AiAssistantService`** — confirmer que le chat IA fonctionne réellement
-2. **Relances automatiques factures** — Symfony Scheduler, envoi J+7 après envoi
-3. **Calcul URSSAF automatique** — formule selon type AE + taux en vigueur
-4. **Bilan IA (génération Claude)** — analyse narrative + export PDF
-5. **Export FEC** — obligatoire pour les plans Pro/Expert
-6. **Multi-devises** — devise sur Invoice/Quote, conversion à l'affichage
-7. **Liasse fiscale assistée** — formulaire 2042-C PRO pré-rempli
+2. **Bilan IA (génération Claude)** — analyse narrative + export PDF
+3. **Liasse fiscale assistée** — formulaire 2042-C PRO pré-rempli
+4. **Configurer Planificateur Windows** — `app:send-invoice-reminders` + `app:send-urssaf-reminders` en cron journalier
 
 ---
 
@@ -316,7 +313,7 @@ Accountant ────────────────┘
 
 ```text
 Phase 1 (fondations) ✅
-    → Phase 2 (comptabilité cœur) 🔄 partiellement
+    → Phase 2 (comptabilité cœur) ✅
         → Phase 3 (dashboard & stats) ✅
             → Phase 4 (portail expert-comptable) ✅
                 → Phase 5 (SaaS / Stripe) ✅
@@ -362,7 +359,7 @@ MAILER_DSN=smtp://localhost:1025
 | Phase | Statut | Description |
 | --- | --- | --- |
 | 1 | ✅ Fait | Fondations |
-| 2 | 🔄 Partiel | Comptabilité cœur (FEC, relances, URSSAF calc manquants) |
+| 2 | ✅ Fait | Comptabilité cœur (FEC, CSV, relances, URSSAF, multi-devises, import CSV) |
 | 3 | ✅ Fait | Dashboard & stats |
 | 4 | ✅ Fait | Portail expert-comptable |
 | 5 | ✅ Fait | SaaS & abonnements Stripe |
