@@ -1,0 +1,182 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mon profil — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Mon profil</h1>
+</div>
+{% endblock %}
+
+{% block body %}
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
+
+    {# ── Informations personnelles ─────────────────────────────── #}
+    <div>
+        <div class="card">
+            <div class="card-title">Informations personnelles</div>
+
+            {% if error %}
+                <div class="alert alert-error" style="margin-bottom:16px;">{{ error }}</div>
+            {% endif %}
+            {% for msg in app.flashes('success') %}
+                <div class="alert alert-success" style="margin-bottom:16px;">{{ msg }}</div>
+            {% endfor %}
+
+            <form method="post" action="{{ path('app_profile') }}">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Prénom <span style="color:#ef4444">*</span></label>
+                        <input type="text" name="firstName" class="form-control"
+                               value="{{ app.user.firstName }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nom <span style="color:#ef4444">*</span></label>
+                        <input type="text" name="lastName" class="form-control"
+                               value="{{ app.user.lastName }}" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Adresse email <span style="color:#ef4444">*</span></label>
+                    <input type="email" name="email" class="form-control"
+                           value="{{ app.user.email }}" required>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Téléphone</label>
+                        <input type="tel" name="phone" class="form-control"
+                               value="{{ app.user.phone }}" placeholder="06 12 34 56 78">
+                    </div>
+                    <div class="form-group">
+                        <label>N° SIRET</label>
+                        <input type="text" name="siret" class="form-control"
+                               value="{{ app.user.siret }}" placeholder="14 chiffres" maxlength="14">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Libellé d'activité</label>
+                    <input type="text" name="activityLabel" class="form-control"
+                           value="{{ app.user.activityLabel }}"
+                           placeholder="Ex : Développeur freelance, Consultant en marketing…">
+                    <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Apparaît sur vos factures PDF.</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Adresse</label>
+                    <input type="text" name="address" class="form-control"
+                           value="{{ app.user.address }}" placeholder="1 rue de la Paix">
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Code postal</label>
+                        <input type="text" name="postalCode" class="form-control"
+                               value="{{ app.user.postalCode }}" placeholder="75001">
+                    </div>
+                    <div class="form-group">
+                        <label>Ville</label>
+                        <input type="text" name="city" class="form-control"
+                               value="{{ app.user.city }}" placeholder="Paris">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;">
+                    Enregistrer les modifications
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {# ── Colonne droite ────────────────────────────────────────── #}
+    <div>
+
+        {# Récapitulatif compte #}
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-title">Mon compte</div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="color:#6b7280;">Plan actuel</span>
+                    {% if app.user.plan == 'pro' %}
+                        <span class="chip chip-blue">PRO · 19 €/mois</span>
+                    {% elseif app.user.plan == 'expert' %}
+                        <span class="chip chip-green">EXPERT · 49 €/mois</span>
+                    {% else %}
+                        <span class="chip chip-gray">Gratuit</span>
+                    {% endif %}
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="color:#6b7280;">Membre depuis</span>
+                    <span>{{ app.user.createdAt|date('d/m/Y') }}</span>
+                </div>
+            </div>
+
+            <div style="margin-top:16px;">
+                <a href="{{ path('app_subscription_manage') }}" class="btn btn-secondary" style="width:100%;text-align:center;">
+                    Gérer mon abonnement
+                </a>
+            </div>
+        </div>
+
+        {# Changer le mot de passe #}
+        <div class="card">
+            <div class="card-title">Changer le mot de passe</div>
+
+            {% for msg in app.flashes('password_error') %}
+                <div class="alert alert-error" style="margin-bottom:16px;">{{ msg }}</div>
+            {% endfor %}
+            {% for msg in app.flashes('password_success') %}
+                <div class="alert alert-success" style="margin-bottom:16px;">{{ msg }}</div>
+            {% endfor %}
+
+            <form method="post" action="{{ path('app_profile_password') }}">
+                <div class="form-group">
+                    <label>Mot de passe actuel</label>
+                    <input type="password" name="current_password" class="form-control"
+                           placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                    <label>Nouveau mot de passe</label>
+                    <input type="password" name="new_password" id="new-pwd" class="form-control"
+                           placeholder="8 caractères minimum" required autocomplete="new-password"
+                           oninput="checkStrength(this.value)">
+                    <div id="pwd-bar" style="height:3px;border-radius:2px;margin-top:6px;transition:width .3s,background .3s;width:0;background:#ef4444;"></div>
+                    <div id="pwd-label" style="font-size:11px;color:#9ca3af;margin-top:4px;"></div>
+                </div>
+                <div class="form-group">
+                    <label>Confirmer le nouveau mot de passe</label>
+                    <input type="password" name="confirm_password" class="form-control"
+                           placeholder="••••••••" required autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn btn-secondary" style="width:100%;">
+                    Modifier le mot de passe
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function checkStrength(val) {
+    const bar   = document.getElementById('pwd-bar');
+    const label = document.getElementById('pwd-label');
+    let score   = 0;
+    if (val.length >= 8)  score++;
+    if (val.length >= 12) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    const colors = ['#ef4444','#f97316','#eab308','#22c55e','#16a34a'];
+    const labels = ['Très faible','Faible','Moyen','Fort','Très fort'];
+    bar.style.width   = (score * 20) + '%';
+    bar.style.background = colors[score - 1] || '#ef4444';
+    label.textContent = val.length ? labels[score - 1] || '' : '';
+}
+</script>
+{% endblock %}

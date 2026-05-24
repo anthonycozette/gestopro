@@ -142,6 +142,8 @@
       <div style="min-width:0; flex:1;">
         <div class="user-name">{{ app.user.firstName }} {{ app.user.lastName }}</div>
         <div class="user-links">
+          <a href="{{ path('app_profile') }}">Profil</a>
+          <span style="color:#c7d6e3"> · </span>
           <a href="{{ path('app_subscription_manage') }}">Abonnement</a>
           <span style="color:#c7d6e3"> · </span>
           <a href="{{ path('app_logout') }}">Déco</a>
