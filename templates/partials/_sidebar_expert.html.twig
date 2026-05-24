@@ -1,0 +1,24 @@
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Gesto<span>Pro</span>
+    <small>Portail Expert-Comptable</small>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="{{ path('expert_dashboard') }}"
+       {% if app.request.attributes.get('_route') == 'expert_dashboard' %}class="active"{% endif %}>
+      Tableau de bord
+    </a>
+    <a href="{{ path('expert_clients') }}"
+       {% if app.request.attributes.get('_route') == 'expert_clients' %}class="active"{% endif %}>
+      Clients
+    </a>
+    <a href="{{ path('expert_invite') }}"
+       {% if app.request.attributes.get('_route') == 'expert_invite' %}class="active"{% endif %}>
+      Inviter un client
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    {% if app.user %}{{ app.user.firstName }} {{ app.user.lastName }}<br>{% endif %}
+    <a href="{{ path('expert_logout') }}">Déconnexion</a>
+  </div>
+</aside>
