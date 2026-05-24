@@ -2,6 +2,7 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\Accountant;
 use App\Entity\AiConversation;
 use App\Entity\AiMessage;
 use App\Entity\Client;
@@ -44,6 +45,9 @@ class AppFixtures extends Fixture
 
         // Conversation IA
         $this->loadAiConversation($manager, $user);
+
+        // Experts-comptables
+        $this->loadAccountants($manager);
 
         $manager->flush();
     }
@@ -198,6 +202,25 @@ class AppFixtures extends Fixture
             }
 
             $manager->persist($decl);
+        }
+    }
+
+    private function loadAccountants(ObjectManager $manager): void
+    {
+        $accountantsData = [
+            ['sophie.lambert@cabinet-lambert.fr', 'Sophie',  'Lambert', 'Cabinet Lambert & Associés', 'OEC-75-12345'],
+            ['pierre.nguyen@fiduciaire-nova.fr',  'Pierre',  'Nguyen',  'Fiduciaire Nova',            'OEC-69-67890'],
+        ];
+
+        foreach ($accountantsData as [$email, $first, $last, $firm, $regNumber]) {
+            $accountant = new Accountant();
+            $accountant->setEmail($email)
+                       ->setFirstName($first)
+                       ->setLastName($last)
+                       ->setFirm($firm)
+                       ->setRegistrationNumber($regNumber)
+                       ->setPassword($this->hasher->hashPassword($accountant, 'password'));
+            $manager->persist($accountant);
         }
     }
 
