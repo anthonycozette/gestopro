@@ -55,14 +55,26 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Statut</label>
-                    <select name="status" class="form-control">
-                        <option value="draft"     {% if invoice.status == 'draft' %}selected{% endif %}>Brouillon</option>
-                        <option value="sent"      {% if invoice.status == 'sent' %}selected{% endif %}>Envoyée</option>
-                        <option value="paid"      {% if invoice.status == 'paid' %}selected{% endif %}>Payée</option>
-                        <option value="cancelled" {% if invoice.status == 'cancelled' %}selected{% endif %}>Annulée</option>
-                    </select>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Statut</label>
+                        <select name="status" class="form-control">
+                            <option value="draft"     {% if invoice.status == 'draft' %}selected{% endif %}>Brouillon</option>
+                            <option value="sent"      {% if invoice.status == 'sent' %}selected{% endif %}>Envoyée</option>
+                            <option value="paid"      {% if invoice.status == 'paid' %}selected{% endif %}>Payée</option>
+                            <option value="cancelled" {% if invoice.status == 'cancelled' %}selected{% endif %}>Annulée</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Devise</label>
+                        <select name="currency" class="form-control" id="currency-select" onchange="updateCurrencySymbol()">
+                            <option value="EUR" {% if invoice.currency == 'EUR' %}selected{% endif %}>€ EUR — Euro</option>
+                            <option value="USD" {% if invoice.currency == 'USD' %}selected{% endif %}>$ USD — Dollar</option>
+                            <option value="GBP" {% if invoice.currency == 'GBP' %}selected{% endif %}>£ GBP — Livre sterling</option>
+                            <option value="CHF" {% if invoice.currency == 'CHF' %}selected{% endif %}>CHF — Franc suisse</option>
+                            <option value="CAD" {% if invoice.currency == 'CAD' %}selected{% endif %}>$ CAD — Dollar canadien</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

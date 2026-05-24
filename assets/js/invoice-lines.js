@@ -38,8 +38,21 @@ function recalculate() {
     document.getElementById('total-ttc').textContent = fmt(totalHt + totalTva);
 }
 
+const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF', CAD: '$' };
+
+function getCurrencySymbol() {
+    const sel = document.getElementById('currency-select');
+    return sel ? (CURRENCY_SYMBOLS[sel.value] || '€') : '€';
+}
+
+function updateCurrencySymbol() {
+    recalculate();
+}
+
 function fmt(n) {
-    return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+    const sym = getCurrencySymbol();
+    const num = n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return sym === 'CHF' ? num + ' CHF' : num + ' ' + sym;
 }
 
 recalculate();

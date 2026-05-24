@@ -189,10 +189,17 @@ class InvoiceController extends AbstractController
             return 'Ajoutez au moins une ligne de prestation.';
         }
 
+        $allowedCurrencies = ['EUR', 'USD', 'GBP', 'CHF', 'CAD'];
+        $currency = strtoupper($request->request->get('currency', 'EUR'));
+        if (!in_array($currency, $allowedCurrencies)) {
+            $currency = 'EUR';
+        }
+
         $invoice->setClient($client)
                 ->setUser($this->getUser())
                 ->setStatus($request->request->get('status', Invoice::STATUS_DRAFT))
                 ->setIssuedAt(new \DateTimeImmutable($request->request->get('issued_at') ?: 'now'))
+                ->setCurrency($currency)
                 ->setNotes($request->request->get('notes') ?: null);
 
         $dueAt = $request->request->get('due_at');
