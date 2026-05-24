@@ -1,24 +1,71 @@
 <aside class="sidebar">
-  <div class="sidebar-brand">
-    Gesto<span>Pro</span>
-    <small>Portail Expert-Comptable</small>
+
+  <div class="brand-card">
+    <div class="brand-icon">G</div>
+    <div style="min-width:0; flex:1;">
+      <div class="brand-text-name">GestoPro</div>
+      <div class="brand-text-sub">Portail Expert-Comptable</div>
+    </div>
   </div>
+
   <nav class="sidebar-nav">
+    <div class="nav-section">Navigation</div>
+
     <a href="{{ path('expert_dashboard') }}"
        {% if app.request.attributes.get('_route') == 'expert_dashboard' %}class="active"{% endif %}>
+      <span class="nav-icon">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="1" y="1" width="6.5" height="6.5" rx="1.5"/>
+          <rect x="8.5" y="1" width="6.5" height="6.5" rx="1.5" opacity=".4"/>
+          <rect x="1" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".4"/>
+          <rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".4"/>
+        </svg>
+      </span>
       Tableau de bord
     </a>
+
     <a href="{{ path('expert_clients') }}"
-       {% if app.request.attributes.get('_route') == 'expert_clients' %}class="active"{% endif %}>
+       {% if app.request.attributes.get('_route') starts with 'expert_client' %}class="active"{% endif %}>
+      <span class="nav-icon">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7Zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+          <path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216Z" opacity=".5"/>
+          <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" opacity=".5"/>
+        </svg>
+      </span>
       Clients liés
     </a>
+
+    <div class="nav-section">Compte</div>
+
     <a href="{{ path('expert_profile') }}"
        {% if app.request.attributes.get('_route') == 'expert_profile' %}class="active"{% endif %}>
+      <span class="nav-icon">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4Z" opacity=".5"/>
+          <path d="M13.5 7a.5.5 0 0 1 .5.5V9h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V10h-1.5a.5.5 0 0 1 0-1H13V7.5a.5.5 0 0 1 .5-.5Z"/>
+        </svg>
+      </span>
       Mon profil public
     </a>
+
   </nav>
+
   <div class="sidebar-footer">
-    {% if app.user %}{{ app.user.firstName }} {{ app.user.lastName }}<br>{% endif %}
-    <a href="{{ path('expert_logout') }}">Déconnexion</a>
+    <div class="sidebar-user">
+      {% if app.user %}
+        <div class="user-avatar">
+          {{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}
+        </div>
+        <div style="min-width:0; flex:1;">
+          <div class="user-name">{{ app.user.firstName }} {{ app.user.lastName }}</div>
+          <div class="user-links">
+            <a href="{{ path('expert_logout') }}">Déconnexion</a>
+          </div>
+        </div>
+        <span class="expert-chip">EXPERT</span>
+      {% endif %}
+    </div>
   </div>
+
 </aside>
