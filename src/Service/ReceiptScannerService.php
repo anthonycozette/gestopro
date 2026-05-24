@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-use Anthropic\Anthropic;
+use Anthropic\Client;
 
 /**
  * Envoie une image de reçu à Claude Vision et extrait les données comptables.
@@ -10,11 +10,11 @@ use Anthropic\Anthropic;
  */
 class ReceiptScannerService
 {
-    private Anthropic $client;
+    private Client $client;
 
     public function __construct(string $apiKey)
     {
-        $this->client = Anthropic::factory()->withApiKey($apiKey)->make();
+        $this->client = new Client(apiKey: $apiKey);
     }
 
     /**
@@ -60,10 +60,9 @@ Règles :
 - Convertis toujours les montants en float (ex: 12,50 → 12.5).
 PROMPT;
 
-        $response = $this->client->messages()->create([
-            'model'      => 'claude-opus-4-5',
-            'max_tokens' => 512,
-            'messages'   => [[
+        $response = $this->client->messages->create(
+            maxTokens: 512,
+            messages: [[
                 'role'    => 'user',
                 'content' => [
                     [
@@ -80,13 +79,13 @@ PROMPT;
                     ],
                 ],
             ]],
-        ]);
+            model: 'claude-opus-4-5',
+        );
 
         $raw  = $response->content[0]->text ?? '';
         $data = json_decode($raw, true);
 
         if (!is_array($data)) {
-            // Claude n'a pas renvoyé du JSON valide — fallback minimal
             return [
                 'vendor'     => null,
                 'date'       => null,
@@ -102,15 +101,15 @@ PROMPT;
         }
 
         return [
-            'vendor'     => isset($data['vendor'])     ? (string) $data['vendor']           : null,
-            'date'       => isset($data['date'])       ? (string) $data['date']             : null,
-            'amount_ttc' => isset($data['amount_ttc']) ? (float)  $data['amount_ttc']       : null,
-            'amount_ht'  => isset($data['amount_ht'])  ? (float)  $data['amount_ht']        : null,
-            'tva'        => isset($data['tva'])        ? (float)  $data['tva']              : null,
-            'tva_rate'   => isset($data['tva_rate'])   ? (float)  $data['tva_rate']         : null,
-            'category'   => isset($data['category'])   ? (string) $data['category']         : null,
-            'notes'      => isset($data['notes'])      ? (string) $data['notes']            : null,
-            'confidence' => isset($data['confidence']) ? min(100, max(0, (float) $data['confidence'])) : 0.0,
+            'vendor'     => isset($data['vendor'])     ? (string) $data['vendor']                                  : null,
+            'date'       => isset($data['date'])       ? (string) $data['date']                                    : null,
+            'amount_ttc' => isset($data['amount_ttc']) ? (float)  $data['amount_ttc']                              : null,
+            'amount_ht'  => isset($data['amount_ht'])  ? (float)  $data['amount_ht']                               : null,
+            'tva'        => isset($data['tva'])        ? (float)  $data['tva']                                     : null,
+            'tva_rate'   => isset($data['tva_rate'])   ? (float)  $data['tva_rate']                                : null,
+            'category'   => isset($data['category'])   ? (string) $data['category']                                : null,
+            'notes'      => isset($data['notes'])      ? (string) $data['notes']                                   : null,
+            'confidence' => isset($data['confidence']) ? min(100, max(0, (float) $data['confidence']))             : 0.0,
             'raw'        => $raw,
         ];
     }
