@@ -90,6 +90,27 @@
       Mon expert-comptable
     </a>
 
+    {% if app.user.isExpert() %}
+    <a href="{{ path('app_balance_sheets') }}"
+       {% if app.request.attributes.get('_route') starts with 'app_balance_sheet' %}class="active"{% endif %}>
+      <span class="nav-icon">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M3 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H3Zm2 4h6v1H5V5Zm0 3h6v1H5V8Zm0 3h4v1H5v-1Z"/>
+        </svg>
+      </span>
+      Bilans comptables
+    </a>
+    {% else %}
+    <a href="{{ path('app_subscription_manage') }}" style="opacity:.35;" title="Réservé au plan Expert">
+      <span class="nav-icon">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3v9h10V6h-1.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5H6V4.5a2 2 0 1 1 4 0V6Z"/>
+        </svg>
+      </span>
+      Bilans (Expert)
+    </a>
+    {% endif %}
+
     <div class="nav-section">Intelligence Artificielle</div>
 
     {% if app.user.isPro() %}
@@ -110,29 +131,6 @@
         </svg>
       </span>
       Assistant IA (Pro)
-    </a>
-    {% endif %}
-
-    {% if app.user.isExpert() %}
-    <div class="nav-section">Expert Comptable</div>
-    <a href="{{ path('app_balance_sheets') }}"
-       {% if app.request.attributes.get('_route') starts with 'app_balance_sheet' %}class="active"{% endif %}>
-      <span class="nav-icon">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M3 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H3Zm2 4h6v1H5V5Zm0 3h6v1H5V8Zm0 3h4v1H5v-1Z"/>
-        </svg>
-      </span>
-      Bilans comptables
-    </a>
-    {% else %}
-    <div class="nav-section">Expert Comptable</div>
-    <a href="{{ path('app_subscription_manage') }}" style="opacity:.35;" title="Réservé au plan Expert">
-      <span class="nav-icon">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3v9h10V6h-1.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5H6V4.5a2 2 0 1 1 4 0V6Z"/>
-        </svg>
-      </span>
-      Bilans (Expert)
     </a>
     {% endif %}
   </nav>
