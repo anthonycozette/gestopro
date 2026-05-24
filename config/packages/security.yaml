@@ -36,7 +36,7 @@ security:
                 check_path: api_token_refresh
 
         expert:
-            pattern: ^/expert
+            pattern: ^/expert(/|$)
             context: expert
             lazy: true
             provider: accountant_provider
