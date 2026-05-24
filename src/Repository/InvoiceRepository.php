@@ -197,4 +197,28 @@ class InvoiceRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Retourne les factures envoyées/en retard dont la dernière relance date de plus de
+     * $intervalDays jours (ou jamais relancées depuis plus de $intervalDays jours après envoi).
+     *
+     * @return Invoice[]
+     */
+    public function findNeedingReminder(int $intervalDays = 7): array
+    {
+        $threshold = new \DateTimeImmutable("-{$intervalDays} days");
+
+        return $this->createQueryBuilder('i')
+            ->join('i.user', 'u')
+            ->where('i.status IN (:statuses)')
+            ->andWhere('i.type = :type')
+            ->andWhere(
+                '(i.lastReminderAt IS NULL AND i.issuedAt <= :threshold) OR i.lastReminderAt <= :threshold'
+            )
+            ->setParameter('statuses', [Invoice::STATUS_SENT, Invoice::STATUS_OVERDUE])
+            ->setParameter('type', Invoice::TYPE_INVOICE)
+            ->setParameter('threshold', $threshold)
+            ->getQuery()
+            ->getResult();
+    }
 }

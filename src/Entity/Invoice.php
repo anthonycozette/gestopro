@@ -108,6 +108,12 @@ class Invoice
     #[Groups(['invoice:read'])]
     private ?string $pdfPath = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $lastReminderAt = null;
+
+    #[ORM\Column(options: ['default' => 0])]
+    private int $reminderCount = 0;
+
     #[ORM\Column]
     #[Groups(['invoice:read'])]
     private \DateTimeImmutable $createdAt;
@@ -176,6 +182,12 @@ class Invoice
 
     public function getPdfPath(): ?string { return $this->pdfPath; }
     public function setPdfPath(?string $path): static { $this->pdfPath = $path; return $this; }
+
+    public function getLastReminderAt(): ?\DateTimeImmutable { return $this->lastReminderAt; }
+    public function setLastReminderAt(?\DateTimeImmutable $d): static { $this->lastReminderAt = $d; return $this; }
+
+    public function getReminderCount(): int { return $this->reminderCount; }
+    public function setReminderCount(int $count): static { $this->reminderCount = $count; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 
