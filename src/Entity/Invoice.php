@@ -30,6 +30,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 )]
 #[ORM\Entity(repositoryClass: InvoiceRepository::class)]
 #[ORM\Table(name: 'invoices')]
+#[ORM\UniqueConstraint(name: 'uniq_invoice_user_number', columns: ['user_id', 'number'])]
 class Invoice
 {
     public const TYPE_INVOICE = 'invoice';
@@ -63,7 +64,7 @@ class Invoice
     #[ORM\Column(length: 20, options: ['default' => self::TYPE_INVOICE])]
     private string $type = self::TYPE_INVOICE;
 
-    #[ORM\Column(length: 30, unique: true)]
+    #[ORM\Column(length: 30)]
     #[Groups(['invoice:read'])]
     private ?string $number = null;
 
