@@ -64,7 +64,6 @@ Accountant ────────────────┘
 | Suivi statut paiement | Free | ✅ OK | 2 |
 | Devis (DRAFT → SENT → CONVERTI) | Free | ✅ OK | 2 |
 | Export comptable basique | Free | ❌ À faire | 2 |
-| Lien de paiement Stripe dans l'email | Pro | ❌ À faire | 5 |
 | Relances automatiques tous les 7 jours | Pro | ❌ À faire | 2 |
 | OCR reçus (photo → extraction IA) | Pro | ✅ OK | 7 |
 | Score de confiance OCR (vert/orange/rouge) | Pro | ✅ OK | 7 |
@@ -128,7 +127,6 @@ Accountant ────────────────┘
 - [x] Statuts : `draft` → `sent` → `paid` / `overdue` / `cancelled`
 - [x] Génération PDF (Twig → wkhtmltopdf)
 - [x] Envoi par email (Symfony Mailer, pièce jointe PDF) — `InvoiceMailer`
-- [ ] Lien de paiement Stripe intégré à l'email ← **promis sur la landing**
 - [ ] Relances automatiques tous les 7 jours (Symfony Scheduler) ← **promis sur la landing**
 - [ ] Multi-devises (€, $, £, CHF) ← **promis sur la landing (plan Pro)**
 - [ ] Export FEC complet (format Livre de Comptes) ← **promis sur la landing (plan Pro)**
@@ -214,7 +212,6 @@ Accountant ────────────────┘
 - [x] Guards plan free (max 5 clients, max 10 factures/mois)
 - [x] Page tarifs publique `/pricing` (3 colonnes, FAQ)
 - [x] Sidebar : badge plan + lien abonnement
-- [ ] Lien de paiement Stripe dans les emails facture ← **promis sur la landing**
 - [ ] Prix Stripe à configurer dans `.env.local` (STRIPE_PRICE_PRO, STRIPE_PRICE_EXPERT)
 
 ---
@@ -312,7 +309,6 @@ Accountant ────────────────┘
 5. **Export FEC** — obligatoire pour les plans Pro/Expert
 6. **Multi-devises** — devise sur Invoice/Quote, conversion à l'affichage
 7. **Liasse fiscale assistée** — formulaire 2042-C PRO pré-rempli
-8. **Lien de paiement Stripe dans l'email** — URL Stripe Checkout dans le mail facture
 
 ---
 
