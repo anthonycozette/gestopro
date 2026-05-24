@@ -9,6 +9,8 @@
 <div class="topbar">
     <h1>Factures</h1>
     <div class="topbar-actions">
+        <a href="{{ path('app_export_invoices_csv') }}" class="btn btn-secondary" title="Exporter en CSV">↓ CSV</a>
+        <a href="{{ path('app_export_fec_csv') }}" class="btn btn-secondary" title="Export FEC (Fichier des Écritures Comptables)">↓ FEC</a>
         <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">+ Nouvelle facture</a>
     </div>
 </div>

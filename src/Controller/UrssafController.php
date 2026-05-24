@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/urssaf', name: 'app_urssaf')]
@@ -93,6 +94,34 @@ class UrssafController extends AbstractController
         return $this->render('urssaf/form.html.twig', [
             'declaration' => $declaration, 'error' => null, 'title' => 'Modifier la déclaration',
         ]);
+    }
+
+    #[Route('/{id}/export-csv', name: '_export_csv')]
+    public function exportCsv(UrssafDeclaration $declaration): StreamedResponse
+    {
+        if ($declaration->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $response = new StreamedResponse(function () use ($declaration) {
+            $out = fopen('php://output', 'w');
+            fprintf($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Champ', 'Valeur'], ';');
+            fputcsv($out, ['Période', $declaration->getPeriodLabel()], ';');
+            fputcsv($out, ['Début de période', $declaration->getPeriodStart()?->format('d/m/Y')], ';');
+            fputcsv($out, ['Fin de période', $declaration->getPeriodEnd()?->format('d/m/Y')], ';');
+            fputcsv($out, ['Périodicité', $declaration->getPeriodicity() === 'monthly' ? 'Mensuelle' : 'Trimestrielle'], ';');
+            fputcsv($out, ['CA déclaré (€)', number_format((float) $declaration->getRevenue(), 2, ',', ' ')], ';');
+            fputcsv($out, ['Taux de cotisation (%)', number_format((float) $declaration->getCotisationRate() * 100, 1, ',', '')], ';');
+            fputcsv($out, ['Cotisation à payer (€)', number_format((float) $declaration->getCotisationAmount(), 2, ',', ' ')], ';');
+            fputcsv($out, ['Statut', $declaration->isDeclared() ? 'Déclarée' : 'À déclarer'], ';');
+            fputcsv($out, ['Date de déclaration', $declaration->getDeclaredAt()?->format('d/m/Y') ?? ''], ';');
+            fclose($out);
+        });
+
+        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="urssaf-' . $declaration->getPeriodLabel() . '.csv"');
+        return $response;
     }
 
     #[Route('/{id}', name: '_show')]

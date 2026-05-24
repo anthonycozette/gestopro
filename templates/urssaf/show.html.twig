@@ -85,6 +85,9 @@
                 <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="btn btn-secondary" style="width:100%;text-align:center;">
                     Modifier la déclaration
                 </a>
+                <a href="{{ path('app_urssaf_export_csv', {id: declaration.id}) }}" class="btn btn-secondary" style="width:100%;text-align:center;">
+                    ↓ Exporter cette déclaration (CSV)
+                </a>
                 <form method="post" action="{{ path('app_urssaf_delete', {id: declaration.id}) }}"
                       data-confirm="Supprimer cette déclaration ?" data-confirm-variant="danger">
                     <input type="hidden" name="_token" value="{{ csrf_token('delete_urssaf_' ~ declaration.id) }}">
