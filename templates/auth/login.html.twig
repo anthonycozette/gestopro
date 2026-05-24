@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — GestoPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #f5f6f8; font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+        .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+        .auth-card { background: #fff; border: 1px solid #e8eaed; border-radius: 14px; padding: 40px 36px; width: 100%; max-width: 400px; box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.04); }
+
+        .auth-brand { text-align: center; margin-bottom: 28px; }
+        .auth-brand .name { font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -.03em; }
+        .auth-brand .name span { color: #2563eb; }
+        .auth-brand .sub { font-size: 12.5px; color: #9ca3af; margin-top: 4px; }
+
+        .auth-tabs { display: flex; background: #f1f5f9; border-radius: 9px; padding: 3px; gap: 3px; margin-bottom: 24px; }
+        .auth-tab { flex: 1; padding: 8px 10px; border: none; border-radius: 7px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; background: transparent; color: #64748b; transition: all .15s; white-space: nowrap; }
+        .auth-tab[data-tab="client"].active  { background: #2563eb; color: #fff; box-shadow: 0 1px 3px rgba(37,99,235,.3); }
+        .auth-tab[data-tab="expert"].active  { background: #1e3a5f; color: #fff; box-shadow: 0 1px 3px rgba(30,58,95,.3); }
+
+        label.lbl { display: block; font-size: 12.5px; font-weight: 500; color: #374151; margin-bottom: 5px; }
+        input.inp { width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 7px; font-size: 14px; font-family: inherit; color: #0f172a; background: #fff; transition: border-color .15s, box-shadow .15s; margin-bottom: 14px; }
+        .form-client input.inp:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+        .form-expert input.inp:focus { outline: none; border-color: #1e3a5f; box-shadow: 0 0 0 3px rgba(30,58,95,.1); }
+
+        .remember { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #6b7280; margin-bottom: 20px; cursor: pointer; }
+
+        .submit-btn { width: 100%; padding: 10px; border: none; border-radius: 7px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: background .12s; letter-spacing: -.01em; color: #fff; }
+        .form-client .submit-btn { background: #2563eb; }
+        .form-client .submit-btn:hover { background: #1d4ed8; }
+        .form-expert .submit-btn { background: #1e3a5f; }
+        .form-expert .submit-btn:hover { background: #2d5282; }
+
+        .err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 10px 13px; border-radius: 7px; font-size: 13px; margin-bottom: 16px; }
+        .ok  { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;  padding: 10px 13px; border-radius: 7px; font-size: 13px; margin-bottom: 16px; }
+
+        .auth-foot { text-align: center; margin-top: 20px; font-size: 13px; color: #9ca3af; }
+        .auth-foot a.link-client { color: #2563eb; font-weight: 500; }
+        .auth-foot a.link-expert { color: #1e3a5f; font-weight: 500; }
+    </style>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <div class="name">Gesto<span>Pro</span></div>
+      <div class="sub">La compta sans la migraine</div>
+    </div>
+
+    {% for flash in app.flashes('success') %}
+      <div class="ok">{{ flash }}</div>
+    {% endfor %}
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab{{ mode != 'expert' ? ' active' : '' }}" data-tab="client">Accès client</button>
+      <button type="button" class="auth-tab{{ mode == 'expert' ? ' active' : '' }}" data-tab="expert">Expert-comptable</button>
+    </div>
+
+    {# ── Formulaire client ── #}
+    <div class="form-client"{{ mode == 'expert' ? ' style="display:none"' : '' }}>
+      {% if mode != 'expert' and error %}
+        <div class="err">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+      {% endif %}
+      <form method="post" action="{{ path('app_login') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+        <label class="lbl" for="cl-email">Adresse email</label>
+        <input id="cl-email" class="inp" type="email" name="email"
+               value="{{ mode != 'expert' ? last_username : '' }}"
+               required autofocus autocomplete="email" placeholder="vous@exemple.fr">
+        <label class="lbl" for="cl-pw">Mot de passe</label>
+        <input id="cl-pw" class="inp" type="password" name="password"
+               required autocomplete="current-password" placeholder="••••••••">
+        <label class="remember">
+          <input type="checkbox" name="_remember_me"> Se souvenir de moi
+        </label>
+        <button type="submit" class="submit-btn">Se connecter</button>
+      </form>
+    </div>
+
+    {# ── Formulaire expert ── #}
+    <div class="form-expert"{{ mode != 'expert' ? ' style="display:none"' : '' }}>
+      {% if mode == 'expert' and error %}
+        <div class="err">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+      {% endif %}
+      <form method="post" action="{{ path('expert_login') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+        <label class="lbl" for="ex-email">Email professionnel</label>
+        <input id="ex-email" class="inp" type="email" name="email"
+               value="{{ mode == 'expert' ? last_username : '' }}"
+               required autocomplete="email" placeholder="expert@cabinet.fr">
+        <label class="lbl" for="ex-pw">Mot de passe</label>
+        <input id="ex-pw" class="inp" type="password" name="password"
+               required autocomplete="current-password" placeholder="••••••••">
+        <button type="submit" class="submit-btn">Se connecter</button>
+      </form>
+    </div>
+
+    <div class="auth-foot" id="foot-client"{{ mode == 'expert' ? ' style="display:none"' : '' }}>
+      Pas encore de compte ?
+      <a href="{{ path('app_register') }}" class="link-client">Créer un compte gratuit</a>
+    </div>
+    <div class="auth-foot" id="foot-expert"{{ mode != 'expert' ? ' style="display:none"' : '' }}>
+      Pas encore de compte ?
+      <a href="{{ path('expert_register') }}" class="link-expert">Créer un compte expert</a>
+    </div>
+
+  </div>
+</div>
+<script>
+  const tabs      = document.querySelectorAll('.auth-tab');
+  const fClient   = document.querySelector('.form-client');
+  const fExpert   = document.querySelector('.form-expert');
+  const ftClient  = document.getElementById('foot-client');
+  const ftExpert  = document.getElementById('foot-expert');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const expert = tab.dataset.tab === 'expert';
+      fClient.style.display  = expert ? 'none' : '';
+      fExpert.style.display  = expert ? '' : 'none';
+      ftClient.style.display = expert ? 'none' : '';
+      ftExpert.style.display = expert ? '' : 'none';
+      document.getElementById(expert ? 'ex-email' : 'cl-email').focus();
+    });
+  });
+</script>
+</body>
+</html>

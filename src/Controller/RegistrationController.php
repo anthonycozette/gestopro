@@ -51,6 +51,6 @@ class RegistrationController extends AbstractController
             }
         }
 
-        return $this->render('registration/register.html.twig', ['error' => $error]);
+        return $this->render('auth/register.html.twig', ['error' => $error, 'mode' => 'client']);
     }
 }

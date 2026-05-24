@@ -20,9 +20,10 @@ class AccountantAuthController extends AbstractController
             return $this->redirectToRoute('expert_dashboard');
         }
 
-        return $this->render('accountant_auth/login.html.twig', [
+        return $this->render('auth/login.html.twig', [
             'last_username' => $authUtils->getLastUsername(),
             'error'         => $authUtils->getLastAuthenticationError(),
+            'mode'          => 'expert',
         ]);
     }
 
@@ -70,6 +71,6 @@ class AccountantAuthController extends AbstractController
             }
         }
 
-        return $this->render('accountant_auth/register.html.twig', ['error' => $error]);
+        return $this->render('auth/register.html.twig', ['error' => $error, 'mode' => 'expert']);
     }
 }

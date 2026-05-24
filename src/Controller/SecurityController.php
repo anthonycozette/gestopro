@@ -16,9 +16,10 @@ class SecurityController extends AbstractController
             return $this->redirectToRoute('app_dashboard');
         }
 
-        return $this->render('security/login.html.twig', [
+        return $this->render('auth/login.html.twig', [
             'last_username' => $authenticationUtils->getLastUsername(),
             'error'         => $authenticationUtils->getLastAuthenticationError(),
+            'mode'          => 'client',
         ]);
     }
 
