@@ -44,6 +44,9 @@ class Accountant implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $registrationNumber = null;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $bio = null;
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $stampPath = null;
 
@@ -83,6 +86,9 @@ class Accountant implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRegistrationNumber(): ?string { return $this->registrationNumber; }
     public function setRegistrationNumber(?string $n): static { $this->registrationNumber = $n; return $this; }
+
+    public function getBio(): ?string { return $this->bio; }
+    public function setBio(?string $bio): static { $this->bio = $bio; return $this; }
 
     public function getStampPath(): ?string { return $this->stampPath; }
     public function setStampPath(?string $path): static { $this->stampPath = $path; return $this; }

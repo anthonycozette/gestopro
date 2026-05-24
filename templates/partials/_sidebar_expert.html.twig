@@ -10,11 +10,11 @@
     </a>
     <a href="{{ path('expert_clients') }}"
        {% if app.request.attributes.get('_route') == 'expert_clients' %}class="active"{% endif %}>
-      Clients
+      Clients liés
     </a>
-    <a href="{{ path('expert_invite') }}"
-       {% if app.request.attributes.get('_route') == 'expert_invite' %}class="active"{% endif %}>
-      Inviter un client
+    <a href="{{ path('expert_profile') }}"
+       {% if app.request.attributes.get('_route') == 'expert_profile' %}class="active"{% endif %}>
+      Mon profil public
     </a>
   </nav>
   <div class="sidebar-footer">

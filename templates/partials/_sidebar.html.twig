@@ -78,6 +78,18 @@
       URSSAF
     </a>
 
+    <div class="nav-section">Expert-comptable</div>
+
+    <a href="{{ path('app_experts') }}"
+       {% if app.request.attributes.get('_route') starts with 'app_expert' %}class="active"{% endif %}>
+      <span class="nav-icon">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm5.002-.274A2.5 2.5 0 0 0 13 3h-.5a.5.5 0 0 1 0-1H13a3.5 3.5 0 0 1 3.5 3.5.5.5 0 0 1-1 0 2.5 2.5 0 0 0-.498-1.5ZM13 8h-.5a.5.5 0 0 1 0-1H13a3.5 3.5 0 0 1 3.442 2.843.5.5 0 1 1-.984.174A2.5 2.5 0 0 0 13 8Z"/>
+        </svg>
+      </span>
+      Mon expert-comptable
+    </a>
+
     <div class="nav-section">Intelligence Artificielle</div>
 
     {% if app.user.isPro() %}

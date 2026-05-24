@@ -1,0 +1,71 @@
+{% extends 'base_expert.html.twig' %}
+{% block title %}Mon profil — GestoPro Expert{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Mon profil public</h1>
+    <div style="font-size:13px;color:#6b7280;">Visible par tous les clients GestoPro</div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+  <div class="card">
+    <div class="card-title">Informations professionnelles</div>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+    <form method="post">
+      <input type="hidden" name="_token" value="{{ csrf_token('expert_profile') }}">
+
+      <div class="form-group">
+        <label>Cabinet / Société</label>
+        <input type="text" name="firm" class="form-control"
+               value="{{ accountant.firm }}" placeholder="Ex : Cabinet Lambert & Associés">
+      </div>
+
+      <div class="form-group">
+        <label>N° inscription <span style="font-size:11px;color:#9ca3af;">(ORIAS / Ordre des EC)</span></label>
+        <input type="text" name="registrationNumber" class="form-control"
+               value="{{ accountant.registrationNumber }}" placeholder="Ex : OEC-75-12345">
+      </div>
+
+      <div class="form-group">
+        <label>Présentation <span style="font-size:11px;color:#9ca3af;">(visible par les clients)</span></label>
+        <textarea name="bio" class="form-control" rows="5"
+                  placeholder="Décrivez votre expertise, vos spécialités, votre approche...">{{ accountant.bio }}</textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </form>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">Aperçu de votre fiche</div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;">
+        <div style="width:44px;height:44px;border-radius:50%;background:#1e3a5f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
+          {{ accountant.firstName|first|upper }}{{ accountant.lastName|first|upper }}
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:15px;">{{ accountant.firstName }} {{ accountant.lastName }}</div>
+          <div style="font-size:13px;color:#6b7280;">{{ accountant.firm ?: '—' }}</div>
+          <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;font-family:monospace;">{{ accountant.registrationNumber ?: '—' }}</div>
+        </div>
+      </div>
+      {% if accountant.bio %}
+        <p style="font-size:13.5px;color:#374151;line-height:1.55;">{{ accountant.bio }}</p>
+      {% else %}
+        <p style="font-size:13px;color:#9ca3af;font-style:italic;">Aucune présentation renseignée.</p>
+      {% endif %}
+    </div>
+
+    <div class="card" style="background:#fffbeb;border-color:#fde68a;">
+      <div style="font-size:13px;color:#854d0e;line-height:1.55;">
+        Une présentation complète augmente vos chances d'être choisi par les clients.
+        Mentionnez vos spécialités (auto-entrepreneurs, e-commerce, libéraux…).
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

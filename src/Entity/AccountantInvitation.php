@@ -60,6 +60,7 @@ class AccountantInvitation
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getExpiresAt(): ?\DateTimeImmutable { return $this->expiresAt; }
+    public function setExpiresAt(?\DateTimeImmutable $d): static { $this->expiresAt = $d; return $this; }
 
     public function getRespondedAt(): ?\DateTimeImmutable { return $this->respondedAt; }
     public function setRespondedAt(?\DateTimeImmutable $d): static { $this->respondedAt = $d; return $this; }

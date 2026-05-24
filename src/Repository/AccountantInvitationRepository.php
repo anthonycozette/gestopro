@@ -31,6 +31,29 @@ class AccountantInvitationRepository extends ServiceEntityRepository
         return $this->findBy(['accountant' => $accountant, 'status' => AccountantInvitation::STATUS_ACCEPTED]);
     }
 
+    /** Demande active (pending ou accepted) d'un client, quel que soit l'expert. */
+    public function findActiveByUser(User $user): ?AccountantInvitation
+    {
+        return $this->createQueryBuilder('i')
+            ->where('i.user = :user')
+            ->andWhere('i.status IN (:statuses)')
+            ->setParameter('user', $user)
+            ->setParameter('statuses', [AccountantInvitation::STATUS_PENDING, AccountantInvitation::STATUS_ACCEPTED])
+            ->orderBy('i.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /** Demandes en attente reçues par un expert (initiées par des clients). */
+    public function findPendingByAccountant(Accountant $accountant): array
+    {
+        return $this->findBy(
+            ['accountant' => $accountant, 'status' => AccountantInvitation::STATUS_PENDING],
+            ['createdAt' => 'ASC']
+        );
+    }
+
     public function existsPendingForEmail(Accountant $accountant, string $email): bool
     {
         return (bool) $this->createQueryBuilder('i')

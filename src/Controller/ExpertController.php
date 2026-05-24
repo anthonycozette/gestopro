@@ -13,6 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 #[Route('/expert', name: 'expert_')]
 class ExpertController extends AbstractController
@@ -29,19 +30,74 @@ class ExpertController extends AbstractController
     #[Route('', name: 'dashboard')]
     public function dashboard(BalanceSheetRepository $sheetRepo, AccountantInvitationRepository $invRepo): Response
     {
-        $accountant = $this->accountant();
-        $sheets     = $sheetRepo->findForAccountant($accountant);
-        $clients    = $invRepo->findAcceptedByAccountant($accountant);
+        $accountant      = $this->accountant();
+        $sheets          = $sheetRepo->findForAccountant($accountant);
+        $clients         = $invRepo->findAcceptedByAccountant($accountant);
+        $pendingRequests = $invRepo->findPendingByAccountant($accountant);
 
-        $pending  = array_filter($sheets, fn($s) => $s->getStatus() === BalanceSheet::STATUS_PENDING_REVIEW);
-        $others   = array_filter($sheets, fn($s) => $s->getStatus() !== BalanceSheet::STATUS_PENDING_REVIEW);
+        $pendingSheets = array_filter($sheets, fn($s) => $s->getStatus() === BalanceSheet::STATUS_PENDING_REVIEW);
+        $others        = array_filter($sheets, fn($s) => $s->getStatus() !== BalanceSheet::STATUS_PENDING_REVIEW);
 
         return $this->render('expert/dashboard.html.twig', [
-            'accountant'    => $accountant,
-            'pending'       => array_values($pending),
-            'others'        => array_values($others),
-            'clientCount'   => count($clients),
+            'accountant'      => $accountant,
+            'pending'         => array_values($pendingSheets),
+            'others'          => array_values($others),
+            'clientCount'     => count($clients),
+            'pendingRequests' => $pendingRequests,
         ]);
+    }
+
+    #[Route('/requests/{id}/approve', name: 'request_approve', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function approveRequest(AccountantInvitation $invitation, Request $request, EntityManagerInterface $em): Response
+    {
+        $this->accountant();
+        if (!$this->isCsrfTokenValid('inv_' . $invitation->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $invitation->setStatus(AccountantInvitation::STATUS_ACCEPTED)
+                   ->setRespondedAt(new \DateTimeImmutable());
+        $em->flush();
+
+        $this->addFlash('success', $invitation->getUser()->getFirstName() . ' ' . $invitation->getUser()->getLastName() . ' est maintenant votre client.');
+        return $this->redirectToRoute('expert_dashboard');
+    }
+
+    #[Route('/requests/{id}/decline', name: 'request_decline', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function declineRequest(AccountantInvitation $invitation, Request $request, EntityManagerInterface $em): Response
+    {
+        $this->accountant();
+        if (!$this->isCsrfTokenValid('inv_' . $invitation->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $invitation->setStatus(AccountantInvitation::STATUS_DECLINED)
+                   ->setRespondedAt(new \DateTimeImmutable());
+        $em->flush();
+
+        $this->addFlash('success', 'Demande refusée.');
+        return $this->redirectToRoute('expert_dashboard');
+    }
+
+    #[Route('/profile', name: 'profile')]
+    public function profile(Request $request, EntityManagerInterface $em): Response
+    {
+        $accountant = $this->accountant();
+        $error      = null;
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('expert_profile', $request->request->get('_token'))) {
+                throw $this->createAccessDeniedException();
+            }
+            $accountant->setFirm(trim($request->request->get('firm', '')) ?: null)
+                       ->setRegistrationNumber(trim($request->request->get('registrationNumber', '')) ?: null)
+                       ->setBio(trim($request->request->get('bio', '')) ?: null);
+            $em->flush();
+            $this->addFlash('success', 'Profil mis à jour.');
+            return $this->redirectToRoute('expert_profile');
+        }
+
+        return $this->render('expert/profile.html.twig', ['accountant' => $accountant, 'error' => $error]);
     }
 
     #[Route('/clients', name: 'clients')]

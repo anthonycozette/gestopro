@@ -12,12 +12,56 @@
 {% endblock %}
 
 {% block body %}
+
+{# ── Demandes clients en attente ── #}
+{% if pendingRequests is not empty %}
+<div class="card" style="border-color:#f97316;margin-bottom:20px;">
+    <div class="card-title" style="color:#ea580c;">
+        Demandes de mise en relation
+        <span style="background:#fed7aa;color:#c2410c;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;margin-left:8px;">{{ pendingRequests|length }}</span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Client</th>
+                <th>Email</th>
+                <th>Demande reçue</th>
+                <th style="text-align:right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in pendingRequests %}
+            <tr>
+                <td>
+                    <strong>{{ inv.user.firstName }} {{ inv.user.lastName }}</strong>
+                </td>
+                <td style="color:#6b7280;">{{ inv.user.email }}</td>
+                <td style="color:#6b7280;">{{ inv.createdAt|date('d/m/Y') }}</td>
+                <td style="text-align:right;">
+                    <form method="post" action="{{ path('expert_request_approve', {id: inv.id}) }}" style="display:inline;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('inv_' ~ inv.id) }}">
+                        <button type="submit" class="btn btn-success btn-sm">Accepter</button>
+                    </form>
+                    <form method="post" action="{{ path('expert_request_decline', {id: inv.id}) }}" style="display:inline;margin-left:6px;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('inv_' ~ inv.id) }}">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Refuser cette demande ?')">Refuser</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
     <div class="card" style="margin-bottom:0;text-align:center;">
         <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Bilans à réviser</div>
         <div style="font-size:28px;font-weight:700;color:{% if pending|length > 0 %}#f97316{% else %}#16a34a{% endif %};">
             {{ pending|length }}
         </div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">bilans</div>
     </div>
     <div class="card" style="margin-bottom:0;text-align:center;">
         <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Clients liés</div>
@@ -102,7 +146,8 @@
 <div class="card">
     <div class="empty-state">
         <p>Aucun bilan à réviser pour l'instant.</p>
-        <a href="{{ path('expert_invite') }}" class="btn btn-primary">Inviter un client</a>
+        <p style="margin-bottom:12px;font-size:13px;color:#6b7280;">Les clients vous trouveront dans l'annuaire et pourront faire une demande.</p>
+        <a href="{{ path('expert_profile') }}" class="btn btn-primary">Compléter mon profil</a>
     </div>
 </div>
 {% endif %}
