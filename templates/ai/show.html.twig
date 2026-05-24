@@ -1,0 +1,259 @@
+{% extends 'base.html.twig' %}
+{% block title %}Assistant IA — GestoPro{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/ai.css') }}">
+{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Assistant comptable IA</h1>
+    <div class="topbar-actions">
+        {% if conversation.messages|length > 0 %}
+        <form method="post" action="{{ path('app_ai_delete', {id: conversation.id}) }}"
+              onsubmit="return confirm('Supprimer cette conversation ?')">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_ai_' ~ conversation.id) }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Supprimer</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="ai-layout">
+
+    {# ── Sidebar ──────────────────────────────────────────────── #}
+    <aside class="ai-sidebar">
+        <div class="ai-sidebar-header">
+            <form method="post" action="{{ path('app_ai_new') }}">
+                <button type="submit" class="ai-new-btn">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1ZM7 5h2v2h2v2H9v2H7V9H5V7h2V5Z"/>
+                    </svg>
+                    Nouvelle conversation
+                </button>
+            </form>
+        </div>
+        <nav class="ai-conv-list">
+            {% for conv in conversations %}
+            <a href="{{ path('app_ai_show', {id: conv.id}) }}"
+               class="ai-conv-item {{ conv.id == conversation.id ? 'active' : '' }}">
+                {{ conv.title ?? 'Nouvelle conversation' }}
+                <span class="ai-conv-date">
+                    {{ (conv.updatedAt ?? conv.createdAt)|date('d/m/Y') }}
+                </span>
+            </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    {# ── Chat main ────────────────────────────────────────────── #}
+    <div class="ai-main">
+
+        {% if not app.user.isPro() %}
+        {# ── Upgrade banner ──────────────────────────────────── #}
+        <div class="ai-messages">
+            <div class="ai-upgrade-banner">
+                <div style="font-size:36px;">🤖</div>
+                <div style="font-size:17px;font-weight:700;color:#111827;">Assistant IA réservé aux plans Pro & Expert</div>
+                <div style="font-size:13px;color:#6b7280;max-width:360px;">
+                    Posez des questions sur votre CA, vos dépenses, vos cotisations URSSAF. L'assistant a accès à toutes vos données comptables.
+                </div>
+                <a href="{{ path('app_pricing') }}" class="btn btn-primary">Passer au plan Pro</a>
+            </div>
+        </div>
+        <div class="ai-input-area">
+            <div class="ai-input-row" style="opacity:.5;pointer-events:none;">
+                <textarea class="ai-textarea" placeholder="Disponible avec le plan Pro…" disabled></textarea>
+                <button class="ai-send-btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1.724 1.053a.5.5 0 0 0-.714.545l1.403 4.85a.5.5 0 0 0 .397.354l4.682.703-4.682.703a.5.5 0 0 0-.397.354l-1.403 4.85a.5.5 0 0 0 .714.545l13-6.5a.5.5 0 0 0 0-.894l-13-6.5Z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        {% else %}
+
+        {# ── Messages area ───────────────────────────────────── #}
+        <div class="ai-messages" id="ai-messages">
+
+            {% if conversation.messages is empty %}
+            <div class="ai-empty" id="ai-empty">
+                <div class="ai-empty-icon">🤖</div>
+                <div class="ai-empty-title">Bonjour {{ app.user.firstName }} !</div>
+                <div class="ai-empty-sub">
+                    Je suis votre assistant comptable. Posez-moi n'importe quelle question sur votre activité.
+                </div>
+                <div class="ai-suggestions">
+                    <button class="ai-suggestion-btn" onclick="fillQuestion(this)">Quel est mon CA de cette année ?</button>
+                    <button class="ai-suggestion-btn" onclick="fillQuestion(this)">Combien dois-je en cotisations URSSAF ?</button>
+                    <button class="ai-suggestion-btn" onclick="fillQuestion(this)">Quelles sont mes dépenses ce mois-ci ?</button>
+                    <button class="ai-suggestion-btn" onclick="fillQuestion(this)">Quel est mon résultat net estimé ?</button>
+                </div>
+            </div>
+            {% else %}
+
+            {% for msg in conversation.messages %}
+            <div class="ai-msg ai-msg-{{ msg.role }}">
+                <div class="ai-msg-avatar">
+                    {% if msg.isUser() %}{{ app.user.firstName|first|upper }}{% else %}🤖{% endif %}
+                </div>
+                <div class="ai-msg-bubble {% if msg.isAssistant() %}ai-rendered-md{% endif %}"
+                     {% if msg.isAssistant() %}data-md="{{ msg.content|e('html_attr') }}"{% endif %}>
+                    {% if msg.isUser() %}
+                        {{ msg.content }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% endif %}
+        </div>
+
+        {# ── Input area ──────────────────────────────────────── #}
+        <div class="ai-input-area">
+            <form id="ai-form" data-url="{{ path('app_ai_message', {id: conversation.id}) }}">
+                <div class="ai-input-row">
+                    <textarea id="ai-input" class="ai-textarea" name="message" rows="1"
+                              placeholder="Posez votre question comptable…"></textarea>
+                    <button type="submit" id="ai-send-btn" class="ai-send-btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M1.724 1.053a.5.5 0 0 0-.714.545l1.403 4.85a.5.5 0 0 0 .397.354l4.682.703-4.682.703a.5.5 0 0 0-.397.354l-1.403 4.85a.5.5 0 0 0 .714.545l13-6.5a.5.5 0 0 0 0-.894l-13-6.5Z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ai-input-hint">Entrée pour envoyer · Maj+Entrée pour un saut de ligne</div>
+            </form>
+        </div>
+
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+const messagesEl = document.getElementById('ai-messages');
+const form       = document.getElementById('ai-form');
+const input      = document.getElementById('ai-input');
+const sendBtn    = document.getElementById('ai-send-btn');
+const userInitial = '{{ app.user.firstName|first|upper }}';
+
+/* Render markdown for pre-existing assistant messages */
+document.querySelectorAll('.ai-rendered-md').forEach(el => {
+    el.innerHTML = marked.parse(el.dataset.md || '');
+});
+
+/* Auto-resize textarea */
+if (input) {
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+    });
+
+    /* Enter sends, Shift+Enter = new line */
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+}
+
+/* Suggestion buttons */
+function fillQuestion(btn) {
+    if (!input) return;
+    input.value = btn.textContent.trim();
+    input.focus();
+    input.dispatchEvent(new Event('input'));
+}
+
+function appendMessage(role, content) {
+    const empty = document.getElementById('ai-empty');
+    if (empty) empty.remove();
+
+    const wrap = document.createElement('div');
+    wrap.className = `ai-msg ai-msg-${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'ai-msg-avatar';
+    avatar.textContent = role === 'user' ? userInitial : '🤖';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'ai-msg-bubble';
+    if (role === 'assistant') {
+        bubble.innerHTML = marked.parse(content);
+    } else {
+        bubble.textContent = content;
+    }
+
+    wrap.appendChild(avatar);
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return wrap;
+}
+
+function addTypingIndicator() {
+    const wrap = document.createElement('div');
+    wrap.className = 'ai-msg ai-msg-assistant';
+    wrap.id = 'ai-typing';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'ai-msg-avatar';
+    avatar.textContent = '🤖';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'ai-msg-bubble';
+    bubble.innerHTML = '<div class="ai-typing"><div class="ai-typing-dot"></div><div class="ai-typing-dot"></div><div class="ai-typing-dot"></div></div>';
+
+    wrap.appendChild(avatar);
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+if (form) {
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const message = input.value.trim();
+        if (!message) return;
+
+        input.value = '';
+        input.style.height = 'auto';
+        sendBtn.disabled = true;
+
+        appendMessage('user', message);
+        addTypingIndicator();
+
+        try {
+            const res = await fetch(form.dataset.url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'message=' + encodeURIComponent(message),
+            });
+
+            document.getElementById('ai-typing')?.remove();
+
+            if (!res.ok) {
+                const data = await res.json();
+                appendMessage('assistant', '⚠️ ' + (data.error ?? 'Erreur inconnue.'));
+            } else {
+                const data = await res.json();
+                appendMessage('assistant', data.content);
+            }
+        } catch {
+            document.getElementById('ai-typing')?.remove();
+            appendMessage('assistant', '⚠️ Erreur de connexion. Vérifiez votre réseau.');
+        } finally {
+            sendBtn.disabled = false;
+            input.focus();
+        }
+    });
+}
+
+/* Scroll to bottom on load */
+if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+</script>
+{% endblock %}

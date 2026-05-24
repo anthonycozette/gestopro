@@ -30,6 +30,10 @@ services:
         arguments:
             $apiKey: '%env(ANTHROPIC_API_KEY)%'
 
+    App\Service\AiAssistantService:
+        arguments:
+            $apiKey: '%env(ANTHROPIC_API_KEY)%'
+
     App\EventListener\JwtLoginSuccessListener:
         arguments:
             $ttl: 2592000

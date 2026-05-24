@@ -179,10 +179,10 @@ Accountant ────────────────┘
 
 ### Assistant comptable (chat)
 
-- [ ] Interface de conversation dans le dashboard
-- [ ] Injection de contexte : CA, dépenses, factures, cotisations
-- [ ] Historique des conversations persisté en base
-- [ ] Exemples de questions : solde courant, optimisation fiscale, rappels
+- [x] Interface de conversation dans le dashboard
+- [x] Injection de contexte : CA, dépenses, factures, cotisations
+- [x] Historique des conversations persisté en base
+- [x] Exemples de questions : solde courant, optimisation fiscale, rappels
 
 ### Bilan Comptable IA
 
