@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+{% block title %}Import clients CSV — GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <h1>Import clients (CSV)</h1>
+    <div class="topbar-actions">
+        <a href="{{ path('app_clients') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div style="max-width:640px;">
+
+    {% for error in errors %}
+        <div class="alert alert-error" style="margin-bottom:12px;">{{ error }}</div>
+    {% endfor %}
+
+    <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">Importer des clients depuis un fichier CSV</div>
+
+        <p style="font-size:14px;color:#6b7280;margin-bottom:16px;">
+            Le fichier doit être encodé en <strong>UTF-8</strong>, séparateur <strong>point-virgule (;)</strong>.<br>
+            La première ligne doit contenir les en-têtes. Seule la colonne <code>nom</code> est obligatoire.
+        </p>
+
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Fichier CSV <span style="color:#ef4444">*</span></label>
+                <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <button type="submit" class="btn btn-primary">Importer</button>
+                <a href="{{ path('app_client_export_csv_template') }}" class="btn btn-secondary" style="font-size:13px;">
+                    ↓ Télécharger le modèle CSV
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-title" style="font-size:14px;margin-bottom:12px;">Colonnes acceptées</div>
+        <table style="font-size:13px;">
+            <thead>
+                <tr>
+                    <th>Colonne</th>
+                    <th>Obligatoire</th>
+                    <th>Exemple</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>nom</code></td><td>✅ Oui</td><td>Dupont SARL</td></tr>
+                <tr><td><code>email</code></td><td>Non</td><td>contact@dupont.fr</td></tr>
+                <tr><td><code>siret</code></td><td>Non</td><td>12345678901234</td></tr>
+                <tr><td><code>telephone</code></td><td>Non</td><td>0612345678</td></tr>
+                <tr><td><code>adresse</code></td><td>Non</td><td>1 rue de la Paix</td></tr>
+                <tr><td><code>code_postal</code></td><td>Non</td><td>75001</td></tr>
+                <tr><td><code>ville</code></td><td>Non</td><td>Paris</td></tr>
+                <tr><td><code>pays</code></td><td>Non</td><td>FR</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
