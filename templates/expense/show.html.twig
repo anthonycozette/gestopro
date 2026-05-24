@@ -96,7 +96,7 @@
 
             <div style="margin-top:16px; border-top:1px solid #e5e7eb; padding-top:12px;">
                 <form method="post" action="{{ path('app_expense_delete', {id: expense.id}) }}"
-                      onsubmit="return confirm('Supprimer cette dépense ?')">
+                      data-confirm="Supprimer cette dépense ?" data-confirm-variant="danger">
                     <input type="hidden" name="_token" value="{{ csrf_token('delete_expense_' ~ expense.id) }}">
                     <button type="submit" class="btn btn-danger btn-sm" style="width:100%">Supprimer</button>
                 </form>

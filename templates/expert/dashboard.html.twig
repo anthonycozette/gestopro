@@ -43,7 +43,7 @@
                     <form method="post" action="{{ path('expert_request_decline', {id: inv.id}) }}" style="display:inline;margin-left:6px;">
                         <input type="hidden" name="_token" value="{{ csrf_token('inv_' ~ inv.id) }}">
                         <button type="submit" class="btn btn-danger btn-sm"
-                                onclick="return confirm('Refuser cette demande ?')">Refuser</button>
+                                data-confirm="Refuser cette demande ?" data-confirm-variant="danger">Refuser</button>
                     </form>
                 </td>
             </tr>

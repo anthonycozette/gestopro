@@ -150,7 +150,7 @@
                     5 clients, 10 factures/mois, sans IA
                 </div>
                 <form method="post" action="{{ path('app_subscription_cancel') }}"
-                      onsubmit="return confirm('Résilier votre abonnement Pro ? Vous conserverez l\'accès jusqu\'à la fin de la période payée.')">
+                      data-confirm="Résilier votre abonnement Pro ? Vous conserverez l'accès jusqu'à la fin de la période payée." data-confirm-variant="danger">
                     <input type="hidden" name="_token" value="{{ csrf_token('subscription_cancel') }}">
                     <button type="submit" class="btn btn-secondary" style="width:100%;font-size:13px;">Résilier l'abonnement</button>
                 </form>
@@ -172,7 +172,7 @@
                     Illimité, IA, OCR — sans portail expert-comptable
                 </div>
                 <form method="post" action="{{ path('app_subscription_checkout', {plan: 'pro'}) }}"
-                      onsubmit="return confirm('Passer au plan Pro ? La différence sera calculée au prorata.')">
+                      data-confirm="Passer au plan Pro ? La différence sera calculée au prorata.">
                     <input type="hidden" name="_token" value="{{ csrf_token('subscription_checkout') }}">
                     <button type="submit" class="btn btn-secondary" style="width:100%;font-size:13px;">Passer à Pro</button>
                 </form>
@@ -185,7 +185,7 @@
                     5 clients, 10 factures/mois, sans IA
                 </div>
                 <form method="post" action="{{ path('app_subscription_cancel') }}"
-                      onsubmit="return confirm('Résilier votre abonnement Expert ? Vous conserverez l\'accès jusqu\'à la fin de la période payée.')">
+                      data-confirm="Résilier votre abonnement Expert ? Vous conserverez l'accès jusqu'à la fin de la période payée." data-confirm-variant="danger">
                     <input type="hidden" name="_token" value="{{ csrf_token('subscription_cancel') }}">
                     <button type="submit" class="btn btn-secondary" style="width:100%;font-size:13px;">Résilier l'abonnement</button>
                 </form>

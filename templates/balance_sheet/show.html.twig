@@ -13,7 +13,7 @@
             <form method="post" action="{{ path('app_balance_sheet_submit', {id: sheet.id}) }}" style="display:inline;">
                 <input type="hidden" name="_token" value="{{ csrf_token('submit_sheet_' ~ sheet.id) }}">
                 <button type="submit" class="btn btn-primary"
-                        onclick="return confirm('Soumettre ce bilan à votre expert-comptable ?')">
+                        data-confirm="Soumettre ce bilan à votre expert-comptable ?">
                     Soumettre pour révision
                 </button>
             </form>
@@ -141,12 +141,12 @@
                 <form method="post" action="{{ path('app_balance_sheet_submit', {id: sheet.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('submit_sheet_' ~ sheet.id) }}">
                     <button type="submit" class="btn btn-primary" style="width:100%;"
-                            onclick="return confirm('Soumettre ce bilan à votre expert-comptable ?')">
+                            data-confirm="Soumettre ce bilan à votre expert-comptable ?">
                         Soumettre pour révision
                     </button>
                 </form>
                 <form method="post" action="{{ path('app_balance_sheet_delete', {id: sheet.id}) }}"
-                      onsubmit="return confirm('Supprimer ce bilan ?')">
+                      data-confirm="Supprimer ce bilan ?" data-confirm-variant="danger">
                     <input type="hidden" name="_token" value="{{ csrf_token('delete_sheet_' ~ sheet.id) }}">
                     <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer</button>
                 </form>

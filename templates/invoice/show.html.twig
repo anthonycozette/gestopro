@@ -241,7 +241,7 @@
         <div class="inv-danger-panel">
             <div style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Zone de danger</div>
             <form method="post" action="{{ path('app_invoice_delete', {id: invoice.id}) }}"
-                  onsubmit="return confirm('Supprimer cette facture définitivement ?')">
+                  data-confirm="Supprimer cette facture définitivement ?" data-confirm-variant="danger">
                 <input type="hidden" name="_token" value="{{ csrf_token('delete_invoice_' ~ invoice.id) }}">
                 <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer</button>
             </form>

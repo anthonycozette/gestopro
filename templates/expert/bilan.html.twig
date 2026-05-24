@@ -92,7 +92,7 @@
             {% if sheet.status != 'validated' %}
             <div style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:4px;">
                 <form method="post" action="{{ path('expert_bilan_validate', {id: sheet.id}) }}"
-                      onsubmit="return confirm('Valider et tamponner ce bilan définitivement ?')">
+                      data-confirm="Valider et tamponner ce bilan définitivement ?">
                     <input type="hidden" name="_token" value="{{ csrf_token('validate_' ~ sheet.id) }}">
                     <button type="submit" class="btn btn-success" style="width:100%;">
                         ✓ Valider et tamponner

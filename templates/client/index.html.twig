@@ -110,7 +110,7 @@
                         <a href="{{ path('app_client_show', {id: client.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
                         <a href="{{ path('app_client_edit', {id: client.id}) }}" class="btn btn-secondary btn-sm">Modifier</a>
                         <form method="post" action="{{ path('app_client_delete', {id: client.id}) }}" style="display:inline"
-                              onsubmit="return confirm('Supprimer ce client ?')">
+                              data-confirm="Supprimer ce client ?" data-confirm-variant="danger">
                             <input type="hidden" name="_token" value="{{ csrf_token('delete_client_' ~ client.id) }}">
                             <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
                         </form>

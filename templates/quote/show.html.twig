@@ -29,7 +29,7 @@
         {% endif %}
         {% if quote.status in ['sent', 'accepted'] %}
             <form method="post" action="{{ path('app_quote_convert', {id: quote.id}) }}" style="display:inline"
-                  onsubmit="return confirm('Convertir ce devis en facture ?')">
+                  data-confirm="Convertir ce devis en facture ?">
                 <input type="hidden" name="_token" value="{{ csrf_token('convert_quote_' ~ quote.id) }}">
                 <button type="submit" class="btn btn-primary" style="background:#7c3aed;border-color:#7c3aed;">⇄ Convertir en facture</button>
             </form>
@@ -210,7 +210,7 @@
                     <button type="submit" class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:8px;color:#b91c1c;border-color:#fecaca;">✕ Marquer refusé</button>
                 </form>
                 <form method="post" action="{{ path('app_quote_convert', {id: quote.id}) }}"
-                      onsubmit="return confirm('Convertir ce devis en facture ?')">
+                      data-confirm="Convertir ce devis en facture ?">
                     <input type="hidden" name="_token" value="{{ csrf_token('convert_quote_' ~ quote.id) }}">
                     <button type="submit" class="btn btn-secondary btn-sm" style="width:100%;color:#7c3aed;border-color:#e9d5ff;">⇄ Convertir en facture</button>
                 </form>
@@ -218,7 +218,7 @@
             {% elseif quote.status == 'accepted' %}
                 <p style="font-size:12px;color:#6b7280;margin:0 0 12px;">Le client a accepté ce devis. Convertissez-le en facture pour encaisser.</p>
                 <form method="post" action="{{ path('app_quote_convert', {id: quote.id}) }}"
-                      onsubmit="return confirm('Convertir ce devis en facture ?')">
+                      data-confirm="Convertir ce devis en facture ?">
                     <input type="hidden" name="_token" value="{{ csrf_token('convert_quote_' ~ quote.id) }}">
                     <button type="submit" class="btn btn-primary" style="width:100%;background:#7c3aed;border-color:#7c3aed;">⇄ Convertir en facture</button>
                 </form>
@@ -284,7 +284,7 @@
         <div class="inv-danger-panel">
             <div style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Zone de danger</div>
             <form method="post" action="{{ path('app_quote_delete', {id: quote.id}) }}"
-                  onsubmit="return confirm('Supprimer ce devis définitivement ?')">
+                  data-confirm="Supprimer ce devis définitivement ?" data-confirm-variant="danger">
                 <input type="hidden" name="_token" value="{{ csrf_token('delete_quote_' ~ quote.id) }}">
                 <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer</button>
             </form>

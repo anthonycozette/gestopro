@@ -112,7 +112,7 @@
       <form method="post" action="{{ path('app_expert_disconnect') }}" style="margin-top:4px;">
         <input type="hidden" name="_token" value="{{ csrf_token('expert_disconnect') }}">
         <button type="submit" class="disconnect-link"
-                onclick="return confirm('Dissocier cet expert ? Vos bilans et messages seront conservés.')">
+                data-confirm="Dissocier cet expert ? Vos bilans et messages seront conservés." data-confirm-variant="danger">
           Dissocier cet expert
         </button>
       </form>
@@ -230,7 +230,7 @@
 
       <form method="post" action="{{ path('app_expert_cancel', {id: myInvitation.id}) }}">
         <input type="hidden" name="_token" value="{{ csrf_token('expert_cancel_' ~ myInvitation.id) }}">
-        <button type="submit" class="btn-cancel" onclick="return confirm('Annuler cette demande ?')">Annuler la demande</button>
+        <button type="submit" class="btn-cancel" data-confirm="Annuler cette demande ?" data-confirm-variant="danger">Annuler la demande</button>
       </form>
     </div>
   </div>
