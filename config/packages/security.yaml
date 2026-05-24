@@ -77,7 +77,7 @@ security:
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/expert/login, roles: PUBLIC_ACCESS }
         - { path: ^/expert/register, roles: PUBLIC_ACCESS }
-        - { path: ^/expert, roles: ROLE_ACCOUNTANT }
+        - { path: ^/expert(/|$), roles: ROLE_ACCOUNTANT }
         - { path: ^/stripe/webhook, roles: PUBLIC_ACCESS }
         - { path: ^/pricing, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
