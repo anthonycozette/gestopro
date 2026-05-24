@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GestoPro · La compta sans la migraine</title>
+  <meta name="description" content="GestoPro crée tes factures, scanne tes reçus, calcule ta TVA et ton URSSAF. L'outil comptable pour auto-entrepreneurs et freelances.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ asset('styles/landing.css') }}">
+</head>
+<body>
+
+{# ════════════════════════════════════════════════════════ NAV #}
+<header class="nav">
+  <div class="nav-inner">
+    <a href="{{ path('app_landing') }}" class="logo">
+      <div class="logo-icon">G</div>
+      <span class="logo-text">GestoPro</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#fonctionnalites">Fonctionnalités</a>
+      <a href="#tarifs">Tarifs</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="nav-spacer"></div>
+    <a href="{{ path('app_login') }}" class="nav-login" style="margin-right:12px;">Se connecter</a>
+    <a onclick="openAuth('register')" class="nav-cta" style="cursor:pointer;">
+      Essai gratuit
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+    </a>
+  </div>
+</header>
+
+{# ════════════════════════════════════════════════════════ HERO #}
+<section class="hero" id="accueil">
+  <div class="hero-bg"></div>
+  <div class="hero-inner" style="max-width:1240px;margin:0 auto;position:relative;">
+
+    {# Copy #}
+    <div>
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-badge">NOUVEAU</span>
+        Pour auto-entrepreneurs, freelances &amp; artisans
+      </div>
+      <h1 class="hero-title">
+        Ta compta,<br>
+        <span class="hero-title-grad">sans la migraine.</span>
+      </h1>
+      <p class="hero-sub">
+        GestoPro crée tes factures, scanne tes reçus, calcule ta TVA et ton URSSAF.
+        Tu gardes ton temps pour ton vrai métier.
+      </p>
+      <div class="hero-btns">
+        <a onclick="openAuth('register')" class="btn-hero-primary" style="cursor:pointer;">
+          Essayer gratuitement
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <a href="{{ path('app_dashboard') }}" class="btn-hero-ghost">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6.5" height="6.5" rx="1.5"/><rect x="8.5" y="1" width="6.5" height="6.5" rx="1.5" opacity=".4"/><rect x="1" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".4"/><rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".4"/></svg>
+          Voir le tableau de bord
+        </a>
+      </div>
+      <div class="hero-badges">
+        <span class="hero-badge"><svg class="badge-check" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg> Sans CB requise</span>
+        <span class="hero-badge"><svg class="badge-check" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg> 14 jours d'essai Pro</span>
+        <span class="hero-badge"><svg class="badge-check" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg> RGPD · données en France</span>
+      </div>
+    </div>
+
+    {# Dashboard mockup #}
+    <div class="hero-mockup">
+      <div class="mockup-window">
+        <div class="mockup-titlebar">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="mockup-url">gestopro.fr / tableau-de-bord</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="mockup-brand">
+              <div class="mockup-brand-icon">G</div>
+              <span class="mockup-brand-name">GestoPro</span>
+            </div>
+            <div class="mockup-nav-item active">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6.5" height="6.5" rx="1.5"/><rect x="8.5" y="1" width="6.5" height="6.5" rx="1.5" opacity=".4"/><rect x="1" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".4"/><rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5" opacity=".4"/></svg>
+              Tableau
+            </div>
+            <div class="mockup-nav-item">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4z"/></svg>
+              Factures
+            </div>
+            <div class="mockup-nav-item">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5 6a1 1 0 0 1-1-1c0-2.5 2.7-4 6-4s6 1.5 6 4a1 1 0 0 1-1 1H3Z"/></svg>
+              Clients
+            </div>
+            <div class="mockup-nav-item">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm.5 3.5v.6A1.5 1.5 0 0 1 9 7.6l-1 .3a.5.5 0 1 0 0 1h1.25A.5.5 0 0 0 9.75 9H11A1.5 1.5 0 0 1 9.5 10.4v.6h-1.5v-.6A1.5 1.5 0 0 1 6.5 8.4l1-.3a.5.5 0 1 0 0-1H6.25a.5.5 0 0 0-.5.5H4.5A1.5 1.5 0 0 1 6 5.6v-.6h2Z"/></svg>
+              Dépenses
+            </div>
+            <div class="mockup-nav-item">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a3 3 0 0 1 3 3 2.5 2.5 0 0 1 2.5 2.5c0 .9-.47 1.68-1.18 2.12A3 3 0 0 1 11 11H5a3 3 0 0 1-1.32-5.38A2.5 2.5 0 0 1 6 4a3 3 0 0 1 2-3Z"/></svg>
+              IA
+            </div>
+          </div>
+          <div class="mockup-main">
+            <div class="mockup-toprow">
+              Bonjour Léa <span class="mockup-toprow-date">· mardi 27 mai</span>
+              <span class="mockup-new-btn">+ Facture</span>
+            </div>
+            <div class="mockup-metric">
+              <div class="mockup-metric-label">CA · Mai 2025</div>
+              <div class="mockup-metric-value">
+                <span style="font-family:var(--font-mono)">12 480 €</span>
+                <span class="mockup-badge-up">↑ 18 %</span>
+              </div>
+              <div class="mockup-sparkline">
+                <svg width="100%" height="28" viewBox="0 0 240 28" fill="none" preserveAspectRatio="none">
+                  <polyline points="0,22 30,18 60,20 90,12 120,14 150,8 180,10 210,5 240,3"
+                    stroke="#2563eb" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                  <polyline points="0,22 30,18 60,20 90,12 120,14 150,8 180,10 210,5 240,3 240,28 0,28"
+                    fill="rgba(37,99,235,.08)" stroke="none"/>
+                </svg>
+              </div>
+            </div>
+            <div class="mockup-kpi-row">
+              <div class="mockup-kpi">
+                <div class="mockup-kpi-label">Factures</div>
+                <div class="mockup-kpi-value">7</div>
+                <div class="mockup-kpi-sub" style="color:oklch(64% 0.14 50)">3 retard</div>
+              </div>
+              <div class="mockup-kpi">
+                <div class="mockup-kpi-label">Dépenses</div>
+                <div class="mockup-kpi-value">2 340 €</div>
+              </div>
+              <div class="mockup-kpi">
+                <div class="mockup-kpi-label">URSSAF</div>
+                <div class="mockup-kpi-value">1 870 €</div>
+                <div class="mockup-kpi-sub" style="color:oklch(58% 0.11 145)">31 mai</div>
+              </div>
+            </div>
+            <div class="mockup-ai-strip">
+              <div class="mockup-ai-strip-bg"></div>
+              <div class="mockup-ai-icon">✦</div>
+              <div class="mockup-ai-text"><strong>Calcule ma TVA du trimestre</strong></div>
+              <span style="font-size:9px;color:var(--subtle);position:relative;font-family:var(--font-mono)">↵</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Floating receipt badge #}
+      <div class="hero-float hero-float-receipt">
+        <div class="hero-float-receipt-img"></div>
+        <div>
+          <div class="hero-float-title">Carburant Total</div>
+          <div class="hero-float-sub">78,40 € · TVA 13,07 €</div>
+        </div>
+        <div class="ocr-badge">✓ 94%</div>
+      </div>
+
+      {# Floating paid toast #}
+      <div class="hero-float hero-float-paid">
+        <div class="hero-float-paid-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg>
+        </div>
+        <div>
+          <div class="hero-float-title">Facture payée</div>
+          <div class="hero-float-sub">F-2025-0048 · 1 850 €</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{# ════════════════════════════════════════════════════════ STATS #}
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div>
+      <div class="stat-value">12 480 €</div>
+      <div class="stat-label">CA facturé ce mois (exemple)</div>
+    </div>
+    <div>
+      <div class="stat-value">30 s</div>
+      <div class="stat-label">pour créer une facture</div>
+    </div>
+    <div>
+      <div class="stat-value">92 %</div>
+      <div class="stat-label">de reçus reconnus correctement</div>
+    </div>
+    <div>
+      <div class="stat-value">0 €/mois</div>
+      <div class="stat-label">pour démarrer</div>
+    </div>
+  </div>
+</div>
+
+{# ════════════════════════════════════════════════════════ FEATURES #}
+<section class="section" id="fonctionnalites">
+  <div class="section-inner">
+    <div class="section-head">
+      <div class="section-eyebrow">Fonctionnalités</div>
+      <h2 class="section-title">Tout ce qu'il faut. <span>Rien de plus.</span></h2>
+      <p class="section-sub">Quatre fonctions, pensées pour ne rien te coûter en charge mentale.</p>
+    </div>
+
+    <div>
+
+      {# ── Feature 1 : Factures #}
+      <div class="feature-row">
+        <div class="feature-copy">
+          <span class="feature-tag tag-blue">Factures</span>
+          <h3 class="feature-title">Factures pros en 30 secondes</h3>
+          <p class="feature-body">Numérotation automatique, mentions légales pré-remplies, TVA gérée. Envoi par email avec lien de paiement. Relances automatiques tous les 7 jours.</p>
+          <a href="#tarifs" class="feature-link">En savoir plus <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+        <div class="feature-visual">
+          <div class="fmock" style="max-width:480px;margin-left:auto;">
+            <div class="fmock-inv-header">
+              <div>
+                <div class="fmock-inv-label">Facture</div>
+                <div class="fmock-inv-num">F-2025-0052</div>
+              </div>
+              <span class="status-badge s-sent">Envoyée</span>
+            </div>
+            <div class="fmock-parties">
+              <div>
+                <div class="fmock-party-label">De</div>
+                <div class="fmock-party-name">Léa Cazenave</div>
+                <div class="fmock-party-sub">Atelier graphique</div>
+                <div class="fmock-party-sub" style="font-family:var(--font-mono)">SIRET 892 145 760</div>
+              </div>
+              <div>
+                <div class="fmock-party-label">Pour</div>
+                <div class="fmock-party-name">Mairie de Vendôme</div>
+                <div class="fmock-party-sub">Pl. du Château, 41100</div>
+              </div>
+            </div>
+            <div class="fmock-lines">
+              <div class="fmock-line">
+                <div>Refonte identité visuelle</div>
+                <div class="fmock-line-qty">×1</div>
+                <div class="fmock-line-price">4 800 €</div>
+              </div>
+              <div class="fmock-line">
+                <div>Charte web & déclinaisons</div>
+                <div class="fmock-line-qty">×1</div>
+                <div class="fmock-line-price">1 600 €</div>
+              </div>
+            </div>
+            <div class="fmock-totals">
+              <div style="min-width:220px;">
+                <div class="fmock-total-row">
+                  <span class="fmock-total-key">Total HT</span>
+                  <span class="fmock-total-val">6 400 €</span>
+                </div>
+                <div class="fmock-total-row">
+                  <span class="fmock-total-key">TVA 20%</span>
+                  <span class="fmock-total-val">1 280 €</span>
+                </div>
+                <div class="fmock-divider"></div>
+                <div class="fmock-total-row big">
+                  <span>Total TTC</span>
+                  <span>7 680 €</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ── Feature 2 : OCR (flip) #}
+      <div class="feature-row">
+        <div class="feature-copy flip">
+          <span class="feature-tag tag-warm">OCR reçus</span>
+          <h3 class="feature-title">Photographie, le reste est à nous</h3>
+          <p class="feature-body">Glisse un reçu, GestoPro lit le montant, la TVA, la date et la catégorie. Score de confiance affiché pour les cas limites.</p>
+          <a href="#tarifs" class="feature-link">En savoir plus <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+        <div class="feature-visual flip">
+          <div class="fmock" style="max-width:480px;">
+            <div class="fmock-receipt-bg">
+              <div class="fmock-receipt-img">
+                <div class="fmock-receipt-line dark"></div>
+                <div class="fmock-receipt-line short" style="margin-top:3px;"></div>
+                <div class="fmock-receipt-line" style="margin-top:6px;"></div>
+                <div class="fmock-receipt-line"></div>
+                <div class="fmock-receipt-line short"></div>
+                <div class="fmock-receipt-line" style="position:absolute;bottom:8px;left:8px;right:8px;height:3px;background:var(--fg);"></div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div class="fmock-ocr-tag">OCR · IA</div>
+                <div class="ocr-badge" style="margin-bottom:6px;">✓ 94 %</div>
+                <div style="font-size:14px;font-weight:700;">Carburant Total</div>
+                <div style="font-size:11.5px;color:var(--muted);margin-top:1px;">14 mai 2025 · A28 La Touques</div>
+                <div class="fmock-ocr-grid" style="margin-top:10px;">
+                  <span class="fmock-ocr-key">Total TTC</span><span class="fmock-ocr-val">78,40 €</span>
+                  <span class="fmock-ocr-key">TVA 20%</span><span class="fmock-ocr-val">13,07 €</span>
+                  <span class="fmock-ocr-key">Catégorie</span><span class="fmock-ocr-val" style="font-family:inherit;">Transport</span>
+                </div>
+              </div>
+            </div>
+            <div class="fmock-btn-row">
+              <button class="fmock-btn-primary">Confirmer</button>
+              <button class="fmock-btn-ghost">Modifier</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ── Feature 3 : IA #}
+      <div class="feature-row">
+        <div class="feature-copy">
+          <span class="feature-tag tag-purple">Assistant IA</span>
+          <h3 class="feature-title">Un expert-comptable dans ta poche</h3>
+          <p class="feature-body">Pose une question — "Calcule ma TVA du trimestre", "Relance les factures en retard" — et obtiens une réponse sourcée sur tes données.</p>
+          <a href="#tarifs" class="feature-link">En savoir plus <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+        <div class="feature-visual">
+          <div class="fmock" style="max-width:480px;margin-left:auto;">
+            <div class="fmock-ai-header">
+              <div class="fmock-ai-avatar">✦</div>
+              <div>
+                <div class="fmock-ai-name">Assistant GestoPro</div>
+                <div class="fmock-ai-sub">Comptable IA · contexte de tes données</div>
+              </div>
+            </div>
+            <div class="fmock-ai-user">
+              <div class="fmock-ai-bubble-user">Calcule ma TVA du trimestre</div>
+            </div>
+            <div class="fmock-ai-reply">
+              <div class="fmock-ai-reply-icon">✦</div>
+              <div class="fmock-ai-reply-bubble">
+                Sur le <strong>T1 2025</strong>, tu as collecté <strong style="font-family:var(--font-mono)">6 240 €</strong> de TVA et déduit <strong style="font-family:var(--font-mono)">820 €</strong>.
+                <div class="fmock-ai-result">
+                  <div class="fmock-ai-result-label">TVA À DÉCLARER</div>
+                  <div class="fmock-ai-result-val">5 420 €</div>
+                  <div class="fmock-ai-result-sub">Échéance : 20 avril</div>
+                </div>
+              </div>
+            </div>
+            <div class="fmock-suggestions">
+              <button class="fmock-suggestion">Génère le formulaire</button>
+              <button class="fmock-suggestion">Programme un rappel</button>
+              <button class="fmock-suggestion">Détail par mois</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ── Feature 4 : Échéances (flip) #}
+      <div class="feature-row">
+        <div class="feature-copy flip">
+          <span class="feature-tag tag-sage">Échéances</span>
+          <h3 class="feature-title">URSSAF &amp; TVA, jamais oubliées</h3>
+          <p class="feature-body">Cotisations calculées à l'euro près. Rappels avant l'échéance. Téléchargement direct du justificatif de déclaration.</p>
+          <a href="#tarifs" class="feature-link">En savoir plus <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+        <div class="feature-visual flip">
+          <div class="fmock" style="max-width:480px;">
+            <div class="fmock-deadlines-title">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="oklch(64% 0.14 50)"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 3v4.5l3 1.5-.5 1L7 8.5V4h1Z"/></svg>
+              <span class="fmock-deadlines-title-text">Échéances à venir</span>
+              <span class="fmock-deadlines-count">3 prochaines</span>
+            </div>
+            <div class="fmock-deadline-item">
+              <div class="fmock-deadline-days warn">
+                <span class="fmock-deadline-num">8</span>
+                <span class="fmock-deadline-unit">JOURS</span>
+              </div>
+              <div class="fmock-deadline-text">
+                <div class="fmock-deadline-name">URSSAF · Cotisations T1</div>
+                <div class="fmock-deadline-date">31 mai · rappel envoyé J-3</div>
+              </div>
+              <div class="fmock-deadline-amt">1 870 €</div>
+            </div>
+            <div class="fmock-deadline-item">
+              <div class="fmock-deadline-days info">
+                <span class="fmock-deadline-num">21</span>
+                <span class="fmock-deadline-unit">JOURS</span>
+              </div>
+              <div class="fmock-deadline-text">
+                <div class="fmock-deadline-name">TVA · Déclaration mensuelle</div>
+                <div class="fmock-deadline-date">12 juin · rappel envoyé J-3</div>
+              </div>
+              <div class="fmock-deadline-amt">2 080 €</div>
+            </div>
+            <div class="fmock-deadline-item">
+              <div class="fmock-deadline-days info">
+                <span class="fmock-deadline-num">28</span>
+                <span class="fmock-deadline-unit">JOURS</span>
+              </div>
+              <div class="fmock-deadline-text">
+                <div class="fmock-deadline-name">Impôt sur le revenu · acompte</div>
+                <div class="fmock-deadline-date">20 juin · rappel envoyé J-3</div>
+              </div>
+              <div class="fmock-deadline-amt">640 €</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{# ════════════════════════════════════════════════════════ PRICING #}
+<section class="pricing-section" id="tarifs">
+  <div style="max-width:1240px;margin:0 auto;">
+    <div class="section-head">
+      <div class="section-eyebrow">Tarifs</div>
+      <h2 class="section-title">Simple. <span>Adapté à ton activité.</span></h2>
+      <p class="section-sub">Démarre gratuitement. Passe au Pro quand ton chiffre d'affaires l'exige. Sans engagement.</p>
+    </div>
+
+    <div class="toggle-wrap">
+      <div class="period-toggle">
+        <button class="period-btn active" data-period="monthly" onclick="setPeriod('monthly')">Mensuel</button>
+        <button class="period-btn" data-period="yearly" onclick="setPeriod('yearly')">
+          Annuel
+          <span class="period-chip on-light" id="chip-yearly">-20%</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="pricing-grid">
+
+      {# Free #}
+      <div class="pricing-card">
+        <div class="pricing-name">Gratuit</div>
+        <div class="pricing-tagline">Pour démarrer son activité</div>
+        <div class="pricing-price">
+          <span>0</span><span class="pricing-price-cur"> €</span>
+          <div class="pricing-price-period">HT / mois</div>
+        </div>
+        <a onclick="openAuth('register')" class="pricing-cta ghost" style="cursor:pointer;">
+          Créer un compte
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <div class="pricing-features">
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Jusqu'à 5 clients</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>10 factures par mois</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Devis &amp; factures PDF</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Suivi des paiements</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Export comptable basique</div>
+          <div class="pricing-feature off"><span class="feat-cross">−</span>Assistant IA</div>
+          <div class="pricing-feature off"><span class="feat-cross">−</span>OCR des reçus</div>
+          <div class="pricing-feature off"><span class="feat-cross">−</span>Portail expert-comptable</div>
+        </div>
+      </div>
+
+      {# Pro — highlight #}
+      <div class="pricing-card highlight">
+        <div class="pricing-badge">Le plus populaire</div>
+        <div class="pricing-name">Pro</div>
+        <div class="pricing-tagline">Pour les indépendants actifs</div>
+        <div class="pricing-price">
+          <span id="pro-price">19</span><span class="pricing-price-cur"> €</span>
+          <div class="pricing-price-period">
+            HT / mois
+            <div class="pricing-price-save" id="pro-save" style="display:none;">↓ 4 €/mois</div>
+          </div>
+        </div>
+        <a onclick="openAuth('register')" class="pricing-cta primary" style="cursor:pointer;">
+          Démarrer 14 jours offerts
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <div class="pricing-features">
+          <div class="pricing-feature hl"><span class="feat-check hl"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Clients &amp; factures illimités</div>
+          <div class="pricing-feature hl"><span class="feat-check hl"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Assistant IA inclus</div>
+          <div class="pricing-feature hl"><span class="feat-check hl"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>OCR des reçus avec IA</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Relances automatiques</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Multi-devises</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Export FEC complet</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Support prioritaire</div>
+          <div class="pricing-feature off"><span class="feat-cross">−</span>Portail expert-comptable</div>
+        </div>
+      </div>
+
+      {# Expert #}
+      <div class="pricing-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div class="pricing-name">Expert</div>
+          <span style="font-size:9.5px;padding:2px 7px;border-radius:4px;background:oklch(64% 0.14 50 / .14);color:oklch(48% 0.13 50);font-weight:700;letter-spacing:.05em;">+ COMPTABLE</span>
+        </div>
+        <div class="pricing-tagline">Pour travailler avec ton comptable</div>
+        <div class="pricing-price">
+          <span id="expert-price">49</span><span class="pricing-price-cur"> €</span>
+          <div class="pricing-price-period">
+            HT / mois
+            <div class="pricing-price-save" id="expert-save" style="display:none;">↓ 10 €/mois</div>
+          </div>
+        </div>
+        <a onclick="openAuth('register')" class="pricing-cta ghost" style="cursor:pointer;">
+          Choisir Expert
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <div class="pricing-features">
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Tout du plan Pro</div>
+          <div class="pricing-feature hl"><span class="feat-check hl"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Portail expert-comptable</div>
+          <div class="pricing-feature hl"><span class="feat-check hl"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Bilans IA mensuels</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Liasse fiscale assistée</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>API &amp; webhooks</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Account manager dédié</div>
+          <div class="pricing-feature"><span class="feat-check normal"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg></span>Audit comptable annuel</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="pricing-footer-notes">
+      <span class="pricing-note"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="oklch(58% 0.11 145)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg> TVA en sus</span>
+      <span class="pricing-note"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="oklch(58% 0.11 145)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg> Sans engagement</span>
+      <span class="pricing-note"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="oklch(58% 0.11 145)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg> Annulation en 1 clic</span>
+      <span class="pricing-note"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="oklch(58% 0.11 145)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l4 4 7-8"/></svg> Données hébergées en France</span>
+    </div>
+  </div>
+</section>
+
+{# ════════════════════════════════════════════════════════ FAQ #}
+<section class="faq-section" id="faq">
+  <div style="max-width:880px;margin:0 auto;">
+    <div class="section-head">
+      <div class="section-eyebrow">FAQ</div>
+      <h2 class="section-title">Questions <span>fréquentes</span></h2>
+      <p class="section-sub">Si tu en as d'autres, l'équipe répond en moins de 24 h.</p>
+    </div>
+    <div class="faq-box">
+      <div class="faq-item">
+        <button class="faq-trigger" onclick="toggleFaq(this)">
+          <span class="faq-q">Suis-je engagé sur la durée ?</span>
+          <span class="faq-icon open">›</span>
+        </button>
+        <div class="faq-answer open">Non. Tu peux changer ou annuler ton abonnement à tout moment depuis ton profil. Le mois en cours reste dû.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-trigger" onclick="toggleFaq(this)">
+          <span class="faq-q">Mes données sont-elles hébergées en France ?</span>
+          <span class="faq-icon">›</span>
+        </button>
+        <div class="faq-answer">Oui. Tous tes documents, factures et reçus sont stockés sur des serveurs OVH situés en France, conformément au RGPD.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-trigger" onclick="toggleFaq(this)">
+          <span class="faq-q">Puis-je facturer un client international ?</span>
+          <span class="faq-icon">›</span>
+        </button>
+        <div class="faq-answer">Oui. Le plan Pro et Expert gèrent les factures multi-devises, l'autoliquidation de la TVA intracommunautaire et les exports en anglais.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-trigger" onclick="toggleFaq(this)">
+          <span class="faq-q">Comment fonctionne l'OCR des reçus ?</span>
+          <span class="faq-icon">›</span>
+        </button>
+        <div class="faq-answer">Tu prends une photo (ou glisses un PDF). GestoPro extrait montant, TVA, date, catégorie en moins de 5 secondes. Tu valides — ou corriges — et c'est rangé.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-trigger" onclick="toggleFaq(this)">
+          <span class="faq-q">Comment fonctionne l'essai gratuit de 14 jours ?</span>
+          <span class="faq-icon">›</span>
+        </button>
+        <div class="faq-answer">Tu crées un compte, tu choisis le plan Pro — sans renseigner ta carte bancaire. À la fin des 14 jours, tu renseignes tes informations de paiement ou tu repasses sur le plan Gratuit automatiquement.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ════════════════════════════════════════════════════════ CONTACT #}
+<section class="contact-section" id="contact">
+  <div class="contact-inner">
+
+    {# Colonne gauche — infos #}
+    <div>
+      <div class="section-eyebrow" style="margin-bottom:16px;">Contact</div>
+      <h2 class="section-title" style="text-align:left;font-size:32px;margin-bottom:12px;">Une question ?<br><span>On vous répond.</span></h2>
+      <p class="section-sub" style="text-align:left;margin-bottom:32px;">Notre équipe est disponible du lundi au vendredi, 9h–18h.</p>
+
+      <div class="contact-info-item">
+        <div class="contact-info-icon">✉</div>
+        <div>
+          <div class="contact-info-label">Email</div>
+          <div class="contact-info-val">contact@gestopro.fr</div>
+          <div class="contact-info-sub">Réponse en moins de 24 h</div>
+        </div>
+      </div>
+      <div class="contact-info-item">
+        <div class="contact-info-icon">⚡</div>
+        <div>
+          <div class="contact-info-label">Support prioritaire</div>
+          <div class="contact-info-val">Disponible sur le plan Pro</div>
+          <div class="contact-info-sub">Réponse garantie en 4 h</div>
+        </div>
+      </div>
+      <div class="contact-info-item">
+        <div class="contact-info-icon">🇫🇷</div>
+        <div>
+          <div class="contact-info-label">Localisation</div>
+          <div class="contact-info-val">Paris, France</div>
+          <div class="contact-info-sub">Données hébergées en France · RGPD</div>
+        </div>
+      </div>
+    </div>
+
+    {# Colonne droite — formulaire #}
+    <div class="contact-form-card">
+      <div class="contact-form-title">Envoyer un message</div>
+      <div class="contact-form-sub">Parlez-nous de votre projet, de vos questions ou d'un bug.</div>
+
+      {% for msg in app.flashes('contact_success') %}
+        <div class="alert-success">{{ msg }}</div>
+      {% endfor %}
+      {% for msg in app.flashes('contact_error') %}
+        <div class="alert-error">{{ msg }}</div>
+      {% endfor %}
+
+      <form method="post" action="{{ path('app_landing') }}#contact">
+        <input type="hidden" name="_token" value="{{ csrf_token('contact') }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input type="text" name="name" class="form-input" placeholder="Jean Dupont" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" name="email" class="form-input" placeholder="jean@exemple.fr" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sujet</label>
+          <input type="text" name="subject" class="form-input" placeholder="Question sur les tarifs, bug, partenariat…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Message *</label>
+          <textarea name="message" class="form-input" rows="5" placeholder="Décrivez votre question ou votre besoin…" required></textarea>
+        </div>
+        <button type="submit" class="form-submit">
+          Envoyer le message
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </button>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+{# ════════════════════════════════════════════════════════ FINAL CTA #}
+<section class="finalcta-section">
+  <div class="finalcta-box">
+    <div class="finalcta-glow"></div>
+    <h2 class="finalcta-title">
+      Range le tableur.
+      <span>GestoPro s'occupe du reste.</span>
+    </h2>
+    <p class="finalcta-sub">14 jours d'essai sur le plan Pro. Sans carte bancaire. Tu peux annuler en un clic.</p>
+    <div class="finalcta-btns">
+      <a onclick="openAuth('register')" class="btn-hero-primary" style="cursor:pointer;font-size:15px;padding:14px 26px;">
+        Démarrer 14 jours offerts
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </a>
+      <a href="{{ path('app_login') }}" class="btn-hero-ghost" style="font-size:14.5px;padding:14px 22px;">Se connecter</a>
+    </div>
+  </div>
+</section>
+
+{# ════════════════════════════════════════════════════════ FOOTER #}
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="{{ path('app_landing') }}" class="logo">
+        <div class="logo-icon">G</div>
+        <span class="logo-text">GestoPro</span>
+      </a>
+      <p>L'outil de comptabilité pour les auto‑entrepreneurs et indépendants français.</p>
+      <div class="footer-social">
+        <span class="footer-social-btn">X</span>
+        <span class="footer-social-btn">in</span>
+        <span class="footer-social-btn">yt</span>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Produit</div>
+      <div class="footer-links">
+        <a href="#fonctionnalites">Fonctionnalités</a>
+        <a href="#tarifs">Tarifs</a>
+        <a href="#">Changelog</a>
+        <a href="#">Statut</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Ressources</div>
+      <div class="footer-links">
+        <a href="#">Guides</a>
+        <a href="#">Lexique compta</a>
+        <a href="#">API</a>
+        <a href="#">Devenir affilié</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Société</div>
+      <div class="footer-links">
+        <a href="#">À propos</a>
+        <a href="#">Blog</a>
+        <a href="#contact">Contact</a>
+        <a href="#">Mentions légales</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2025 GestoPro · SIRET 893 412 005 00018 · Made in France 🇫🇷</div>
+    <div class="footer-bottom-links">
+      <a href="#">RGPD</a>
+      <a href="#">Sécurité</a>
+      <a href="#">CGU</a>
+      <a href="#">Cookies</a>
+    </div>
+  </div>
+</footer>
+
+{# ════════════════════════════════════════════════════════ AUTH MODAL #}
+<div id="auth-overlay" class="auth-overlay" role="dialog" aria-modal="true">
+  <div class="auth-box" style="position:relative;">
+    <button class="auth-close" onclick="closeAuth()">×</button>
+
+    {# Logo centré #}
+    <div style="display:flex;justify-content:center;margin-bottom:20px;">
+      <a href="{{ path('app_landing') }}" class="logo">
+        <div class="logo-icon">G</div>
+        <span class="logo-text">GestoPro</span>
+      </a>
+    </div>
+
+    {# Tabs #}
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Se connecter</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Créer un compte</button>
+    </div>
+
+    {# Login form #}
+    <div class="auth-form active" id="auth-login">
+      <div class="auth-title">Bon retour 👋</div>
+      <div class="auth-sub">Connectez-vous à votre espace GestoPro.</div>
+      <form method="post" action="{{ path('app_login') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-input" placeholder="vous@exemple.fr" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <input type="password" name="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <input type="checkbox" name="_remember_me" id="remember" style="accent-color:var(--accent);">
+          <label for="remember" style="font-size:13px;color:var(--muted);">Se souvenir de moi</label>
+        </div>
+        <button type="submit" class="auth-submit">Se connecter</button>
+      </form>
+      <div class="auth-footer-link">
+        Pas encore de compte ? <a onclick="switchAuthTab('register')" style="cursor:pointer;">Créer un compte</a>
+      </div>
+    </div>
+
+    {# Register form #}
+    <div class="auth-form" id="auth-register">
+      <div class="auth-title">Commencer gratuitement</div>
+      <div class="auth-sub">14 jours Pro offerts · sans carte bancaire.</div>
+      <form method="post" action="{{ path('app_register') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('registration') }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input type="text" name="firstName" class="form-input" placeholder="Léa" required autocomplete="given-name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom</label>
+            <input type="text" name="lastName" class="form-input" placeholder="Cazenave" required autocomplete="family-name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-input" placeholder="vous@exemple.fr" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <input type="password" name="plainPassword" class="form-input" placeholder="Min. 8 caractères" required autocomplete="new-password" minlength="8">
+        </div>
+        <button type="submit" class="auth-submit">Créer mon compte</button>
+      </form>
+      <div class="auth-footer-link">
+        Déjà un compte ? <a onclick="switchAuthTab('login')" style="cursor:pointer;">Se connecter</a>
+      </div>
+      <div class="auth-divider">En créant un compte vous acceptez nos <a href="#">CGU</a> et notre <a href="#">politique de confidentialité</a>.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── FAQ ──────────────────────────────────────────────────────────
+function toggleFaq(btn) {
+  var icon = btn.querySelector('.faq-icon');
+  var answer = btn.nextElementSibling;
+  var open = answer.classList.contains('open');
+  answer.classList.toggle('open', !open);
+  icon.classList.toggle('open', !open);
+}
+
+// ─── PRICING TOGGLE ───────────────────────────────────────────────
+function setPeriod(p) {
+  document.querySelectorAll('.period-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.period === p);
+    var chip = b.querySelector('.period-chip');
+    if (chip) chip.className = 'period-chip ' + (b.classList.contains('active') ? 'on-dark' : 'on-light');
+  });
+  var yearly = p === 'yearly';
+  document.getElementById('pro-price').textContent    = yearly ? '15' : '19';
+  document.getElementById('expert-price').textContent = yearly ? '39' : '49';
+  document.getElementById('pro-save').style.display    = yearly ? 'block' : 'none';
+  document.getElementById('expert-save').style.display = yearly ? 'block' : 'none';
+}
+
+// ─── AUTH MODAL ───────────────────────────────────────────────────
+function openAuth(tab) {
+  switchAuthTab(tab || 'login');
+  document.getElementById('auth-overlay').classList.add('is-open');
+}
+function closeAuth() {
+  document.getElementById('auth-overlay').classList.remove('is-open');
+}
+function switchAuthTab(tab) {
+  ['login','register'].forEach(function(t) {
+    document.getElementById('auth-' + t).classList.toggle('active', t === tab);
+    document.querySelectorAll('.auth-tab').forEach(function(btn, i) {
+      btn.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+  });
+}
+document.getElementById('auth-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAuth();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeAuth();
+});
+</script>
+</body>
+</html>

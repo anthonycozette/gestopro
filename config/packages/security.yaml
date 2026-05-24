@@ -60,7 +60,7 @@ security:
                 check_path: app_login
                 username_parameter: email
                 password_parameter: password
-                default_target_path: app_dashboard
+                default_target_path: /dashboard
                 enable_csrf: true
             logout:
                 path: app_logout
@@ -82,6 +82,7 @@ security:
         - { path: ^/pricing, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
+        - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }
 
 when@test:
