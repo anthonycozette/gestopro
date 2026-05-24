@@ -1,0 +1,126 @@
+{% extends 'base_expert.html.twig' %}
+{% block title %}{{ invitation.user.firstName }} {{ invitation.user.lastName }} — Expert GestoPro{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <a href="{{ path('expert_clients') }}" style="color:#6b7280;font-size:13px;">← Clients</a>
+        <span style="color:#d1d5db;">/</span>
+        <h1>{{ invitation.user.firstName }} {{ invitation.user.lastName }}</h1>
+    </div>
+    <div style="font-size:13px;color:#6b7280;">{{ invitation.user.email }}</div>
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+  .detail-layout { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+  @media (max-width:900px) { .detail-layout { grid-template-columns:1fr; } }
+
+  .section-title { font-size:13px; font-weight:700; color:#0f172a; letter-spacing:-.01em; margin-bottom:12px; }
+
+  .bilan-row  { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f3f4f6; gap:8px; }
+  .bilan-row:last-child { border-bottom:none; }
+  .bilan-info { flex:1; min-width:0; }
+  .bilan-period { font-size:13.5px; font-weight:600; color:#0f172a; }
+  .bilan-date   { font-size:12px; color:#9ca3af; margin-top:1px; }
+  .bilan-empty  { text-align:center; padding:24px; color:#9ca3af; font-size:13px; }
+
+  .chip { display:inline-block; padding:2px 9px; border-radius:99px; font-size:11.5px; font-weight:600; }
+  .chip-draft    { background:#f3f4f6; color:#374151; }
+  .chip-review   { background:#fef9c3; color:#854d0e; }
+  .chip-annotated{ background:#dbeafe; color:#1d4ed8; }
+  .chip-validated{ background:#dcfce7; color:#166534; }
+
+  .msg-thread { max-height:380px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:4px 0 12px; }
+  .msg-bubble { max-width:78%; padding:10px 13px; border-radius:12px; font-size:13.5px; line-height:1.5; word-break:break-word; }
+  .msg-client { align-self:flex-start; background:#f1f5f9; color:#0f172a; border-bottom-left-radius:4px; }
+  .msg-expert { align-self:flex-end; background:#1e3a5f; color:#fff; border-bottom-right-radius:4px; }
+  .msg-meta   { font-size:11px; color:#94a3b8; margin-top:3px; }
+  .msg-meta-right { text-align:right; }
+  .msg-empty  { text-align:center; color:#9ca3af; font-size:13px; padding:20px 0; }
+  .msg-input  { display:flex; gap:8px; margin-top:10px; }
+  .msg-input textarea { flex:1; padding:9px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:13.5px; font-family:inherit; resize:none; }
+  .msg-input textarea:focus { outline:none; border-color:#1e3a5f; box-shadow:0 0 0 3px rgba(30,58,95,.1); }
+  .msg-send { padding:9px 16px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; align-self:flex-end; flex-shrink:0; }
+  .msg-send:hover { background:#2d5282; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="detail-layout">
+
+  {# ── Bilans du client ── #}
+  <div id="bilans">
+    <div class="card">
+      <div class="section-title">Bilans de {{ invitation.user.firstName }}</div>
+
+      {% if bilans is empty %}
+        <div class="bilan-empty">Ce client n'a pas encore généré de bilan.</div>
+      {% else %}
+        {% for bilan in bilans %}
+        <div class="bilan-row">
+          <div class="bilan-info">
+            <div class="bilan-period">{{ bilan.period }}</div>
+            <div class="bilan-date">{{ bilan.createdAt|date('d/m/Y') }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            {% if bilan.status == 'draft' %}
+              <span class="chip chip-draft">Brouillon</span>
+            {% elseif bilan.status == 'pending_review' %}
+              <span class="chip chip-review">À réviser</span>
+              <a href="{{ path('expert_bilan_show', {id: bilan.id}) }}" class="btn btn-primary btn-sm">Réviser</a>
+            {% elseif bilan.status == 'annotated' %}
+              <span class="chip chip-annotated">Annoté</span>
+              <a href="{{ path('expert_bilan_show', {id: bilan.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+            {% elseif bilan.status == 'validated' %}
+              <span class="chip chip-validated">Validé</span>
+              <a href="{{ path('expert_bilan_show', {id: bilan.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Messages ── #}
+  <div id="messages">
+    <div class="card">
+      <div class="section-title">Messages avec {{ invitation.user.firstName }}</div>
+
+      <div class="msg-thread" id="msg-thread">
+        {% if messages is empty %}
+          <div class="msg-empty">Aucun message pour l'instant.</div>
+        {% else %}
+          {% for msg in messages %}
+            <div>
+              <div class="msg-bubble {{ msg.fromClient ? 'msg-client' : 'msg-expert' }}">
+                {{ msg.content|nl2br }}
+              </div>
+              <div class="msg-meta {{ msg.fromClient ? '' : 'msg-meta-right' }}">
+                {% if msg.fromClient %}{{ invitation.user.firstName }}{% else %}Vous{% endif %}
+                · {{ msg.createdAt|date('d/m à H:i') }}
+              </div>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <form method="post" action="{{ path('expert_client_message', {id: invitation.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('expert_msg_' ~ invitation.id) }}">
+        <div class="msg-input">
+          <textarea name="content" rows="2" placeholder="Répondre à {{ invitation.user.firstName }}…" required></textarea>
+          <button type="submit" class="msg-send">Envoyer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const thread = document.getElementById('msg-thread');
+  if (thread) thread.scrollTop = thread.scrollHeight;
+</script>
+{% endblock %}

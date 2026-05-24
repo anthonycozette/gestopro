@@ -1,144 +1,269 @@
 {% extends 'base.html.twig' %}
-{% block title %}Trouver un expert-comptable — GestoPro{% endblock %}
+{% block title %}Mon expert-comptable — GestoPro{% endblock %}
 
 {% block topbar %}
 <div class="topbar">
-  <h1>Experts-comptables</h1>
+  <h1>Expert-comptable</h1>
 </div>
 {% endblock %}
 
 {% block body %}
 <style>
+  /* ── Expert list (no expert) ── */
   .expert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .expert-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; display:flex; flex-direction:column; transition:box-shadow .15s; }
+  .expert-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.07); }
+  .expert-card.is-mine { border-color:#1e3a5f; box-shadow:0 0 0 2px rgba(30,58,95,.12); }
+  .expert-head { display:flex; align-items:flex-start; gap:14px; margin-bottom:14px; }
+  .expert-avatar { width:48px; height:48px; border-radius:50%; background:#1e3a5f; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; flex-shrink:0; }
+  .expert-name { font-size:15px; font-weight:700; color:#0f172a; margin-bottom:2px; }
+  .expert-firm { font-size:13px; color:#6b7280; }
+  .expert-reg  { font-size:11.5px; color:#94a3b8; margin-top:3px; font-family:monospace; }
+  .expert-bio  { font-size:13.5px; color:#374151; line-height:1.55; flex:1; margin-bottom:16px; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+  .expert-bio-empty { font-size:13px; color:#9ca3af; font-style:italic; margin-bottom:16px; }
+  .chip-mine    { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; background:#dbeafe; color:#1d4ed8; border-radius:99px; font-size:12px; font-weight:600; }
+  .chip-pending { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; background:#fef9c3; color:#854d0e; border-radius:99px; font-size:12px; font-weight:600; }
+  .btn-request { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:#1e3a5f; color:#fff; border:none; border-radius:7px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; transition:background .12s; }
+  .btn-request:hover { background:#2d5282; }
+  .btn-request:disabled { opacity:.4; cursor:not-allowed; }
+  .btn-cancel  { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; background:transparent; color:#6b7280; border:1px solid #d1d5db; border-radius:7px; font-size:12px; font-family:inherit; cursor:pointer; transition:.12s; }
+  .btn-cancel:hover { border-color:#ef4444; color:#ef4444; }
+  .action-row  { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .page-intro  { color:#6b7280; font-size:14px; line-height:1.6; margin-bottom:24px; }
 
-  .expert-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    transition: box-shadow .15s;
-  }
-  .expert-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
-  .expert-card.is-mine { border-color: #1e3a5f; box-shadow: 0 0 0 2px rgba(30,58,95,.12); }
+  /* ── Hub (accepted) ── */
+  .hub-layout { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+  @media (max-width:900px) { .hub-layout { grid-template-columns:1fr; } }
 
-  .expert-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
-  .expert-avatar {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: #1e3a5f; color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; flex-shrink: 0; letter-spacing: .03em;
-  }
-  .expert-name { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
-  .expert-firm { font-size: 13px; color: #6b7280; }
-  .expert-reg  { font-size: 11.5px; color: #94a3b8; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .hub-expert-header { display:flex; align-items:center; gap:14px; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #f1f5f9; }
+  .hub-avatar { width:52px; height:52px; border-radius:50%; background:#1e3a5f; color:#fff; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:700; flex-shrink:0; }
+  .hub-name   { font-size:16px; font-weight:700; color:#0f172a; }
+  .hub-sub    { font-size:13px; color:#6b7280; margin-top:2px; }
+  .hub-reg    { font-size:11.5px; color:#94a3b8; font-family:monospace; margin-top:3px; }
+  .hub-bio    { font-size:13.5px; color:#374151; line-height:1.55; margin-bottom:14px; }
+  .hub-bio-empty { font-size:13px; color:#9ca3af; font-style:italic; margin-bottom:14px; }
 
-  .expert-bio {
-    font-size: 13.5px; color: #374151; line-height: 1.55;
-    flex: 1; margin-bottom: 16px;
-    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .expert-bio-empty { font-size: 13px; color: #9ca3af; font-style: italic; margin-bottom: 16px; }
+  /* ── Bilans list ── */
+  .bilan-row  { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f3f4f6; gap:8px; }
+  .bilan-row:last-child { border-bottom:none; }
+  .bilan-info { flex:1; min-width:0; }
+  .bilan-period { font-size:13.5px; font-weight:600; color:#0f172a; }
+  .bilan-date   { font-size:12px; color:#9ca3af; margin-top:1px; }
+  .bilan-empty  { text-align:center; padding:24px; color:#9ca3af; font-size:13px; }
 
-  .expert-action { margin-top: auto; }
+  /* ── Messages ── */
+  .msg-thread { max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:4px 0 12px; }
+  .msg-bubble { max-width:78%; padding:10px 13px; border-radius:12px; font-size:13.5px; line-height:1.5; word-break:break-word; }
+  .msg-client { align-self:flex-end; background:#1e3a5f; color:#fff; border-bottom-right-radius:4px; }
+  .msg-expert { align-self:flex-start; background:#f1f5f9; color:#0f172a; border-bottom-left-radius:4px; }
+  .msg-meta   { font-size:11px; color:#94a3b8; margin-top:3px; }
+  .msg-meta-right { text-align:right; }
+  .msg-empty  { text-align:center; color:#9ca3af; font-size:13px; padding:20px 0; }
+  .msg-input  { display:flex; gap:8px; margin-top:10px; }
+  .msg-input textarea { flex:1; padding:9px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:13.5px; font-family:inherit; resize:none; line-height:1.5; transition:border-color .15s; }
+  .msg-input textarea:focus { outline:none; border-color:#1e3a5f; box-shadow:0 0 0 3px rgba(30,58,95,.1); }
+  .msg-send   { padding:9px 16px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; align-self:flex-end; transition:background .12s; flex-shrink:0; }
+  .msg-send:hover { background:#2d5282; }
 
-  .chip-mine    { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #dbeafe; color: #1d4ed8; border-radius: 99px; font-size: 12px; font-weight: 600; }
-  .chip-pending { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #fef9c3; color: #854d0e; border-radius: 99px; font-size: 12px; font-weight: 600; }
-  .chip-refused { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #fee2e2; color: #991b1b; border-radius: 99px; font-size: 12px; font-weight: 600; }
+  .section-title { font-size:13px; font-weight:700; color:#0f172a; letter-spacing:-.01em; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
 
-  .btn-request { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #1e3a5f; color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: background .12s; text-decoration: none; }
-  .btn-request:hover { background: #2d5282; color: #fff; text-decoration: none; }
-  .btn-request:disabled { opacity: .4; cursor: not-allowed; }
-  .btn-cancel  { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: transparent; color: #6b7280; border: 1px solid #d1d5db; border-radius: 7px; font-size: 12px; font-family: inherit; cursor: pointer; transition: .12s; }
-  .btn-cancel:hover { border-color: #ef4444; color: #ef4444; }
+  .chip { display:inline-block; padding:2px 9px; border-radius:99px; font-size:11.5px; font-weight:600; }
+  .chip-draft    { background:#f3f4f6; color:#374151; }
+  .chip-review   { background:#fef9c3; color:#854d0e; }
+  .chip-annotated{ background:#dbeafe; color:#1d4ed8; }
+  .chip-validated{ background:#dcfce7; color:#166534; }
 
-  .action-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn-sm-submit { padding:4px 10px; background:#1e3a5f; color:#fff; border:none; border-radius:6px; font-size:11.5px; font-weight:600; font-family:inherit; cursor:pointer; transition:background .12s; white-space:nowrap; }
+  .btn-sm-submit:hover { background:#2d5282; }
 
-  .page-intro { max-width: 600px; color: #6b7280; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
-  .status-banner { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 20px; }
-  .status-banner strong { color: #15803d; }
+  .disconnect-link { font-size:12px; color:#9ca3af; cursor:pointer; background:none; border:none; padding:0; font-family:inherit; }
+  .disconnect-link:hover { color:#ef4444; text-decoration:underline; }
+  .warning-tip { background:#fff7ed; border:1px solid #fed7aa; color:#92400e; padding:10px 13px; border-radius:7px; font-size:12.5px; line-height:1.5; margin-top:12px; }
 </style>
 
-{# ── Bannière statut si client a déjà un expert ── #}
+{# ════════════════════════════════════════
+   État 1 : client a un expert accepté → HUB
+   ════════════════════════════════════════ #}
 {% if myInvitation and myInvitation.status == 'accepted' %}
-  <div class="status-banner">
-    Votre expert-comptable : <strong>{{ myInvitation.accountant.firstName }} {{ myInvitation.accountant.lastName }}</strong>
-    {% if myInvitation.accountant.firm %} — {{ myInvitation.accountant.firm }}{% endif %}
-  </div>
-{% elseif myInvitation and myInvitation.status == 'pending' %}
-  <div class="status-banner" style="background:#fef9c3;border-color:#fde68a;color:#854d0e;">
-    Demande en attente de réponse de <strong>{{ myInvitation.accountant.firstName }} {{ myInvitation.accountant.lastName }}</strong>.
-    Vous serez notifié dès qu'elle est acceptée.
-  </div>
-{% endif %}
 
-<p class="page-intro">Choisissez un expert-comptable pour l'accompagnement de votre activité. Il pourra réviser et valider vos bilans IA.</p>
+  {% set expert = myInvitation.accountant %}
 
-{% if accountants is empty %}
-  <div class="card">
-    <div class="empty-state">
-      <p>Aucun expert-comptable n'est encore inscrit sur GestoPro.</p>
+  <div style="margin-bottom:20px;">
+    <div class="card" style="margin-bottom:0;">
+      <div class="hub-expert-header">
+        <div class="hub-avatar">{{ expert.firstName|first|upper }}{{ expert.lastName|first|upper }}</div>
+        <div style="flex:1;">
+          <div class="hub-name">{{ expert.firstName }} {{ expert.lastName }}</div>
+          {% if expert.firm %}<div class="hub-sub">{{ expert.firm }}</div>{% endif %}
+          {% if expert.registrationNumber %}<div class="hub-reg">{{ expert.registrationNumber }}</div>{% endif %}
+        </div>
+        <span class="chip-mine" style="background:#dcfce7;color:#166534;">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>
+          Expert lié
+        </span>
+      </div>
+
+      {% if expert.bio %}
+        <p class="hub-bio">{{ expert.bio }}</p>
+      {% else %}
+        <p class="hub-bio-empty">Cet expert n'a pas encore ajouté de présentation.</p>
+      {% endif %}
+
+      <form method="post" action="{{ path('app_expert_disconnect') }}" style="margin-top:4px;">
+        <input type="hidden" name="_token" value="{{ csrf_token('expert_disconnect') }}">
+        <button type="submit" class="disconnect-link"
+                onclick="return confirm('Dissocier cet expert ? Vos bilans et messages seront conservés.')">
+          Dissocier cet expert
+        </button>
+      </form>
     </div>
   </div>
-{% else %}
-  <div class="expert-grid">
-    {% for expert in accountants %}
-      {% set isMyExpert  = myInvitation and myInvitation.accountant.id == expert.id and myInvitation.status == 'accepted' %}
-      {% set isPending   = myInvitation and myInvitation.accountant.id == expert.id and myInvitation.status == 'pending' %}
-      {% set hasOther    = myInvitation and myInvitation.accountant.id != expert.id %}
 
-      <div class="expert-card{{ isMyExpert ? ' is-mine' : '' }}">
-        <div class="expert-head">
-          <div class="expert-avatar">
-            {{ expert.firstName|first|upper }}{{ expert.lastName|first|upper }}
-          </div>
-          <div>
-            <div class="expert-name">{{ expert.firstName }} {{ expert.lastName }}</div>
-            {% if expert.firm %}
-              <div class="expert-firm">{{ expert.firm }}</div>
-            {% endif %}
-            {% if expert.registrationNumber %}
-              <div class="expert-reg">{{ expert.registrationNumber }}</div>
-            {% endif %}
-          </div>
+  <div class="hub-layout">
+
+    {# ── Bilans ── #}
+    <div id="bilans">
+      <div class="card">
+        <div class="section-title">
+          Mes bilans
+          <a href="{{ path('app_balance_sheets') }}" class="btn btn-secondary btn-sm" style="font-size:12px;">+ Nouveau bilan</a>
         </div>
 
-        {% if expert.bio %}
-          <p class="expert-bio">{{ expert.bio }}</p>
+        {% if bilans is empty %}
+          <div class="bilan-empty">
+            Aucun bilan généré pour l'instant.<br>
+            <a href="{{ path('app_balance_sheets') }}" style="color:#1e3a5f;font-weight:600;">Créer votre premier bilan IA</a>
+          </div>
         {% else %}
-          <p class="expert-bio-empty">Présentation à venir.</p>
+          {% for bilan in bilans %}
+          <div class="bilan-row">
+            <div class="bilan-info">
+              <div class="bilan-period">{{ bilan.period }}</div>
+              <div class="bilan-date">{{ bilan.createdAt|date('d/m/Y') }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              {% if bilan.status == 'draft' %}
+                <span class="chip chip-draft">Brouillon</span>
+                <form method="post" action="{{ path('app_expert_bilan_submit', {id: bilan.id}) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('submit_bilan_' ~ bilan.id) }}">
+                  <button type="submit" class="btn-sm-submit">Soumettre</button>
+                </form>
+              {% elseif bilan.status == 'pending_review' %}
+                <span class="chip chip-review">En révision</span>
+              {% elseif bilan.status == 'annotated' %}
+                <span class="chip chip-annotated">Annoté</span>
+                <a href="{{ path('app_balance_sheet_show', {id: bilan.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+              {% elseif bilan.status == 'validated' %}
+                <span class="chip chip-validated">Validé</span>
+                <a href="{{ path('app_balance_sheet_show', {id: bilan.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
         {% endif %}
 
-        <div class="expert-action">
-          {% if isMyExpert %}
-            <div class="action-row">
-              <span class="chip-mine">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>
-                Votre expert
-              </span>
-            </div>
+        <div class="warning-tip">
+          Seuls les bilans en statut <strong>Brouillon</strong> peuvent être soumis à votre expert pour révision.
+        </div>
+      </div>
+    </div>
 
-          {% elseif isPending %}
-            <div class="action-row">
-              <span class="chip-pending">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>
-                Demande envoyée
-              </span>
-              <form method="post" action="{{ path('app_expert_cancel', {id: myInvitation.id}) }}" style="display:inline;">
-                <input type="hidden" name="_token" value="{{ csrf_token('expert_cancel_' ~ myInvitation.id) }}">
-                <button type="submit" class="btn-cancel"
-                        onclick="return confirm('Annuler la demande ?')">Annuler</button>
-              </form>
-            </div>
+    {# ── Messages ── #}
+    <div id="messages">
+      <div class="card">
+        <div class="section-title">
+          Messages avec {{ expert.firstName }}
+        </div>
 
-          {% elseif hasOther %}
-            <button class="btn-request" disabled title="Annulez votre demande en cours pour en envoyer une nouvelle.">
-              Choisir cet expert
-            </button>
-
+        <div class="msg-thread" id="msg-thread">
+          {% if messages is empty %}
+            <div class="msg-empty">Aucun message pour l'instant. Envoyez le premier !</div>
           {% else %}
+            {% for msg in messages %}
+              <div>
+                <div class="msg-bubble {{ msg.fromClient ? 'msg-client' : 'msg-expert' }}">
+                  {{ msg.content|nl2br }}
+                </div>
+                <div class="msg-meta {{ msg.fromClient ? 'msg-meta-right' : '' }}">
+                  {% if msg.fromClient %}Vous{% else %}{{ expert.firstName }}{% endif %}
+                  · {{ msg.createdAt|date('d/m à H:i') }}
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+
+        <form method="post" action="{{ path('app_expert_message') }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('expert_msg') }}">
+          <div class="msg-input">
+            <textarea name="content" rows="2" placeholder="Écrivez un message à {{ expert.firstName }}…" required></textarea>
+            <button type="submit" class="msg-send">Envoyer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+{# ════════════════════════════════════════
+   État 2 : demande en attente
+   ════════════════════════════════════════ #}
+{% elseif myInvitation and myInvitation.status == 'pending' %}
+
+  {% set expert = myInvitation.accountant %}
+  <div style="max-width:520px;margin:40px auto;">
+    <div class="card" style="text-align:center;padding:40px 32px;">
+      <div class="hub-avatar" style="margin:0 auto 16px;width:60px;height:60px;font-size:20px;">
+        {{ expert.firstName|first|upper }}{{ expert.lastName|first|upper }}
+      </div>
+      <div style="font-size:17px;font-weight:700;color:#0f172a;margin-bottom:4px;">{{ expert.firstName }} {{ expert.lastName }}</div>
+      {% if expert.firm %}<div style="font-size:13px;color:#6b7280;margin-bottom:20px;">{{ expert.firm }}</div>{% endif %}
+
+      <span class="chip-pending" style="display:inline-flex;margin-bottom:20px;">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>
+        Demande envoyée le {{ myInvitation.createdAt|date('d/m/Y') }} — en attente de réponse
+      </span>
+
+      <p style="font-size:13.5px;color:#6b7280;line-height:1.6;margin-bottom:24px;">
+        Votre expert-comptable a été notifié et devrait répondre sous peu. Vous recevrez accès à la messagerie et à la soumission de bilans une fois la demande acceptée.
+      </p>
+
+      <form method="post" action="{{ path('app_expert_cancel', {id: myInvitation.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('expert_cancel_' ~ myInvitation.id) }}">
+        <button type="submit" class="btn-cancel" onclick="return confirm('Annuler cette demande ?')">Annuler la demande</button>
+      </form>
+    </div>
+  </div>
+
+{# ════════════════════════════════════════
+   État 3 : pas d'expert → annuaire
+   ════════════════════════════════════════ #}
+{% else %}
+
+  <p class="page-intro">Choisissez un expert-comptable. Il pourra réviser vos bilans IA, ajouter des annotations et les valider officiellement.</p>
+
+  {% if accountants is empty %}
+    <div class="card">
+      <div class="empty-state"><p>Aucun expert-comptable n'est encore inscrit sur GestoPro.</p></div>
+    </div>
+  {% else %}
+    <div class="expert-grid">
+      {% for expert in accountants %}
+        <div class="expert-card">
+          <div class="expert-head">
+            <div class="expert-avatar">{{ expert.firstName|first|upper }}{{ expert.lastName|first|upper }}</div>
+            <div>
+              <div class="expert-name">{{ expert.firstName }} {{ expert.lastName }}</div>
+              {% if expert.firm %}<div class="expert-firm">{{ expert.firm }}</div>{% endif %}
+              {% if expert.registrationNumber %}<div class="expert-reg">{{ expert.registrationNumber }}</div>{% endif %}
+            </div>
+          </div>
+          {% if expert.bio %}
+            <p class="expert-bio">{{ expert.bio }}</p>
+          {% else %}
+            <p class="expert-bio-empty">Présentation à venir.</p>
+          {% endif %}
+          <div style="margin-top:auto;">
             <form method="post" action="{{ path('app_expert_request', {id: expert.id}) }}">
               <input type="hidden" name="_token" value="{{ csrf_token('expert_connect_' ~ expert.id) }}">
               <button type="submit" class="btn-request">
@@ -146,10 +271,16 @@
                 Choisir cet expert
               </button>
             </form>
-          {% endif %}
+          </div>
         </div>
-      </div>
-    {% endfor %}
-  </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
 {% endif %}
+
+<script>
+  const thread = document.getElementById('msg-thread');
+  if (thread) thread.scrollTop = thread.scrollHeight;
+</script>
 {% endblock %}

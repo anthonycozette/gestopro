@@ -5,9 +5,11 @@ namespace App\Controller;
 use App\Entity\Accountant;
 use App\Entity\AccountantInvitation;
 use App\Entity\BalanceSheet;
+use App\Entity\ExpertMessage;
 use App\Entity\User;
 use App\Repository\AccountantInvitationRepository;
 use App\Repository\BalanceSheetRepository;
+use App\Repository\ExpertMessageRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -110,6 +112,56 @@ class ExpertController extends AbstractController
             'invitations' => $invitations,
             'accountant'  => $accountant,
         ]);
+    }
+
+    #[Route('/clients/{id}', name: 'client_detail', requirements: ['id' => '\d+'])]
+    public function clientDetail(
+        AccountantInvitation $invitation,
+        ExpertMessageRepository $msgRepo,
+        EntityManagerInterface $em,
+    ): Response {
+        $accountant = $this->accountant();
+        if ($invitation->getAccountant() !== $accountant || $invitation->getStatus() !== AccountantInvitation::STATUS_ACCEPTED) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $messages = $msgRepo->findByInvitation($invitation);
+        $bilans   = $em->getRepository(BalanceSheet::class)
+                       ->findBy(['user' => $invitation->getUser()], ['createdAt' => 'DESC']);
+
+        return $this->render('expert/client_detail.html.twig', [
+            'accountant'  => $accountant,
+            'invitation'  => $invitation,
+            'messages'    => $messages,
+            'bilans'      => $bilans,
+        ]);
+    }
+
+    #[Route('/clients/{id}/message', name: 'client_message', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function sendMessage(
+        AccountantInvitation $invitation,
+        Request $request,
+        EntityManagerInterface $em,
+    ): Response {
+        $accountant = $this->accountant();
+        if ($invitation->getAccountant() !== $accountant) {
+            throw $this->createAccessDeniedException();
+        }
+        if (!$this->isCsrfTokenValid('expert_msg_' . $invitation->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $content = trim($request->request->get('content', ''));
+        if ($content !== '') {
+            $msg = (new ExpertMessage())
+                ->setInvitation($invitation)
+                ->setSenderType(ExpertMessage::SENDER_EXPERT)
+                ->setContent($content);
+            $em->persist($msg);
+            $em->flush();
+        }
+
+        return $this->redirectToRoute('expert_client_detail', ['id' => $invitation->getId(), '#' => 'messages']);
     }
 
     #[Route('/bilans/{id}', name: 'bilan_show')]

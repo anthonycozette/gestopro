@@ -4,9 +4,6 @@
 {% block topbar %}
 <div class="topbar">
     <h1>Mes clients</h1>
-    <div class="topbar-actions">
-        <a href="{{ path('expert_invite') }}" class="btn btn-primary">+ Inviter un client</a>
-    </div>
 </div>
 {% endblock %}
 
@@ -14,8 +11,8 @@
 <div class="card">
     {% if invitations is empty %}
         <div class="empty-state">
-            <p>Aucun client invité pour l'instant.</p>
-            <a href="{{ path('expert_invite') }}" class="btn btn-primary">Envoyer une invitation</a>
+            <p>Aucun client lié pour l'instant. Les clients vous trouveront dans l'annuaire.</p>
+            <a href="{{ path('expert_profile') }}" class="btn btn-primary">Compléter mon profil</a>
         </div>
     {% else %}
         <table>
@@ -23,9 +20,9 @@
                 <tr>
                     <th>Client</th>
                     <th>Email</th>
-                    <th>Date invitation</th>
-                    <th>Expiration</th>
+                    <th>Depuis le</th>
                     <th>Statut</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -35,16 +32,14 @@
                     <td>{{ inv.user.email }}</td>
                     <td>{{ inv.createdAt|date('d/m/Y') }}</td>
                     <td>
-                        {% if inv.expiresAt %}
-                            {% if inv.expired %}<span style="color:#ef4444;">{{ inv.expiresAt|date('d/m/Y') }}</span>
-                            {% else %}{{ inv.expiresAt|date('d/m/Y') }}{% endif %}
-                        {% else %}—{% endif %}
-                    </td>
-                    <td>
-                        {% if inv.status == 'accepted' %}<span class="badge badge-green">Acceptée</span>
-                        {% elseif inv.status == 'declined' %}<span class="badge badge-red">Refusée</span>
-                        {% elseif inv.expired %}<span class="badge badge-gray">Expirée</span>
+                        {% if inv.status == 'accepted' %}<span class="badge badge-green">Lié</span>
+                        {% elseif inv.status == 'declined' %}<span class="badge badge-red">Refusé</span>
                         {% else %}<span class="badge badge-yellow">En attente</span>{% endif %}
+                    </td>
+                    <td style="text-align:right;">
+                        {% if inv.status == 'accepted' %}
+                            <a href="{{ path('expert_client_detail', {id: inv.id}) }}" class="btn btn-primary btn-sm">Voir la fiche</a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
