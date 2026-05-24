@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}Bilan {{ sheet.period }} — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/accounting.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>Bilan {{ sheet.period }}</h1>
@@ -23,76 +27,135 @@
 {% set fd = sheet.financialData %}
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start;">
 
-    <div class="card">
-        <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">
-            {{ sheet.periodStart|date('d/m/Y') }} → {{ sheet.periodEnd|date('d/m/Y') }}
+    {# ── Compte de résultat ───────────────────────────────────── #}
+    <div>
+        <div class="acc-doc">
+            <div class="acc-doc-header">
+                <div>
+                    <div class="acc-doc-eyebrow">Compte de résultat simplifié</div>
+                    <div class="acc-doc-period">{{ sheet.period }}</div>
+                    <div class="acc-doc-dates">
+                        {{ sheet.periodStart|date('d/m/Y') }} → {{ sheet.periodEnd|date('d/m/Y') }}
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    {% if sheet.status == 'validated' %}
+                        <span class="chip chip-green"><span class="chip-dot"></span>Validé</span>
+                    {% elseif sheet.status == 'annotated' %}
+                        <span class="chip chip-blue"><span class="chip-dot"></span>Annoté</span>
+                    {% elseif sheet.status == 'pending_review' %}
+                        <span class="chip chip-orange"><span class="chip-dot"></span>En révision</span>
+                    {% else %}
+                        <span class="chip chip-gray"><span class="chip-dot"></span>Brouillon</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="acc-amounts">
+                <div class="acc-row">
+                    <span class="acc-row-label">Chiffre d'affaires HT</span>
+                    <span class="acc-row-value c-positive">{{ fd.revenue_ht|number_format(2, ',', ' ') }} €</span>
+                </div>
+                <div class="acc-row">
+                    <span class="acc-row-label">Dépenses TTC</span>
+                    <span class="acc-row-value c-negative">− {{ fd.expenses_ttc|number_format(2, ',', ' ') }} €</span>
+                </div>
+                <div class="acc-row">
+                    <span class="acc-row-label">Cotisations URSSAF</span>
+                    <span class="acc-row-value c-negative">− {{ fd.cotisations|number_format(2, ',', ' ') }} €</span>
+                </div>
+                <div class="acc-row-total">
+                    <span class="acc-row-label">Résultat net estimé</span>
+                    <span class="acc-row-value {{ fd.net_result >= 0 ? 'c-positive' : 'c-negative' }}">
+                        {{ fd.net_result|number_format(2, ',', ' ') }} €
+                    </span>
+                </div>
+            </div>
         </div>
 
-        <table style="width:360px;">
-            <tr>
-                <td style="color:#6b7280;padding:8px 0;">Chiffre d'affaires HT</td>
-                <td style="text-align:right;font-weight:600;font-size:15px;">{{ fd.revenue_ht|number_format(2, ',', ' ') }} €</td>
-            </tr>
-            <tr>
-                <td style="color:#6b7280;padding:8px 0;">Dépenses TTC</td>
-                <td style="text-align:right;color:#ef4444;">− {{ fd.expenses_ttc|number_format(2, ',', ' ') }} €</td>
-            </tr>
-            <tr>
-                <td style="color:#6b7280;padding:8px 0;">Cotisations URSSAF</td>
-                <td style="text-align:right;color:#ef4444;">− {{ fd.cotisations|number_format(2, ',', ' ') }} €</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding:0;height:2px;background:#1e3a5f;"></td>
-            </tr>
-            <tr>
-                <td style="font-weight:700;padding-top:12px;font-size:15px;">Résultat net estimé</td>
-                <td style="text-align:right;font-weight:700;font-size:20px;padding-top:12px;color:{% if fd.net_result < 0 %}#ef4444{% else %}#16a34a{% endif %};">
-                    {{ fd.net_result|number_format(2, ',', ' ') }} €
-                </td>
-            </tr>
-        </table>
-
         {% if sheet.accountantComment %}
-        <div style="margin-top:24px;padding:16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;">
-            <div style="font-size:12px;font-weight:600;color:#1e40af;margin-bottom:8px;">
+        <div class="expert-comment">
+            <div class="expert-comment-label">
                 Commentaire de l'expert-comptable
+                {% if sheet.accountant %} — {{ sheet.accountant.fullName }}{% endif %}
             </div>
-            <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;color:#374151;">{{ sheet.accountantComment }}</div>
+            <div class="expert-comment-body">{{ sheet.accountantComment }}</div>
         </div>
         {% endif %}
     </div>
 
+    {# ── Sidebar ──────────────────────────────────────────────── #}
     <div>
+        {# Status timeline #}
         <div class="card">
-            <div class="card-title">Statut</div>
-            <div style="margin-bottom:16px;">
-                {% if sheet.status == 'validated' %}<span class="badge badge-green" style="font-size:13px;padding:5px 12px;">Validé</span>
-                {% elseif sheet.status == 'annotated' %}<span class="badge badge-blue" style="font-size:13px;padding:5px 12px;">Annoté par l'expert</span>
-                {% elseif sheet.status == 'pending_review' %}<span class="badge badge-yellow" style="font-size:13px;padding:5px 12px;">En cours de révision</span>
-                {% else %}<span class="badge badge-gray" style="font-size:13px;padding:5px 12px;">Brouillon</span>{% endif %}
+            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">
+                Progression
             </div>
-
-            {% if sheet.accountant %}
-            <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Expert-comptable</div>
-            <div style="font-size:14px;font-weight:600;">{{ sheet.accountant.fullName }}</div>
-            {% if sheet.accountant.firm %}<div style="font-size:12px;color:#6b7280;">{{ sheet.accountant.firm }}</div>{% endif %}
-            {% endif %}
-
-            {% if sheet.validatedAt %}
-            <div style="margin-top:12px;font-size:12px;color:#16a34a;">
-                ✓ Validé le {{ sheet.validatedAt|date('d/m/Y à H:i') }}
+            <div class="bs-timeline">
+                <div class="bs-step {{ sheet.status in ['draft','pending_review','annotated','validated'] ? 'done' : '' }}">
+                    <div class="bs-step-label">Brouillon créé</div>
+                    <div class="bs-step-sub">Données calculées automatiquement</div>
+                </div>
+                <div class="bs-step
+                    {{ sheet.status == 'pending_review' ? 'current' : '' }}
+                    {{ sheet.status in ['annotated','validated'] ? 'done' : '' }}">
+                    <div class="bs-step-label">Soumis pour révision</div>
+                    <div class="bs-step-sub">En attente de l'expert-comptable</div>
+                </div>
+                <div class="bs-step
+                    {{ sheet.status == 'annotated' ? 'current' : '' }}
+                    {{ sheet.status == 'validated' ? 'done' : '' }}">
+                    <div class="bs-step-label">Annoté par l'expert</div>
+                    <div class="bs-step-sub">Commentaire ajouté</div>
+                </div>
+                <div class="bs-step {{ sheet.status == 'validated' ? 'validated' : '' }}">
+                    <div class="bs-step-label">Bilan validé</div>
+                    {% if sheet.validatedAt %}
+                    <div class="bs-step-sub" style="color:#16a34a;">
+                        le {{ sheet.validatedAt|date('d/m/Y') }}
+                    </div>
+                    {% else %}
+                    <div class="bs-step-sub">Validation de l'expert requise</div>
+                    {% endif %}
+                </div>
             </div>
-            {% endif %}
+        </div>
 
-            {% if sheet.status == 'draft' %}
-            <div style="margin-top:16px;border-top:1px solid #e5e7eb;padding-top:12px;">
+        {# Expert info #}
+        {% if sheet.accountant %}
+        <div class="acc-status-box st-blue" style="margin-top:12px;">
+            <div class="acc-status-title" style="color:#1d4ed8;">Expert-comptable</div>
+            <div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;">
+                {{ sheet.accountant.fullName }}
+            </div>
+            {% if sheet.accountant.firm %}
+            <div class="acc-status-desc">{{ sheet.accountant.firm }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# Actions #}
+        <div class="card" style="margin-top:12px;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                {% if sheet.status == 'draft' %}
+                <form method="post" action="{{ path('app_balance_sheet_submit', {id: sheet.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('submit_sheet_' ~ sheet.id) }}">
+                    <button type="submit" class="btn btn-primary" style="width:100%;"
+                            onclick="return confirm('Soumettre ce bilan à votre expert-comptable ?')">
+                        Soumettre pour révision
+                    </button>
+                </form>
                 <form method="post" action="{{ path('app_balance_sheet_delete', {id: sheet.id}) }}"
                       onsubmit="return confirm('Supprimer ce bilan ?')">
                     <input type="hidden" name="_token" value="{{ csrf_token('delete_sheet_' ~ sheet.id) }}">
                     <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer</button>
                 </form>
+                {% else %}
+                <a href="{{ path('app_balance_sheets') }}" class="btn btn-secondary" style="width:100%;text-align:center;">
+                    Retour aux bilans
+                </a>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
 

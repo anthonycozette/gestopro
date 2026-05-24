@@ -1,5 +1,9 @@
 {% extends 'base.html.twig' %}
-{% block title %}Bilans — GestoPro{% endblock %}
+{% block title %}Bilans comptables — GestoPro{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/accounting.css') }}">
+{% endblock %}
 
 {% block topbar %}
 <div class="topbar">
@@ -11,54 +15,166 @@
 {% endblock %}
 
 {% block body %}
+
+{% set totalRevenue  = 0 %}
+{% set totalExpenses = 0 %}
+{% set totalNet      = 0 %}
+{% for s in sheets %}
+    {% set fd = s.financialData %}
+    {% set totalRevenue  = totalRevenue  + fd.revenue_ht %}
+    {% set totalExpenses = totalExpenses + fd.expenses_ttc %}
+    {% set totalNet      = totalNet      + fd.net_result %}
+{% endfor %}
+
+{% set countDraft    = sheets|filter(s => s.status == 'draft')|length %}
+{% set countPending  = sheets|filter(s => s.status == 'pending_review')|length %}
+{% set countAnnotated= sheets|filter(s => s.status == 'annotated')|length %}
+{% set countValid    = sheets|filter(s => s.status == 'validated')|length %}
+
+{# ── Stat tiles ───────────────────────────────────────────────── #}
+{% if sheets is not empty %}
+<div class="acc-stat-grid" style="grid-template-columns:repeat(3,1fr);">
+
+    <div class="acc-stat-card">
+        <div class="acc-stat-label">CA HT total</div>
+        <div class="acc-stat-value">{{ totalRevenue|number_format(0, ',', ' ') }} €</div>
+        <div class="acc-stat-sub">{{ sheets|length }} bilan{{ sheets|length != 1 ? 's' : '' }}</div>
+    </div>
+
+    <div class="acc-stat-card">
+        <div class="acc-stat-label">Dépenses TTC total</div>
+        <div class="acc-stat-value c-negative">{{ totalExpenses|number_format(0, ',', ' ') }} €</div>
+        <div class="acc-stat-sub">Toutes périodes confondues</div>
+    </div>
+
+    <div class="acc-stat-card">
+        <div class="acc-stat-label">Résultat net cumulé</div>
+        <div class="acc-stat-value {{ totalNet >= 0 ? 'c-positive' : 'c-negative' }}">
+            {{ totalNet|number_format(0, ',', ' ') }} €
+        </div>
+        <div class="acc-stat-sub">
+            {% if countValid > 0 %}{{ countValid }} validé{{ countValid != 1 ? 's' : '' }}{% else %}Aucun bilan validé{% endif %}
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+{# ── Filter tabs ──────────────────────────────────────────────── #}
+{% if sheets is not empty %}
+<div class="acc-tabs">
+    <button class="acc-tab active" data-filter="all">
+        <span class="acc-tab-dot" style="background:#6b7280;"></span>
+        Tout <span style="opacity:.55;margin-left:2px;">{{ sheets|length }}</span>
+    </button>
+    {% if countDraft > 0 %}
+    <button class="acc-tab" data-filter="draft">
+        <span class="acc-tab-dot" style="background:#9ca3af;"></span>
+        Brouillon <span style="opacity:.55;margin-left:2px;">{{ countDraft }}</span>
+    </button>
+    {% endif %}
+    {% if countPending > 0 %}
+    <button class="acc-tab" data-filter="pending_review">
+        <span class="acc-tab-dot" style="background:#f97316;"></span>
+        En révision <span style="opacity:.55;margin-left:2px;">{{ countPending }}</span>
+    </button>
+    {% endif %}
+    {% if countAnnotated > 0 %}
+    <button class="acc-tab" data-filter="annotated">
+        <span class="acc-tab-dot" style="background:#2563eb;"></span>
+        Annoté <span style="opacity:.55;margin-left:2px;">{{ countAnnotated }}</span>
+    </button>
+    {% endif %}
+    {% if countValid > 0 %}
+    <button class="acc-tab" data-filter="validated">
+        <span class="acc-tab-dot" style="background:#16a34a;"></span>
+        Validé <span style="opacity:.55;margin-left:2px;">{{ countValid }}</span>
+    </button>
+    {% endif %}
+</div>
+{% endif %}
+
+{# ── Table ────────────────────────────────────────────────────── #}
 <div class="card">
     {% if sheets is empty %}
         <div class="empty-state">
-            <p>Aucun bilan créé pour l'instant.</p>
+            <div class="empty-state-icon">📊</div>
+            <p>Aucun bilan comptable créé.</p>
             <a href="{{ path('app_balance_sheet_new') }}" class="btn btn-primary">Créer mon premier bilan</a>
         </div>
     {% else %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Période</th>
-                    <th style="text-align:right">CA HT</th>
-                    <th style="text-align:right">Dépenses</th>
-                    <th style="text-align:right">Résultat net</th>
-                    <th>Statut</th>
-                    <th>Expert</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in sheets %}
-                {% set fd = s.financialData %}
-                <tr>
-                    <td>
-                        <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}"><strong>{{ s.period }}</strong></a>
-                        <div style="font-size:11px;color:#9ca3af;">{{ s.periodStart|date('d/m/Y') }} → {{ s.periodEnd|date('d/m/Y') }}</div>
-                    </td>
-                    <td style="text-align:right">{{ fd.revenue_ht|number_format(2, ',', ' ') }} €</td>
-                    <td style="text-align:right;color:#ef4444;">{{ fd.expenses_ttc|number_format(2, ',', ' ') }} €</td>
-                    <td style="text-align:right;font-weight:600;color:{% if fd.net_result < 0 %}#ef4444{% else %}#16a34a{% endif %};">
-                        {{ fd.net_result|number_format(2, ',', ' ') }} €
-                    </td>
-                    <td>
-                        {% if s.status == 'validated' %}<span class="badge badge-green">Validé</span>
-                        {% elseif s.status == 'annotated' %}<span class="badge badge-blue">Annoté</span>
-                        {% elseif s.status == 'pending_review' %}<span class="badge badge-yellow">En révision</span>
-                        {% else %}<span class="badge badge-gray">Brouillon</span>{% endif %}
-                    </td>
-                    <td style="font-size:12px;color:#6b7280;">
-                        {% if s.accountant %}{{ s.accountant.fullName }}{% else %}—{% endif %}
-                    </td>
-                    <td style="text-align:right">
-                        <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <table>
+        <thead>
+            <tr>
+                <th>Période</th>
+                <th style="text-align:right;">CA HT</th>
+                <th style="text-align:right;">Dépenses</th>
+                <th style="text-align:right;">Résultat net</th>
+                <th>Statut</th>
+                <th>Expert</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in sheets %}
+        {% set fd = s.financialData %}
+        <tr data-status="{{ s.status }}">
+            <td>
+                <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}"
+                   style="font-weight:600;color:#111827;text-decoration:none;">
+                    {{ s.period }}
+                </a>
+                <div style="font-size:11px;color:#9ca3af;margin-top:2px;">
+                    {{ s.periodStart|date('d/m/Y') }} → {{ s.periodEnd|date('d/m/Y') }}
+                </div>
+            </td>
+            <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;">
+                {{ fd.revenue_ht|number_format(2, ',', ' ') }} €
+            </td>
+            <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:#dc2626;">
+                − {{ fd.expenses_ttc|number_format(2, ',', ' ') }} €
+            </td>
+            <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;
+                       color:{{ fd.net_result >= 0 ? '#16a34a' : '#dc2626' }};">
+                {{ fd.net_result|number_format(2, ',', ' ') }} €
+            </td>
+            <td>
+                {% if s.status == 'validated' %}
+                    <span class="chip chip-green"><span class="chip-dot"></span>Validé</span>
+                {% elseif s.status == 'annotated' %}
+                    <span class="chip chip-blue"><span class="chip-dot"></span>Annoté</span>
+                {% elseif s.status == 'pending_review' %}
+                    <span class="chip chip-orange"><span class="chip-dot"></span>En révision</span>
+                {% else %}
+                    <span class="chip chip-gray"><span class="chip-dot"></span>Brouillon</span>
+                {% endif %}
+            </td>
+            <td style="font-size:12px;color:#6b7280;">
+                {% if s.accountant %}{{ s.accountant.fullName }}{% else %}—{% endif %}
+            </td>
+            <td style="text-align:right;">
+                <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
     {% endif %}
 </div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.querySelectorAll('.acc-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.acc-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        const f = btn.dataset.filter;
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.style.display = (f === 'all' || row.dataset.status === f) ? '' : 'none';
+        });
+    });
+});
+</script>
 {% endblock %}

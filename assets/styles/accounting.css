@@ -1,0 +1,117 @@
+/* ── STAT GRID ───────────────────────────────────────────────── */
+.acc-stat-grid { display: grid; gap: 14px; margin-bottom: 20px; }
+.acc-stat-card {
+    background: #fff; border: 1px solid #e8edf2; border-radius: 12px;
+    padding: 18px 20px; position: relative;
+}
+.acc-stat-card.alert-glow { border-color: #fca5a5; box-shadow: 0 0 0 3px #fee2e2; }
+.acc-stat-label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.acc-stat-value { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: #111827; margin-bottom: 4px; }
+.acc-stat-sub   { font-size: 12px; color: #9ca3af; }
+
+/* ── TVA PROGRESS BAR ────────────────────────────────────────── */
+.tva-bar-track { height: 5px; background: #e5e7eb; border-radius: 99px; overflow: hidden; margin: 6px 0 4px; }
+.tva-bar-fill  { height: 100%; border-radius: 99px; }
+.tva-ok   { background: #16a34a; }
+.tva-warn { background: #f97316; }
+.tva-bad  { background: #dc2626; }
+
+/* ── FILTER TABS ─────────────────────────────────────────────── */
+.acc-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.acc-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 8px;
+    border: 1px solid #e5e7eb; background: #fff;
+    font-size: 13px; font-weight: 500; color: #6b7280;
+    cursor: pointer; transition: all .15s;
+}
+.acc-tab:hover { border-color: #2563eb; color: #2563eb; }
+.acc-tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.acc-tab-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── STATUS CHIPS ────────────────────────────────────────────── */
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.chip-green  { background: #dcfce7; color: #15803d; }
+.chip-orange { background: #ffedd5; color: #c2410c; }
+.chip-blue   { background: #dbeafe; color: #1d4ed8; }
+.chip-gray   { background: #f1f5f9; color: #475569; }
+.chip-purple { background: #ede9fe; color: #6d28d9; }
+.chip-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* ── FORMAL DOCUMENT ─────────────────────────────────────────── */
+.acc-doc {
+    background: #fff; border: 1px solid #e8edf2; border-radius: 14px;
+    padding: 28px 32px; margin-bottom: 16px;
+}
+.acc-doc-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 24px; padding-bottom: 18px;
+    border-bottom: 2px solid #f1f5f9;
+}
+.acc-doc-eyebrow { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.acc-doc-period  { font-size: 24px; font-weight: 800; color: #111827; }
+.acc-doc-dates   { font-size: 13px; color: #9ca3af; margin-top: 4px; }
+
+/* Amount rows */
+.acc-amounts { max-width: 420px; }
+.acc-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px;
+}
+.acc-row:last-child { border-bottom: none; }
+.acc-row-label { color: #6b7280; }
+.acc-row-value { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+.acc-row-total {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 14px 0 0; margin-top: 6px;
+    border-top: 2px solid #1e3a5f;
+}
+.acc-row-total .acc-row-label { font-weight: 700; font-size: 15px; color: #111827; }
+.acc-row-total .acc-row-value { font-size: 26px; font-weight: 800; }
+
+/* Result colors */
+.c-positive { color: #16a34a; }
+.c-negative  { color: #dc2626; }
+.c-blue      { color: #2563eb; }
+.c-muted     { color: #9ca3af; }
+
+/* ── SIDEBAR STATUS BOX ──────────────────────────────────────── */
+.acc-status-box { padding: 14px 16px; border-radius: 10px; margin-bottom: 14px; }
+.acc-status-box.st-gray     { background: #f8fafc; border: 1px solid #e2e8f0; }
+.acc-status-box.st-orange   { background: #fffbeb; border: 1px solid #fde68a; }
+.acc-status-box.st-blue     { background: #eff6ff; border: 1px solid #bfdbfe; }
+.acc-status-box.st-green    { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.acc-status-title   { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+.acc-status-desc    { font-size: 12px; color: #6b7280; line-height: 1.5; }
+
+/* ── BALANCE SHEET TIMELINE ──────────────────────────────────── */
+.bs-timeline { position: relative; padding-left: 22px; margin: 4px 0; }
+.bs-timeline::before { content: ''; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: #e5e7eb; }
+.bs-step { position: relative; margin-bottom: 16px; }
+.bs-step::before {
+    content: ''; position: absolute; left: -18px; top: 3px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid #e5e7eb; background: #fff;
+}
+.bs-step.done::before    { background: #2563eb; border-color: #2563eb; }
+.bs-step.current::before { background: #f97316; border-color: #f97316; box-shadow: 0 0 0 3px #ffedd5; }
+.bs-step.validated::before { background: #16a34a; border-color: #16a34a; }
+.bs-step-label { font-size: 12px; font-weight: 600; color: #374151; }
+.bs-step-sub   { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+/* ── EXPERT COMMENT BOX ──────────────────────────────────────── */
+.expert-comment {
+    background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 16px 20px; margin-top: 20px;
+}
+.expert-comment-label { font-size: 12px; font-weight: 700; color: #1e40af; margin-bottom: 8px; }
+.expert-comment-body  { font-size: 13px; line-height: 1.7; color: #374151; white-space: pre-wrap; }
+
+/* ── NEW BILAN FORM ──────────────────────────────────────────── */
+.bs-preview-result {
+    display: flex; justify-content: space-between; align-items: baseline;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 16px 20px; margin: 12px 0;
+}
+.bs-preview-label { font-size: 14px; font-weight: 700; color: #111827; }
+.bs-preview-value { font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }

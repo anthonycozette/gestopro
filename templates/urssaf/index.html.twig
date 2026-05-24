@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}URSSAF — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/accounting.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>Déclarations URSSAF</h1>
@@ -12,86 +16,155 @@
 
 {% block body %}
 
+{% set tvaPercent = totalRevenue > 0 ? min(100, (totalRevenue / thresholdServices * 100)) : 0 %}
+{% set countPending  = declarations|filter(d => not d.declared)|length %}
+{% set countDeclared = declarations|filter(d => d.declared)|length %}
+
+{# ── Alerte seuil TVA ─────────────────────────────────────────── #}
 {% if totalRevenue >= thresholdServices * 0.9 %}
-<div class="alert alert-error" style="display:flex; align-items:center; gap:10px;">
-    <span style="font-size:18px;">⚠️</span>
+<div class="alert alert-error" style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+    <span style="font-size:20px;flex-shrink:0;">⚠️</span>
     <div>
-        <strong>Attention — Seuil de franchise TVA</strong><br>
-        Votre CA cumulé ({{ totalRevenue|number_format(2, ',', ' ') }} €) approche du seuil de franchise TVA
-        pour les prestations de services ({{ thresholdServices|number_format(0, ',', ' ') }} €).
+        <strong>Seuil de franchise TVA — {{ tvaPercent|round }}% atteint</strong><br>
+        <span style="font-size:13px;">CA cumulé {{ totalRevenue|number_format(0, ',', ' ') }} € sur {{ thresholdServices|number_format(0, ',', ' ') }} € — renseignez-vous sur vos obligations TVA.</span>
     </div>
 </div>
 {% endif %}
 
-<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px;">
-    <div class="card" style="margin-bottom:0; text-align:center;">
-        <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">CA cumulé déclaré</div>
-        <div style="font-size:22px; font-weight:700; color:#111827;">{{ totalRevenue|number_format(2, ',', ' ') }} €</div>
+{# ── Stat tiles ───────────────────────────────────────────────── #}
+<div class="acc-stat-grid" style="grid-template-columns:repeat(3,1fr);">
+
+    <div class="acc-stat-card">
+        <div class="acc-stat-label">CA cumulé déclaré</div>
+        <div class="acc-stat-value">{{ totalRevenue|number_format(0, ',', ' ') }} €</div>
+        <div class="acc-stat-sub">{{ declarations|length }} déclaration{{ declarations|length != 1 ? 's' : '' }}</div>
     </div>
-    <div class="card" style="margin-bottom:0; text-align:center;">
-        <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Cotisations totales</div>
-        <div style="font-size:22px; font-weight:700; color:#2563eb;">{{ totalCotisation|number_format(2, ',', ' ') }} €</div>
+
+    <div class="acc-stat-card">
+        <div class="acc-stat-label">Cotisations dues</div>
+        <div class="acc-stat-value c-blue">{{ totalCotisation|number_format(0, ',', ' ') }} €</div>
+        <div class="acc-stat-sub">{{ countDeclared }} déclarée{{ countDeclared != 1 ? 's' : '' }}{% if countPending > 0 %} · <span style="color:#c2410c;">{{ countPending }} en attente</span>{% endif %}</div>
     </div>
-    <div class="card" style="margin-bottom:0; text-align:center;">
-        <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Seuil franchise TVA</div>
-        <div style="font-size:22px; font-weight:700; color:{% if totalRevenue >= thresholdServices %}#ef4444{% elseif totalRevenue >= thresholdServices * 0.9 %}#f97316{% else %}#16a34a{% endif %};">
-            {{ thresholdServices|number_format(0, ',', ' ') }} €
+
+    <div class="acc-stat-card{% if tvaPercent >= 90 %} alert-glow{% endif %}">
+        <div class="acc-stat-label">Seuil franchise TVA (services)</div>
+        <div class="acc-stat-value {% if tvaPercent >= 100 %}c-negative{% elseif tvaPercent >= 90 %}{% else %}c-positive{% endif %}"
+             style="{% if tvaPercent >= 90 and tvaPercent < 100 %}color:#f97316;{% endif %}">
+            {{ tvaPercent|round }} %
         </div>
-        <div style="font-size:11px; color:#6b7280; margin-top:2px;">
-            {{ max(0, thresholdServices - totalRevenue)|number_format(0, ',', ' ') }} € restants
+        <div class="tva-bar-track">
+            <div class="tva-bar-fill {% if tvaPercent >= 100 %}tva-bad{% elseif tvaPercent >= 90 %}tva-warn{% else %}tva-ok{% endif %}"
+                 style="width:{{ min(100, tvaPercent) }}%;"></div>
         </div>
+        <div class="acc-stat-sub">{{ max(0, thresholdServices - totalRevenue)|number_format(0, ',', ' ') }} € restants</div>
     </div>
+
 </div>
 
+{# ── Filter tabs ──────────────────────────────────────────────── #}
+{% if declarations is not empty %}
+<div class="acc-tabs">
+    <button class="acc-tab active" data-filter="all">
+        <span class="acc-tab-dot" style="background:#6b7280;"></span>
+        Tout <span style="opacity:.55;margin-left:2px;">{{ declarations|length }}</span>
+    </button>
+    <button class="acc-tab" data-filter="pending">
+        <span class="acc-tab-dot" style="background:#f97316;"></span>
+        À déclarer <span style="opacity:.55;margin-left:2px;">{{ countPending }}</span>
+    </button>
+    <button class="acc-tab" data-filter="declared">
+        <span class="acc-tab-dot" style="background:#16a34a;"></span>
+        Déclarées <span style="opacity:.55;margin-left:2px;">{{ countDeclared }}</span>
+    </button>
+</div>
+{% endif %}
+
+{# ── Table ────────────────────────────────────────────────────── #}
 <div class="card">
     {% if declarations is empty %}
         <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
             <p>Aucune déclaration URSSAF enregistrée.</p>
             <a href="{{ path('app_urssaf_new') }}" class="btn btn-primary">Créer ma première déclaration</a>
         </div>
     {% else %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Période</th>
-                    <th>Périodicité</th>
-                    <th style="text-align:right">CA déclaré</th>
-                    <th style="text-align:right">Taux</th>
-                    <th style="text-align:right">Cotisation</th>
-                    <th>Statut</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for d in declarations %}
-                <tr>
-                    <td>
-                        <a href="{{ path('app_urssaf_show', {id: d.id}) }}"><strong>{{ d.periodLabel }}</strong></a>
-                        <div style="font-size:11px; color:#9ca3af;">
-                            {{ d.periodStart|date('d/m/Y') }} → {{ d.periodEnd|date('d/m/Y') }}
-                        </div>
-                    </td>
-                    <td>{{ d.periodicity == 'monthly' ? 'Mensuelle' : 'Trimestrielle' }}</td>
-                    <td style="text-align:right"><strong>{{ d.revenue|number_format(2, ',', ' ') }} €</strong></td>
-                    <td style="text-align:right">{{ (d.cotisationRate * 100)|number_format(1, ',', ' ') }} %</td>
-                    <td style="text-align:right; color:#2563eb; font-weight:600;">{{ d.cotisationAmount|number_format(2, ',', ' ') }} €</td>
-                    <td>
-                        {% if d.declared %}
-                            <span class="badge badge-green">Déclarée</span>
-                            {% if d.declaredAt %}
-                                <div style="font-size:10px; color:#9ca3af; margin-top:2px;">le {{ d.declaredAt|date('d/m/Y') }}</div>
-                            {% endif %}
-                        {% else %}
-                            <span class="badge badge-yellow">À déclarer</span>
+    <table>
+        <thead>
+            <tr>
+                <th>Période</th>
+                <th>Type</th>
+                <th style="text-align:right;">CA déclaré</th>
+                <th style="text-align:right;">Taux</th>
+                <th style="text-align:right;">Cotisation</th>
+                <th>Statut</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in declarations %}
+            <tr data-status="{{ d.declared ? 'declared' : 'pending' }}">
+                <td>
+                    <a href="{{ path('app_urssaf_show', {id: d.id}) }}"
+                       style="font-weight:600;color:#111827;text-decoration:none;">
+                        {{ d.periodLabel }}
+                    </a>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:2px;">
+                        {{ d.periodStart|date('d/m/Y') }} → {{ d.periodEnd|date('d/m/Y') }}
+                    </div>
+                </td>
+                <td>
+                    <span style="font-size:12px;color:#6b7280;">
+                        {{ d.periodicity == 'monthly' ? 'Mensuelle' : 'Trimestrielle' }}
+                    </span>
+                </td>
+                <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;">
+                    {{ d.revenue|number_format(2, ',', ' ') }} €
+                </td>
+                <td style="text-align:right;font-size:13px;color:#6b7280;">
+                    {{ (d.cotisationRate * 100)|number_format(1, ',', ' ') }} %
+                </td>
+                <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:#2563eb;">
+                    {{ d.cotisationAmount|number_format(2, ',', ' ') }} €
+                </td>
+                <td>
+                    {% if d.declared %}
+                        <span class="chip chip-green">
+                            <span class="chip-dot"></span>Déclarée
+                        </span>
+                        {% if d.declaredAt %}
+                            <div style="font-size:10px;color:#9ca3af;margin-top:2px;">
+                                le {{ d.declaredAt|date('d/m/Y') }}
+                            </div>
                         {% endif %}
-                    </td>
-                    <td style="text-align:right">
-                        <a href="{{ path('app_urssaf_show', {id: d.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    {% else %}
+                        <span class="chip chip-orange">
+                            <span class="chip-dot"></span>À déclarer
+                        </span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">
+                    <a href="{{ path('app_urssaf_show', {id: d.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
     {% endif %}
 </div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.querySelectorAll('.acc-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.acc-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        const f = btn.dataset.filter;
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.style.display = (f === 'all' || row.dataset.status === f) ? '' : 'none';
+        });
+    });
+});
+</script>
 {% endblock %}

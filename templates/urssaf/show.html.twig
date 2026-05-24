@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ declaration.periodLabel }} — URSSAF — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/accounting.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>Déclaration {{ declaration.periodLabel }}</h1>
@@ -12,71 +16,79 @@
 {% endblock %}
 
 {% block body %}
-<div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start;">
 
-    <div class="card">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+    {# ── Formal document ──────────────────────────────────────── #}
+    <div class="acc-doc">
+        <div class="acc-doc-header">
             <div>
-                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Période</div>
-                <div style="font-size:18px;font-weight:700;">{{ declaration.periodLabel }}</div>
-                <div style="font-size:13px;color:#6b7280;margin-top:2px;">
+                <div class="acc-doc-eyebrow">Déclaration URSSAF</div>
+                <div class="acc-doc-period">{{ declaration.periodLabel }}</div>
+                <div class="acc-doc-dates">
                     {{ declaration.periodStart|date('d/m/Y') }} → {{ declaration.periodEnd|date('d/m/Y') }}
                 </div>
             </div>
-            <div>
-                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Périodicité</div>
-                <div>{{ declaration.periodicity == 'monthly' ? 'Mensuelle' : 'Trimestrielle' }}</div>
+            <div style="text-align:right;">
+                <div class="acc-doc-eyebrow" style="margin-bottom:6px;">Périodicité</div>
+                <span class="chip chip-gray">
+                    {{ declaration.periodicity == 'monthly' ? 'Mensuelle' : 'Trimestrielle' }}
+                </span>
             </div>
         </div>
 
-        <div style="border-top:2px solid #e5e7eb; padding-top:20px;">
-            <div style="display:flex; justify-content:flex-end;">
-                <table style="width:300px;">
-                    <tr>
-                        <td style="color:#6b7280; font-size:13px; padding:6px 0;">Chiffre d'affaires déclaré</td>
-                        <td style="text-align:right; font-size:15px; font-weight:600;">{{ declaration.revenue|number_format(2, ',', ' ') }} €</td>
-                    </tr>
-                    <tr>
-                        <td style="color:#6b7280; font-size:13px; padding:6px 0;">Taux de cotisation</td>
-                        <td style="text-align:right; font-size:13px;">{{ (declaration.cotisationRate * 100)|number_format(1, ',', ' ') }} %</td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" style="padding:0; height:1px; background:#e5e7eb;"></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight:700; font-size:16px; padding-top:10px; color:#1e40af;">Cotisation à payer</td>
-                        <td style="text-align:right; font-weight:700; font-size:20px; padding-top:10px; color:#1e40af;">
-                            {{ declaration.cotisationAmount|number_format(2, ',', ' ') }} €
-                        </td>
-                    </tr>
-                </table>
+        <div class="acc-amounts">
+            <div class="acc-row">
+                <span class="acc-row-label">Chiffre d'affaires déclaré</span>
+                <span class="acc-row-value">{{ declaration.revenue|number_format(2, ',', ' ') }} €</span>
+            </div>
+            <div class="acc-row">
+                <span class="acc-row-label">Taux de cotisation</span>
+                <span class="acc-row-value c-muted">{{ (declaration.cotisationRate * 100)|number_format(1, ',', ' ') }} %</span>
+            </div>
+            <div class="acc-row-total">
+                <span class="acc-row-label">Cotisation à payer</span>
+                <span class="acc-row-value c-blue">{{ declaration.cotisationAmount|number_format(2, ',', ' ') }} €</span>
             </div>
         </div>
     </div>
 
+    {# ── Sidebar ──────────────────────────────────────────────── #}
     <div>
-        <div class="card">
-            <div class="card-title">Statut</div>
-
-            {% if declaration.declared %}
-                <span class="badge badge-green" style="font-size:13px;padding:5px 12px;">Déclarée</span>
-                {% if declaration.declaredAt %}
-                    <div style="font-size:13px; color:#6b7280; margin-top:8px;">
-                        le {{ declaration.declaredAt|date('d/m/Y') }}
-                    </div>
-                {% endif %}
-            {% else %}
-                <span class="badge badge-yellow" style="font-size:13px;padding:5px 12px;">À déclarer</span>
-                <div style="font-size:12px; color:#6b7280; margin-top:8px; line-height:1.5;">
-                    Déclarez sur <strong>urssaf.fr</strong> avant la date limite de la période.
-                </div>
+        {% if declaration.declared %}
+        <div class="acc-status-box st-green">
+            <div class="acc-status-title" style="color:#15803d;">
+                <span class="chip chip-green" style="margin-bottom:6px;">
+                    <span class="chip-dot"></span>Déclarée
+                </span>
+            </div>
+            {% if declaration.declaredAt %}
+            <div class="acc-status-desc">
+                Déclaration effectuée le {{ declaration.declaredAt|date('d/m/Y') }}.
+            </div>
             {% endif %}
+        </div>
+        {% else %}
+        <div class="acc-status-box st-orange">
+            <div style="margin-bottom:6px;">
+                <span class="chip chip-orange">
+                    <span class="chip-dot"></span>À déclarer
+                </span>
+            </div>
+            <div class="acc-status-desc">
+                Déclarez ce CA sur <strong>urssaf.fr</strong> avant la date limite de la période.
+            </div>
+        </div>
+        {% endif %}
 
-            <div style="margin-top:20px; border-top:1px solid #e5e7eb; padding-top:12px;">
+        <div class="card" style="margin-top:0;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="btn btn-secondary" style="width:100%;text-align:center;">
+                    Modifier la déclaration
+                </a>
                 <form method="post" action="{{ path('app_urssaf_delete', {id: declaration.id}) }}"
                       onsubmit="return confirm('Supprimer cette déclaration ?')">
                     <input type="hidden" name="_token" value="{{ csrf_token('delete_urssaf_' ~ declaration.id) }}">
-                    <button type="submit" class="btn btn-danger btn-sm" style="width:100%">Supprimer</button>
+                    <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer</button>
                 </form>
             </div>
         </div>
