@@ -338,6 +338,42 @@
             {% endif %}
         </div>
 
+        {# Mon expert-comptable — plan expert uniquement #}
+        {% if app.user.plan == 'expert' %}
+        <div class="card">
+            <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Mon expert-comptable
+            </div>
+
+            {% if linkedAccountant %}
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;">
+                    {{ linkedAccountant.firstName|first|upper }}{{ linkedAccountant.lastName|first|upper }}
+                </div>
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#1c1a17;">{{ linkedAccountant.fullName }}</div>
+                    {% if linkedAccountant.firm %}
+                    <div style="font-size:11.5px;color:#6b7280;">{{ linkedAccountant.firm }}</div>
+                    {% endif %}
+                    <div style="font-size:11px;color:#9ca3af;">{{ linkedAccountant.email }}</div>
+                </div>
+            </div>
+            {% if linkedAccountant.registrationNumber %}
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:10px;">N° {{ linkedAccountant.registrationNumber }}</div>
+            {% endif %}
+            <a href="mailto:{{ linkedAccountant.email }}" class="btn btn-secondary" style="width:100%;justify-content:center;font-size:12px;">
+                Contacter mon expert →
+            </a>
+            {% else %}
+            <div style="text-align:center;color:#9ca3af;font-size:13px;padding:12px 0 8px;">
+                Aucun expert-comptable lié.<br>
+                <a href="{{ path('app_subscription_manage') }}" style="color:#2563eb;font-size:12px;">Inviter un expert →</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
     </div>
 </div>
 

@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\UrssafDeclaration;
+use App\Repository\AccountantInvitationRepository;
 use App\Repository\ExpenseRepository;
 use App\Repository\InvoiceRepository;
 use App\Repository\UrssafDeclarationRepository;
@@ -17,6 +18,7 @@ class DashboardController extends AbstractController
         InvoiceRepository $invoiceRepo,
         ExpenseRepository $expenseRepo,
         UrssafDeclarationRepository $urssafRepo,
+        AccountantInvitationRepository $invitationRepo,
     ): Response {
         $user  = $this->getUser();
         $year  = (int) date('Y');
@@ -66,6 +68,15 @@ class DashboardController extends AbstractController
             $urssafProgress = max(0, min(100, (int) round((1 - $urssafDaysLeft / 30) * 100)));
         }
 
+        // Expert-comptable lié (plan expert uniquement)
+        $linkedAccountant = null;
+        if ($user->getPlan() === 'expert') {
+            $invitation = $invitationRepo->findActiveByUser($user);
+            if ($invitation && $invitation->getStatus() === 'accepted') {
+                $linkedAccountant = $invitation->getAccountant();
+            }
+        }
+
         // Recent expenses with OCR for "Reçus scannés" widget
         $recentOcrExpenses = $expenseRepo->findRecentByUser($user, 3, true);
 
@@ -106,6 +117,7 @@ class DashboardController extends AbstractController
             'chartCatData'        => json_encode(array_column($expensesByCategory, 'total')),
             'year'                => $year,
             'currentMonth'        => $month,
+            'linkedAccountant'    => $linkedAccountant,
         ]);
     }
 }
