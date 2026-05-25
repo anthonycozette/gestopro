@@ -199,6 +199,28 @@ class InvoiceRepository extends ServiceEntityRepository
     }
 
     /**
+     * Retourne les devis envoyés sans réponse depuis plus de $intervalDays jours.
+     *
+     * @return Invoice[]
+     */
+    public function findQuotesNeedingReminder(int $intervalDays = 7): array
+    {
+        $threshold = new \DateTimeImmutable("-{$intervalDays} days");
+
+        return $this->createQueryBuilder('i')
+            ->where('i.type = :type')
+            ->andWhere('i.status = :status')
+            ->andWhere(
+                '(i.lastReminderAt IS NULL AND i.issuedAt <= :threshold) OR i.lastReminderAt <= :threshold'
+            )
+            ->setParameter('type', Invoice::TYPE_QUOTE)
+            ->setParameter('status', Invoice::STATUS_SENT)
+            ->setParameter('threshold', $threshold)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Retourne les factures envoyées/en retard dont la dernière relance date de plus de
      * $intervalDays jours (ou jamais relancées depuis plus de $intervalDays jours après envoi).
      *

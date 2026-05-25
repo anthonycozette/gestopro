@@ -44,6 +44,25 @@ class InvoiceMailer
         $this->mailer->send($email);
     }
 
+    public function sendQuoteReminder(Invoice $quote): void
+    {
+        $client = $quote->getClient();
+        $user   = $quote->getUser();
+
+        if (!$client->getEmail()) {
+            return;
+        }
+
+        $email = (new TemplatedEmail())
+            ->from(new Address('noreply@gestopro.fr', $user->getFullName()))
+            ->to(new Address($client->getEmail(), $client->getName()))
+            ->subject('Relance — Devis ' . $quote->getNumber() . ' en attente — ' . $user->getFullName())
+            ->htmlTemplate('email/quote_reminder.html.twig')
+            ->context(['quote' => $quote, 'user' => $user]);
+
+        $this->mailer->send($email);
+    }
+
     public function sendReminder(Invoice $invoice): void
     {
         $client = $invoice->getClient();
