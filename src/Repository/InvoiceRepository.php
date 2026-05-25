@@ -80,6 +80,52 @@ class InvoiceRepository extends ServiceEntityRepository
         return (float) ($result ?? 0);
     }
 
+    /** @return array{ht: float, tva: float, ttc: float} */
+    public function getMonthRevenueDetails(User $user, int $year, int $month): array
+    {
+        $result = $this->createQueryBuilder('i')
+            ->select('SUM(i.totalHt) as ht, SUM(i.totalTva) as tva, SUM(i.totalTtc) as ttc')
+            ->where('i.user = :user')
+            ->andWhere('i.status = :status')
+            ->andWhere('YEAR(i.issuedAt) = :year')
+            ->andWhere('MONTH(i.issuedAt) = :month')
+            ->setParameter('user', $user)
+            ->setParameter('status', Invoice::STATUS_PAID)
+            ->setParameter('year', $year)
+            ->setParameter('month', $month)
+            ->getQuery()
+            ->getSingleResult();
+
+        return [
+            'ht'  => (float) ($result['ht']  ?? 0),
+            'tva' => (float) ($result['tva'] ?? 0),
+            'ttc' => (float) ($result['ttc'] ?? 0),
+        ];
+    }
+
+    /** @return array<int, float> index 1–12 => montant TTC */
+    public function getMonthlyRevenueTtc(User $user, int $year): array
+    {
+        $rows = $this->createQueryBuilder('i')
+            ->select('MONTH(i.issuedAt) as m, SUM(i.totalTtc) as total')
+            ->where('i.user = :user')
+            ->andWhere('i.status = :status')
+            ->andWhere('YEAR(i.issuedAt) = :year')
+            ->setParameter('user', $user)
+            ->setParameter('status', Invoice::STATUS_PAID)
+            ->setParameter('year', $year)
+            ->groupBy('m')
+            ->getQuery()
+            ->getArrayResult();
+
+        $data = array_fill(1, 12, 0.0);
+        foreach ($rows as $row) {
+            $data[(int) $row['m']] = (float) $row['total'];
+        }
+
+        return $data;
+    }
+
     /** @return array<int, float> index 1–12 => montant HT */
     public function getMonthlyRevenue(User $user, int $year): array
     {

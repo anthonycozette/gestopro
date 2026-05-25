@@ -22,13 +22,35 @@ class DashboardController extends AbstractController
         $year  = (int) date('Y');
         $month = (int) date('n');
 
-        $monthlyRevenues = $invoiceRepo->getMonthlyRevenue($user, $year);
-        $monthlyExpenses = $expenseRepo->getMonthlyTotals($user, $year);
+        $prevMonth = $month === 1 ? 12 : $month - 1;
+        $prevYear  = $month === 1 ? $year - 1 : $year;
+
+        $monthlyRevenues    = $invoiceRepo->getMonthlyRevenue($user, $year);
+        $monthlyRevenuesTtc = $invoiceRepo->getMonthlyRevenueTtc($user, $year);
+        $monthlyExpenses    = $expenseRepo->getMonthlyTotals($user, $year);
         $expensesByCategory = $expenseRepo->getTotalsByCategory($user, $year);
+
+        $monthDetails     = $invoiceRepo->getMonthRevenueDetails($user, $year, $month);
+        $prevMonthDetails = $invoiceRepo->getMonthRevenueDetails($user, $prevYear, $prevMonth);
+
+        $caMonthTtc  = $monthDetails['ttc'];
+        $prevTtc     = $prevMonthDetails['ttc'];
+        $deltaMonth  = $prevTtc > 0 ? (int) round(($caMonthTtc - $prevTtc) / $prevTtc * 100) : null;
+        $diffMonth   = $caMonthTtc - $prevTtc;
+
+        $monthNames  = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        $prevMonthName = $monthNames[$prevMonth];
 
         return $this->render('dashboard/index.html.twig', [
             'caMonth'        => $invoiceRepo->getMonthRevenue($user, $year, $month),
             'caYear'         => $invoiceRepo->getYearRevenue($user, $year),
+            'caMonthHt'      => $monthDetails['ht'],
+            'caMonthTva'     => $monthDetails['tva'],
+            'caMonthTtc'     => $caMonthTtc,
+            'deltaMonth'     => $deltaMonth,
+            'diffMonth'      => $diffMonth,
+            'prevMonthName'  => $prevMonthName,
             'expensesMonth'  => $expenseRepo->getMonthTotal($user, $year, $month),
             'expensesYear'   => $expenseRepo->getYearTotal($user, $year),
             'pending'        => $invoiceRepo->getPendingStats($user),
@@ -41,10 +63,12 @@ class DashboardController extends AbstractController
             'tvaThreshold'   => UrssafDeclaration::THRESHOLD_TVA_SERVICES,
             'monthLabels'    => json_encode(['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']),
             'chartRevenues'  => json_encode(array_values($monthlyRevenues)),
+            'chartRevenuesTtc' => json_encode(array_values($monthlyRevenuesTtc)),
             'chartExpenses'  => json_encode(array_values($monthlyExpenses)),
             'chartCatLabels' => json_encode(array_column($expensesByCategory, 'label')),
             'chartCatData'   => json_encode(array_column($expensesByCategory, 'total')),
             'year'           => $year,
+            'currentMonth'   => $month,
         ]);
     }
 }

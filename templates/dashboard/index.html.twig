@@ -36,19 +36,64 @@
 </div>
 {% endif %}
 
-{# Hero CA + graphique CA vs Dépenses #}
+{# Hero CA + graphique #}
 <div class="hero-card">
-    <div style="position:relative;z-index:1;">
-        <div class="hero-label">Chiffre d'affaires {{ year }}</div>
-        <div class="hero-amount">{{ caYear|number_format(0, ',', ' ') }} €</div>
-        <div class="hero-sub">
-            <span>Ce mois :</span>
-            <span class="hero-sub-chip">{{ caMonth|number_format(0, ',', ' ') }} €</span>
+
+    {# Colonne gauche : montant + décomposition #}
+    <div class="hero-left">
+        <div class="hero-eyebrow">
+            <div class="hero-icon-wrap">€</div>
+            {% set monthNames = {1:'Janvier',2:'Février',3:'Mars',4:'Avril',5:'Mai',6:'Juin',7:'Juillet',8:'Août',9:'Septembre',10:'Octobre',11:'Novembre',12:'Décembre'} %}
+            <span>Chiffre d'affaires · {{ monthNames[currentMonth]|default('Mois en cours') }} {{ year }}</span>
+        </div>
+
+        <div class="hero-amount-row">
+            <div class="hero-amount">{{ caMonthTtc|number_format(0, ',', ' ') }} €</div>
+            {% if deltaMonth is not null %}
+            <span class="hero-delta {% if deltaMonth >= 0 %}delta-up{% else %}delta-down{% endif %}">
+                {{ deltaMonth >= 0 ? '↑' : '↓' }} {{ deltaMonth|abs }} %
+            </span>
+            {% endif %}
+        </div>
+
+        {% if diffMonth != 0 %}
+        <div class="hero-diff">
+            <strong>{{ diffMonth|abs|number_format(0, ',', ' ') }} €</strong>
+            {{ diffMonth >= 0 ? 'de plus' : 'de moins' }} que {{ prevMonthName|lower }}
+        </div>
+        {% endif %}
+
+        <div class="hero-breakdown">
+            <div class="hero-breakdown-cell">
+                <div class="hero-breakdown-label">Total HT</div>
+                <div class="hero-breakdown-value">{{ caMonthHt|number_format(0, ',', ' ') }} €</div>
+            </div>
+            <div class="hero-breakdown-cell">
+                <div class="hero-breakdown-label">TVA 20%</div>
+                <div class="hero-breakdown-value hero-breakdown-tva">{{ caMonthTva|number_format(0, ',', ' ') }} €</div>
+            </div>
+            <div class="hero-breakdown-cell hero-breakdown-ttc">
+                <div class="hero-breakdown-label">Total TTC</div>
+                <div class="hero-breakdown-value hero-breakdown-accent">{{ caMonthTtc|number_format(0, ',', ' ') }} €</div>
+            </div>
         </div>
     </div>
-    <div class="hero-chart-wrap">
-        <canvas id="chart-monthly" height="100"></canvas>
+
+    {# Colonne droite : graphique #}
+    <div class="hero-right">
+        <div class="hero-chart-header">
+            <span class="hero-period-label" id="period-label">6 derniers mois</span>
+            <div class="period-tabs">
+                <button class="period-tab active" data-period="6m">6M</button>
+                <button class="period-tab" data-period="1a">1A</button>
+                <button class="period-tab" data-period="max">MAX</button>
+            </div>
+        </div>
+        <div class="hero-chart-wrap">
+            <canvas id="chart-monthly"></canvas>
+        </div>
     </div>
+
 </div>
 
 {# 3 KPIs : factures, dépenses, URSSAF #}
@@ -157,7 +202,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="{{ asset('js/dashboard.js') }}"></script>
 <script>
-initMonthlyChart({{ monthLabels|raw }}, {{ chartRevenues|raw }}, {{ chartExpenses|raw }});
+initMonthlyChart({{ monthLabels|raw }}, {{ chartRevenuesTtc|raw }}, {{ chartExpenses|raw }}, {{ currentMonth }});
 {% if chartCatData != '[]' %}
 initCategoryChart({{ chartCatLabels|raw }}, {{ chartCatData|raw }});
 {% endif %}
