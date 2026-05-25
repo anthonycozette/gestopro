@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
 use Symfony\Component\Security\Http\Authenticator\FormLoginAuthenticator;
 
@@ -20,6 +21,7 @@ class RegistrationController extends AbstractController
         UserPasswordHasherInterface $hasher,
         EntityManagerInterface $em,
         UserAuthenticatorInterface $userAuthenticator,
+        #[Autowire(service: 'security.authenticator.form_login.main')]
         FormLoginAuthenticator $formLoginAuthenticator,
     ): Response {
         if ($this->getUser()) {
