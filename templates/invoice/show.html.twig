@@ -125,7 +125,7 @@
                     <div class="inv-party-detail">
                         {% if invoice.client.siret %}SIRET {{ invoice.client.siret }}<br>{% endif %}
                         {% if invoice.client.email %}{{ invoice.client.email }}<br>{% endif %}
-                        {% if invoice.client.fullAddress %}{{ invoice.client.fullAddress }}{% endif %}
+                        {% if invoice.client.address %}{{ invoice.client.fullAddress }}{% endif %}
                     </div>
                 </div>
             </div>
@@ -207,9 +207,9 @@
                 </div>
             </div>
             <div class="inv-info-grid">
-                {% if invoice.client.contactName %}<span class="inv-info-key">Contact</span><span class="inv-info-val">{{ invoice.client.contactName }}</span>{% endif %}
                 {% if invoice.client.email %}<span class="inv-info-key">Email</span><span class="inv-info-val"><a href="mailto:{{ invoice.client.email }}">{{ invoice.client.email }}</a></span>{% endif %}
-                {% if invoice.client.fullAddress %}<span class="inv-info-key">Adresse</span><span class="inv-info-val">{{ invoice.client.fullAddress }}</span>{% endif %}
+                {% if invoice.client.phone %}<span class="inv-info-key">Téléphone</span><span class="inv-info-val">{{ invoice.client.phone }}</span>{% endif %}
+                {% if invoice.client.address %}<span class="inv-info-key">Adresse</span><span class="inv-info-val">{{ invoice.client.address }}{% if invoice.client.city %}, {{ invoice.client.postalCode }} {{ invoice.client.city }}{% endif %}</span>{% endif %}
             </div>
             <a href="{{ path('app_client_show', {id: invoice.client.id}) }}" class="btn btn-secondary btn-sm" style="width:100%;margin-top:12px;justify-content:center;">
                 Voir le client →
@@ -226,9 +226,9 @@
                     {{ invoice.dueAt|date('d M Y') }}{% if isLate %} · En retard{% endif %}
                 </span>
                 {% endif %}
-                {% if invoice.paymentConditions %}
+                {% if invoice.notes %}
                 <span class="inv-info-key">Conditions</span>
-                <span class="inv-info-val">{{ invoice.paymentConditions }}</span>
+                <span class="inv-info-val">{{ invoice.notes|slice(0, 60) }}{% if invoice.notes|length > 60 %}…{% endif %}</span>
                 {% endif %}
             </div>
             {% if not isPaid %}

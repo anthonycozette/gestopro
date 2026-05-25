@@ -177,7 +177,7 @@
                         {% set conds = ['Net 30 jours · Virement','Net 15 jours · Virement','Net 7 jours · Virement','Paiement à réception','Net 60 jours'] %}
                         <option value="">—</option>
                         {% for c in conds %}
-                        <option value="{{ c }}" {% if invoice.paymentConditions == c %}selected{% endif %}>{{ c }}</option>
+                        <option value="{{ c }}">{{ c }}</option>
                         {% endfor %}
                     </select>
                 </div>
