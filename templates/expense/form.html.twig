@@ -15,7 +15,7 @@
 {% endblock %}
 
 {% block body %}
-<form method="post" id="expense-form">
+<form method="post" id="expense-form" enctype="multipart/form-data">
     {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
 
     <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
@@ -177,6 +177,31 @@
                     Enregistrer
                 </button>
             </div>
+
+            {# Justificatif #}
+            <div class="card" style="margin-top:0;">
+                <div class="card-title">Justificatif</div>
+
+                {% if expense.receiptPath %}
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
+                    <span style="font-size:18px;">📎</span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;font-weight:500;color:#15803d;">Justificatif existant</div>
+                        <a href="{{ path('app_expense_receipt', {id: expense.id}) }}" target="_blank"
+                           style="font-size:12px;color:#2563eb;">Voir le fichier</a>
+                    </div>
+                </div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Remplacer par un nouveau fichier :</div>
+                {% endif %}
+
+                <label id="receipt-upload-label" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed #d1d5db;border-radius:8px;padding:20px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#d1d5db'">
+                    <span style="font-size:24px;">📁</span>
+                    <span style="font-size:13px;color:#6b7280;text-align:center;">Glisser un fichier ici ou <span style="color:#2563eb;">parcourir</span></span>
+                    <span style="font-size:11px;color:#9ca3af;">JPEG, PNG, WebP, PDF — max 10 Mo</span>
+                    <input type="file" name="receipt_file" id="receipt-file-input" accept=".jpg,.jpeg,.png,.webp,.pdf" style="display:none;" onchange="showSelectedFile(this)">
+                </label>
+                <div id="receipt-file-name" style="font-size:12px;color:#2563eb;margin-top:6px;display:none;"></div>
+            </div>
         </div>
 
     </div>
@@ -190,6 +215,14 @@
 {% block javascripts %}
 <script src="{{ asset('js/expense-form.js') }}"></script>
 <script>
+function showSelectedFile(input) {
+    const el = document.getElementById('receipt-file-name');
+    if (input.files && input.files[0]) {
+        el.textContent = '📎 ' + input.files[0].name;
+        el.style.display = 'block';
+    }
+}
+
 {% if app.user.plan != 'free' %}
 const SCAN_URL = '{{ path('app_expense_scan_receipt') }}';
 

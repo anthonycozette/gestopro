@@ -67,6 +67,34 @@
     </div>
 
     <div>
+        {# Justificatif #}
+        <div class="card" style="margin-bottom:0;">
+            <div class="card-title">Justificatif</div>
+
+            {% if expense.receiptPath %}
+            <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;margin-bottom:12px;">
+                <span style="font-size:20px;">📎</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:500;color:#15803d;margin-bottom:2px;">Justificatif joint</div>
+                    <a href="{{ path('app_expense_receipt', {id: expense.id}) }}" target="_blank"
+                       class="btn btn-secondary btn-sm">Voir le fichier</a>
+                </div>
+            </div>
+            <form method="post" action="{{ path('app_expense_receipt_delete', {id: expense.id}) }}"
+                  data-confirm="Supprimer le justificatif ?" data-confirm-variant="danger"
+                  style="margin-top:8px;">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_receipt_' ~ expense.id) }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer le justificatif</button>
+            </form>
+            {% else %}
+            <div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px;">
+                <div style="font-size:24px;margin-bottom:6px;">📂</div>
+                Aucun justificatif<br>
+                <a href="{{ path('app_expense_edit', {id: expense.id}) }}" style="color:#2563eb;font-size:12px;margin-top:4px;display:inline-block;">Ajouter depuis la modification</a>
+            </div>
+            {% endif %}
+        </div>
+
         <div class="card">
             <div class="card-title">Déductibilité</div>
             <div style="margin-bottom:16px;">

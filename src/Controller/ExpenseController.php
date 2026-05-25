@@ -9,10 +9,13 @@ use App\Repository\ExpenseRepository;
 use App\Service\ReceiptScannerService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 #[Route('/expenses', name: 'app_expense')]
 class ExpenseController extends AbstractController
@@ -121,6 +124,45 @@ class ExpenseController extends AbstractController
         return $this->render('expense/show.html.twig', ['expense' => $expense]);
     }
 
+    #[Route('/{id}/receipt', name: '_receipt')]
+    public function viewReceipt(Expense $expense): Response
+    {
+        if ($expense->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $path = $this->getReceiptDir() . '/' . $expense->getReceiptPath();
+
+        if (!$expense->getReceiptPath() || !file_exists($path)) {
+            throw $this->createNotFoundException('Justificatif introuvable.');
+        }
+
+        return new BinaryFileResponse(
+            $path,
+            200,
+            [],
+            true,
+            ResponseHeaderBag::DISPOSITION_INLINE
+        );
+    }
+
+    #[Route('/{id}/receipt/delete', name: '_receipt_delete', methods: ['POST'])]
+    public function deleteReceipt(Expense $expense, Request $request, EntityManagerInterface $em): Response
+    {
+        if ($expense->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($this->isCsrfTokenValid('delete_receipt_' . $expense->getId(), $request->request->get('_token'))) {
+            $this->removeReceiptFile($expense);
+            $expense->setReceiptPath(null);
+            $em->flush();
+            $this->addFlash('success', 'Justificatif supprimé.');
+        }
+
+        return $this->redirectToRoute('app_expense_show', ['id' => $expense->getId()]);
+    }
+
     #[Route('/{id}/delete', name: '_delete', methods: ['POST'])]
     public function delete(Expense $expense, Request $request, EntityManagerInterface $em): Response
     {
@@ -179,9 +221,49 @@ class ExpenseController extends AbstractController
                     ->setOcrVerified(true);
         }
 
+        // Justificatif (upload)
+        $receiptFile = $request->files->get('receipt_file');
+        if ($receiptFile) {
+            $allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+            if (!in_array($receiptFile->getMimeType(), $allowed, true)) {
+                return 'Format de justificatif non supporté (JPEG, PNG, WebP, PDF).';
+            }
+            if ($receiptFile->getSize() > 10 * 1024 * 1024) {
+                return 'Le justificatif ne doit pas dépasser 10 Mo.';
+            }
+
+            $this->removeReceiptFile($expense);
+
+            $ext      = $receiptFile->guessExtension() ?? 'bin';
+            $filename = sprintf('%s-%s.%s', $expense->getUser()->getId(), bin2hex(random_bytes(8)), $ext);
+            $dir      = $this->getReceiptDir();
+
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+
+            $receiptFile->move($dir, $filename);
+            $expense->setReceiptPath($filename);
+        }
+
         $em->persist($expense);
         $em->flush();
 
         return $expense;
+    }
+
+    private function getReceiptDir(): string
+    {
+        return $this->getParameter('kernel.project_dir') . '/var/uploads/receipts';
+    }
+
+    private function removeReceiptFile(Expense $expense): void
+    {
+        if ($expense->getReceiptPath()) {
+            $old = $this->getReceiptDir() . '/' . $expense->getReceiptPath();
+            if (file_exists($old)) {
+                unlink($old);
+            }
+        }
     }
 }
