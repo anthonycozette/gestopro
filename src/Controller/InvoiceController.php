@@ -53,7 +53,8 @@ class InvoiceController extends AbstractController
                 if ($result->getStatus() === Invoice::STATUS_SENT) {
                     $this->sendInvoiceEmail($result, $mailer);
                 }
-                $this->addFlash('success', 'Facture ' . $result->getNumber() . ' créée.');
+                $label = $result->isQuote() ? 'Devis' : 'Facture';
+                $this->addFlash('success', $label . ' ' . $result->getNumber() . ' créé(e).');
                 return $this->redirectToRoute('app_invoices');
             }
             return $this->render('invoice/form.html.twig', ['invoice' => new Invoice(), 'clients' => $clients, 'error' => $result, 'title' => 'Nouvelle facture']);
@@ -201,19 +202,22 @@ class InvoiceController extends AbstractController
             $currency = 'EUR';
         }
 
+        $typeParam = $request->request->get('type', Invoice::TYPE_INVOICE);
+        $type = $typeParam === Invoice::TYPE_QUOTE ? Invoice::TYPE_QUOTE : Invoice::TYPE_INVOICE;
+
         $action = $request->request->get('action', 'draft');
         if ($action === 'send') {
             $newStatus = Invoice::STATUS_SENT;
         } elseif ($isNew) {
             $newStatus = Invoice::STATUS_DRAFT;
         } else {
-            // En mode édition : ne pas rétrograder un statut déjà avancé
             $newStatus = in_array($invoice->getStatus(), [Invoice::STATUS_DRAFT, Invoice::STATUS_SENT])
                 ? Invoice::STATUS_DRAFT
                 : $invoice->getStatus();
         }
 
-        $invoice->setClient($client)
+        $invoice->setType($type)
+                ->setClient($client)
                 ->setUser($this->getUser())
                 ->setStatus($newStatus)
                 ->setIssuedAt(new \DateTimeImmutable($request->request->get('issued_at') ?: 'now'))
@@ -224,7 +228,11 @@ class InvoiceController extends AbstractController
         $invoice->setDueAt($dueAt ? new \DateTimeImmutable($dueAt) : null);
 
         if ($isNew) {
-            $invoice->setNumber($numberService->generate($this->getUser()));
+            $invoice->setNumber(
+                $type === Invoice::TYPE_QUOTE
+                    ? $numberService->generateQuote($this->getUser())
+                    : $numberService->generate($this->getUser())
+            );
         }
 
         if ($newStatus === Invoice::STATUS_SENT && $invoice->isQuote() && !$invoice->getSignatureToken()) {

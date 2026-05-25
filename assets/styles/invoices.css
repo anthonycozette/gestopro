@@ -258,6 +258,19 @@
 .st-declined{ background: #fee2e2; color: #b91c1c; } .st-declined::before{ background: #b91c1c; }
 .st-expired { background: #fef3c7; color: #b45309; } .st-expired::before { background: #d97706; }
 
+/* Type badge (inline in number cell) */
+.type-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  vertical-align: middle;
+  margin-left: 5px;
+}
+.type-quote { background: #ede9fe; color: #6d28d9; }
+
 /* Larger chip for action bar */
 .status-chip {
   display: inline-flex; align-items: center; gap: 6px;

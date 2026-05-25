@@ -21,12 +21,14 @@
 {% block body %}
 
 {% set allInvoices  = invoices %}
-{% set totalEmis    = allInvoices|reduce((c, i) => c + i.totalTtc, 0) %}
-{% set totalPaid    = allInvoices|filter(i => i.status == 'paid')|reduce((c, i) => c + i.totalTtc, 0) %}
-{% set totalPending = allInvoices|filter(i => i.status in ['sent','overdue'])|reduce((c, i) => c + i.totalTtc, 0) %}
-{% set totalLate    = allInvoices|filter(i => i.status == 'overdue')|reduce((c, i) => c + i.totalTtc, 0) %}
-{% set countLate    = allInvoices|filter(i => i.status == 'overdue')|length %}
-{% set countPending = allInvoices|filter(i => i.status in ['sent','overdue'])|length %}
+{% set onlyInvoices = allInvoices|filter(i => i.type == 'invoice') %}
+{% set onlyQuotes   = allInvoices|filter(i => i.type == 'quote') %}
+{% set totalEmis    = onlyInvoices|reduce((c, i) => c + i.totalTtc, 0) %}
+{% set totalPaid    = onlyInvoices|filter(i => i.status == 'paid')|reduce((c, i) => c + i.totalTtc, 0) %}
+{% set totalPending = onlyInvoices|filter(i => i.status in ['sent','overdue'])|reduce((c, i) => c + i.totalTtc, 0) %}
+{% set totalLate    = onlyInvoices|filter(i => i.status == 'overdue')|reduce((c, i) => c + i.totalTtc, 0) %}
+{% set countLate    = onlyInvoices|filter(i => i.status == 'overdue')|length %}
+{% set countPending = onlyInvoices|filter(i => i.status in ['sent','overdue'])|length %}
 
 {# ── Stat tiles ─── #}
 <div class="inv-stat-grid">
@@ -72,7 +74,13 @@
     <div class="inv-toolbar">
         <div class="inv-tabs">
             <button class="inv-tab active" data-filter="all">
-                Toutes <span class="inv-tab-count">{{ allInvoices|length }}</span>
+                Tous <span class="inv-tab-count">{{ allInvoices|length }}</span>
+            </button>
+            <button class="inv-tab" data-filter="type:invoice">
+                Factures <span class="inv-tab-count">{{ onlyInvoices|length }}</span>
+            </button>
+            <button class="inv-tab" data-filter="type:quote">
+                Devis <span class="inv-tab-count">{{ onlyQuotes|length }}</span>
             </button>
             <button class="inv-tab" data-filter="paid">
                 <span class="dot dot-paid"></span>Payées
@@ -131,12 +139,14 @@
             {% for invoice in allInvoices %}
             {% set colorIdx = (invoice.client.name|length) % 8 %}
             {% set isLate = invoice.status == 'overdue' %}
-            <tr data-status="{{ invoice.status }}" data-search="{{ (invoice.number ~ ' ' ~ invoice.client.name ~ ' ' ~ invoice.totalTtc)|lower }}">
+            {% set isQuote = invoice.type == 'quote' %}
+            <tr data-status="{{ invoice.status }}" data-type="{{ invoice.type }}" data-search="{{ (invoice.number ~ ' ' ~ invoice.client.name ~ ' ' ~ invoice.totalTtc ~ ' ' ~ invoice.type)|lower }}">
                 <td class="inv-cb-col">
                     <span class="inv-cb"></span>
                 </td>
                 <td class="inv-num-col">
                     <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="inv-num-link">{{ invoice.number }}</a>
+                    {% if isQuote %}<span class="type-badge type-quote">Devis</span>{% endif %}
                 </td>
                 <td>
                     <div class="inv-client-cell">
@@ -156,10 +166,13 @@
                 </td>
                 <td>
                     {% if invoice.status == 'paid' %}<span class="st-badge st-paid">Payée</span>
-                    {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
+                    {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent">Envoyé{{ isQuote ? 'é' : 'e' }}</span>
                     {% elseif invoice.status == 'overdue' %}<span class="st-badge st-late">En retard</span>
                     {% elseif invoice.status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
-                    {% elseif invoice.status == 'cancelled' %}<span class="st-badge st-cancel">Annulée</span>
+                    {% elseif invoice.status == 'cancelled' %}<span class="st-badge st-cancel">Annulé{{ isQuote ? '' : 'e' }}</span>
+                    {% elseif invoice.status == 'accepted' %}<span class="st-badge st-paid">Accepté</span>
+                    {% elseif invoice.status == 'declined' %}<span class="st-badge st-cancel">Refusé</span>
+                    {% elseif invoice.status == 'expired' %}<span class="st-badge st-late">Expiré</span>
                     {% endif %}
                 </td>
                 <td><span class="inv-amount-cell">{{ invoice.totalTtc|number_format(0, ',', ' ') }} €</span></td>
@@ -174,7 +187,7 @@
     </table>
 
     <div class="inv-table-footer">
-        <span id="inv-count">{{ allInvoices|length }} facture{{ allInvoices|length != 1 ? 's' : '' }}</span>
+        <span id="inv-count">{{ allInvoices|length }} document{{ allInvoices|length != 1 ? 's' : '' }}</span>
         <div style="flex:1;"></div>
         <div class="inv-pagination" id="inv-pagination"></div>
     </div>
@@ -199,9 +212,16 @@
     function visible() {
         const q = search ? search.value.toLowerCase() : '';
         return rows.filter(r => {
-            const statusOk = currentFilter === 'all' || r.dataset.status === currentFilter;
+            let filterOk;
+            if (currentFilter === 'all') {
+                filterOk = true;
+            } else if (currentFilter.startsWith('type:')) {
+                filterOk = r.dataset.type === currentFilter.slice(5);
+            } else {
+                filterOk = r.dataset.status === currentFilter;
+            }
             const searchOk = !q || (r.dataset.search || '').includes(q);
-            return statusOk && searchOk;
+            return filterOk && searchOk;
         });
     }
 
@@ -211,7 +231,7 @@
         currentPage = Math.min(currentPage, pages);
         rows.forEach(r => r.style.display = 'none');
         vis.slice((currentPage - 1) * PER, currentPage * PER).forEach(r => r.style.display = '');
-        if (count) count.textContent = vis.length + ' facture' + (vis.length !== 1 ? 's' : '');
+        if (count) count.textContent = vis.length + ' document' + (vis.length !== 1 ? 's' : '');
         renderPagination(pages);
     }
 
