@@ -144,6 +144,22 @@ class InvoiceController extends AbstractController
         return $this->redirectToRoute('app_invoice_show', ['id' => $invoice->getId()]);
     }
 
+    #[Route('/{id}/reminder', name: '_send_reminder', methods: ['POST'])]
+    public function sendReminder(Invoice $invoice, Request $request, EntityManagerInterface $em, InvoiceMailer $mailer): Response
+    {
+        if ($invoice->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($this->isCsrfTokenValid('reminder_' . $invoice->getId(), $request->request->get('_token'))) {
+            $this->sendInvoiceEmail($invoice, $mailer);
+            $invoice->setLastReminderAt(new \DateTimeImmutable());
+            $em->flush();
+        }
+
+        return $this->redirectToRoute('app_invoice_show', ['id' => $invoice->getId()]);
+    }
+
     #[Route('/{id}/delete', name: '_delete', methods: ['POST'])]
     public function delete(Invoice $invoice, Request $request, EntityManagerInterface $em): Response
     {
