@@ -115,6 +115,18 @@ class Invoice
     #[ORM\Column(options: ['default' => 0])]
     private int $reminderCount = 0;
 
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $signatureToken = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $signedAt = null;
+
+    #[ORM\Column(length: 45, nullable: true)]
+    private ?string $signerIp = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $signatureData = null;
+
     #[ORM\Column]
     #[Groups(['invoice:read'])]
     private \DateTimeImmutable $createdAt;
@@ -189,6 +201,23 @@ class Invoice
 
     public function getReminderCount(): int { return $this->reminderCount; }
     public function setReminderCount(int $count): static { $this->reminderCount = $count; return $this; }
+
+    public function getSignatureToken(): ?string { return $this->signatureToken; }
+    public function setSignatureToken(?string $t): static { $this->signatureToken = $t; return $this; }
+
+    public function getSignedAt(): ?\DateTimeImmutable { return $this->signedAt; }
+    public function setSignedAt(?\DateTimeImmutable $d): static { $this->signedAt = $d; return $this; }
+
+    public function getSignerIp(): ?string { return $this->signerIp; }
+    public function setSignerIp(?string $ip): static { $this->signerIp = $ip; return $this; }
+
+    public function getSignatureData(): ?string { return $this->signatureData; }
+    public function setSignatureData(?string $data): static { $this->signatureData = $data; return $this; }
+
+    public function isSignable(): bool
+    {
+        return $this->type === self::TYPE_QUOTE && in_array($this->status, [self::STATUS_SENT, self::STATUS_ACCEPTED], true);
+    }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 

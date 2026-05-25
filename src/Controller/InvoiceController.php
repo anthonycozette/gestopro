@@ -125,6 +125,9 @@ class InvoiceController extends AbstractController
             if ($status === Invoice::STATUS_PAID) {
                 $invoice->setPaidAt(new \DateTimeImmutable());
             }
+            if ($status === Invoice::STATUS_SENT && $invoice->isQuote() && !$invoice->getSignatureToken()) {
+                $invoice->setSignatureToken(bin2hex(random_bytes(32)));
+            }
             $em->flush();
 
             if ($status === Invoice::STATUS_SENT && $previousStatus !== Invoice::STATUS_SENT) {

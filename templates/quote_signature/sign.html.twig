@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Signer le devis {{ quote.number }} — GestoPro</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; margin: 0; padding: 24px 16px; color: #111827; }
+        .container { max-width: 640px; margin: 0 auto; }
+        .header { background: #1e293b; padding: 20px 28px; border-radius: 10px 10px 0 0; }
+        .header h1 { color: #fff; margin: 0; font-size: 20px; font-weight: 700; }
+        .header h1 span { color: #60a5fa; }
+        .card { background: #fff; border-radius: 0 0 10px 10px; box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 28px; }
+        .banner { background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 6px; font-size: 14px; color: #1e40af; font-weight: 500; margin-bottom: 24px; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .detail-item label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 3px; }
+        .detail-item .val { font-size: 14px; font-weight: 500; }
+        .amount { color: #2563eb; font-size: 18px; font-weight: 800; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+        .form-control { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .form-control:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+        .canvas-wrap { border: 2px dashed #d1d5db; border-radius: 8px; background: #fafafa; position: relative; cursor: crosshair; }
+        .canvas-wrap:hover { border-color: #2563eb; }
+        canvas { display: block; width: 100%; height: 160px; touch-action: none; }
+        .canvas-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 13px; color: #9ca3af; pointer-events: none; text-align: center; }
+        .canvas-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 6px; border: none; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-ghost { background: transparent; color: #6b7280; font-size: 12px; padding: 6px 10px; }
+        .btn-ghost:hover { color: #374151; }
+        .btn-submit { width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 8px; }
+        .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+        .legal { font-size: 11px; color: #9ca3af; text-align: center; margin-top: 16px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header"><h1>Gesto<span>Pro</span></h1></div>
+    <div class="card">
+        <div class="banner">✍️ Signature du devis {{ quote.number }}</div>
+
+        {% if error is defined and error %}
+        <div class="alert-error">{{ error }}</div>
+        {% endif %}
+
+        <div class="detail-grid">
+            <div class="detail-item">
+                <label>Émis par</label>
+                <div class="val">{{ quote.user.fullName }}</div>
+            </div>
+            <div class="detail-item">
+                <label>Numéro</label>
+                <div class="val">{{ quote.number }}</div>
+            </div>
+            <div class="detail-item">
+                <label>Date d'émission</label>
+                <div class="val">{{ quote.issuedAt|date('d/m/Y') }}</div>
+            </div>
+            {% if quote.dueAt %}
+            <div class="detail-item">
+                <label>Valide jusqu'au</label>
+                <div class="val">{{ quote.dueAt|date('d/m/Y') }}</div>
+            </div>
+            {% endif %}
+            <div class="detail-item" style="grid-column:span 2;">
+                <label>Montant total TTC</label>
+                <div class="val amount">{{ quote.totalTtc|number_format(2, ',', ' ') }} {{ quote.currency }}</div>
+            </div>
+        </div>
+
+        <form method="post" action="{{ path('app_quote_sign_submit', {token: token}) }}" id="sign-form">
+            <div class="form-group">
+                <label for="signer_name">Votre nom complet <span style="color:#ef4444">*</span></label>
+                <input type="text" name="signer_name" id="signer_name" class="form-control"
+                       placeholder="Prénom Nom" required>
+            </div>
+
+            <div class="form-group">
+                <label>Signature <span style="color:#ef4444">*</span></label>
+                <div class="canvas-wrap" id="canvas-wrap">
+                    <canvas id="sig-canvas"></canvas>
+                    <div class="canvas-hint" id="canvas-hint">Signez ici avec votre souris ou votre doigt</div>
+                </div>
+                <div class="canvas-actions">
+                    <button type="button" class="btn btn-ghost" onclick="clearCanvas()">✕ Effacer</button>
+                </div>
+            </div>
+
+            <input type="hidden" name="signature_data" id="signature-data">
+
+            <button type="submit" class="btn btn-primary btn-submit" onclick="return prepareSubmit()">
+                ✓ Accepter et signer le devis
+            </button>
+        </form>
+
+        <p class="legal">
+            En signant ce devis, vous acceptez les conditions indiquées par {{ quote.user.fullName }}.<br>
+            Votre signature électronique est horodatée et votre adresse IP sera enregistrée à titre de preuve.
+        </p>
+    </div>
+</div>
+
+<script>
+(function () {
+    const canvas  = document.getElementById('sig-canvas');
+    const ctx     = canvas.getContext('2d');
+    const hint    = document.getElementById('canvas-hint');
+    let drawing   = false;
+    let hasMark   = false;
+
+    function resize() {
+        const ratio = window.devicePixelRatio || 1;
+        const rect  = canvas.getBoundingClientRect();
+        canvas.width  = rect.width  * ratio;
+        canvas.height = rect.height * ratio;
+        ctx.scale(ratio, ratio);
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth   = 2;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    function pos(e) {
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: t.clientX - r.left, y: t.clientY - r.top };
+    }
+
+    function start(e) {
+        e.preventDefault();
+        drawing = true;
+        const p = pos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        if (!hasMark) { hint.style.display = 'none'; hasMark = true; }
+    }
+
+    function move(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        const p = pos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    }
+
+    function end(e) { e.preventDefault(); drawing = false; }
+
+    canvas.addEventListener('mousedown',  start);
+    canvas.addEventListener('mousemove',  move);
+    canvas.addEventListener('mouseup',    end);
+    canvas.addEventListener('mouseleave', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove',  move,  { passive: false });
+    canvas.addEventListener('touchend',   end,   { passive: false });
+
+    window.clearCanvas = function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasMark = false;
+        hint.style.display = '';
+    };
+
+    window.prepareSubmit = function () {
+        if (!hasMark) {
+            alert('Veuillez apposer votre signature avant de valider.');
+            return false;
+        }
+        document.getElementById('signature-data').value = canvas.toDataURL('image/png');
+        return true;
+    };
+})();
+</script>
+</body>
+</html>

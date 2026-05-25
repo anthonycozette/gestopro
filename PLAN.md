@@ -137,8 +137,8 @@ Accountant ────────────────┘
 - [x] CRUD complet + numérotation (`DEV-2026-0001`)
 - [x] Workflow : `draft` → `sent` → `accepted` / `declined` → `converted` (facture)
 - [x] Envoi par email + conversion en facture avec clonage des lignes + devise propagée
-- [ ] Relances automatiques sur devis en attente (optionnel)
-- [ ] Signature électronique (optionnel)
+- [x] Relances automatiques sur devis en attente (optionnel)
+- [x] Signature électronique (optionnel)
 
 ### Dépenses
 
@@ -150,7 +150,7 @@ Accountant ────────────────┘
   - [x] Score de confiance affiché (badge vert/orange/rouge)
   - [x] Formulaire pré-rempli → validation utilisateur
   - [x] Persistance `ocrData`, `ocrConfidence`, `ocrVerified` en base
-  - [ ] Fichier attaché comme justificatif (VichUploader) — optionnel
+  - [x] Fichier attaché comme justificatif — optionnel
 - [x] Export CSV dépenses (`GET /export/expenses.csv`)
 - [x] Export comptable basique inclus dans le FEC
 

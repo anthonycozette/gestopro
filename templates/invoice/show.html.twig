@@ -225,6 +225,15 @@
                     </div>
                 </div>
                 {% endif %}
+                {% if invoice.signedAt %}
+                <div class="activity-item">
+                    <div class="activity-dot paid">✍</div>
+                    <div class="activity-body">
+                        <div class="activity-title" style="color:#15803d;">Devis signé</div>
+                        <div class="activity-date">{{ invoice.signedAt|date('d/m/Y') }}</div>
+                    </div>
+                </div>
+                {% endif %}
                 {% if isLate %}
                 <div class="activity-item">
                     <div class="activity-dot overdue">!</div>
@@ -236,6 +245,40 @@
                 {% endif %}
             </div>
         </div>
+
+        {# Signature électronique (devis uniquement) #}
+        {% if invoice.isQuote() %}
+        <div class="inv-panel">
+            <div class="inv-panel-title">Signature électronique</div>
+            {% if invoice.signedAt %}
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;margin-bottom:10px;">
+                <div style="font-size:13px;font-weight:600;color:#15803d;margin-bottom:4px;">✓ Signé</div>
+                <div style="font-size:12px;color:#6b7280;">Le {{ invoice.signedAt|date('d/m/Y à H:i') }}</div>
+                {% if invoice.signerIp %}
+                <div style="font-size:11px;color:#9ca3af;margin-top:2px;">IP : {{ invoice.signerIp }}</div>
+                {% endif %}
+            </div>
+            {% if invoice.signatureData %}
+            <div style="margin-bottom:10px;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
+                <img src="{{ invoice.signatureData }}" alt="Signature" style="max-width:100%;display:block;background:#fff;">
+            </div>
+            {% endif %}
+            {% elseif invoice.signatureToken %}
+            <div style="margin-bottom:10px;font-size:13px;color:#6b7280;">En attente de signature du client.</div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:10px;word-break:break-all;">
+                <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">Lien de signature</div>
+                <a href="{{ url('app_quote_sign', {token: invoice.signatureToken}) }}" target="_blank"
+                   style="font-size:12px;color:#2563eb;">{{ url('app_quote_sign', {token: invoice.signatureToken}) }}</a>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" style="width:100%;font-size:12px;"
+                    onclick="navigator.clipboard.writeText('{{ url('app_quote_sign', {token: invoice.signatureToken}) }}').then(()=>this.textContent='✓ Copié !').catch(()=>{})">
+                Copier le lien
+            </button>
+            {% else %}
+            <div style="font-size:13px;color:#9ca3af;">Envoyez le devis pour générer le lien de signature.</div>
+            {% endif %}
+        </div>
+        {% endif %}
 
         {# Danger #}
         <div class="inv-danger-panel">
