@@ -152,9 +152,22 @@ class InvoiceController extends AbstractController
         }
 
         if ($this->isCsrfTokenValid('reminder_' . $invoice->getId(), $request->request->get('_token'))) {
-            $this->sendInvoiceEmail($invoice, $mailer);
-            $invoice->setLastReminderAt(new \DateTimeImmutable());
-            $em->flush();
+            if (!$invoice->getClient()->getEmail()) {
+                $this->addFlash('error', 'Email non envoyé : le client n\'a pas d\'adresse email renseignée.');
+            } else {
+                try {
+                    if ($invoice->isQuote()) {
+                        $mailer->sendQuoteReminder($invoice);
+                    } else {
+                        $mailer->sendReminder($invoice);
+                    }
+                    $invoice->setLastReminderAt(new \DateTimeImmutable());
+                    $em->flush();
+                    $this->addFlash('success', 'Relance envoyée à ' . $invoice->getClient()->getEmail() . '.');
+                } catch (\Exception $e) {
+                    $this->addFlash('error', 'Impossible d\'envoyer la relance : ' . $e->getMessage());
+                }
+            }
         }
 
         return $this->redirectToRoute('app_invoice_show', ['id' => $invoice->getId()]);
@@ -183,9 +196,15 @@ class InvoiceController extends AbstractController
             return;
         }
 
+        $label = $invoice->isQuote() ? 'Devis' : 'Facture';
+
         try {
-            $mailer->sendToClient($invoice);
-            $this->addFlash('success', 'Facture envoyée par email à ' . $invoice->getClient()->getEmail() . '.');
+            if ($invoice->isQuote()) {
+                $mailer->sendQuoteToClient($invoice);
+            } else {
+                $mailer->sendToClient($invoice);
+            }
+            $this->addFlash('success', $label . ' envoyé(e) par email à ' . $invoice->getClient()->getEmail() . '.');
         } catch (\Exception $e) {
             $this->addFlash('error', 'Impossible d\'envoyer l\'email : ' . $e->getMessage());
         }
