@@ -34,7 +34,7 @@ class InvoiceMailer
             ->context(['quote' => $quote, 'user' => $user]);
 
         try {
-            $html       = $this->twig->render('invoice/pdf.html.twig', ['invoice' => $quote]);
+            $html       = $this->twig->render('invoice/pdf_quote.html.twig', ['invoice' => $quote]);
             $pdfContent = $this->pdf->getOutputFromHtml($html);
             $email->attach($pdfContent, 'devis-' . $quote->getNumber() . '.pdf', 'application/pdf');
         } catch (\Exception) {

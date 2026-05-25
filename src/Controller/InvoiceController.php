@@ -104,12 +104,11 @@ class InvoiceController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $html = $this->renderView('invoice/pdf.html.twig', ['invoice' => $invoice]);
+        $template  = $invoice->isQuote() ? 'invoice/pdf_quote.html.twig' : 'invoice/pdf.html.twig';
+        $html      = $this->renderView($template, ['invoice' => $invoice]);
+        $filename  = ($invoice->isQuote() ? 'devis-' : 'facture-') . $invoice->getNumber() . '.pdf';
 
-        return new PdfResponse(
-            $knpPdf->getOutputFromHtml($html),
-            'facture-' . $invoice->getNumber() . '.pdf'
-        );
+        return new PdfResponse($knpPdf->getOutputFromHtml($html), $filename);
     }
 
     #[Route('/{id}/status/{status}', name: '_status', methods: ['POST'])]

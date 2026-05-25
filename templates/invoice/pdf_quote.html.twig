@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111; line-height: 1.5; }
+
+        .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
+        .company { font-size: 20px; font-weight: bold; color: #7c3aed; }
+        .company-info { font-size: 11px; color: #555; margin-top: 4px; }
+        .doc-meta { text-align: right; }
+        .doc-meta h1 { font-size: 24px; font-weight: bold; color: #7c3aed; }
+        .doc-meta .number { font-size: 14px; color: #555; }
+
+        .parties { display: flex; justify-content: space-between; margin-bottom: 32px; }
+        .party { width: 48%; }
+        .party-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #888; margin-bottom: 4px; }
+        .party-name { font-weight: bold; font-size: 13px; }
+        .party-info { font-size: 11px; color: #555; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background: #7c3aed; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; }
+        th:not(:first-child) { text-align: right; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
+        td:not(:first-child) { text-align: right; }
+        tr:nth-child(even) td { background: #f9fafb; }
+
+        .totals { display: flex; justify-content: flex-end; margin-bottom: 32px; }
+        .totals-table { width: 260px; }
+        .totals-table td { border: none; padding: 4px 10px; }
+        .totals-table tr.total-ttc td { font-weight: bold; font-size: 14px; border-top: 2px solid #7c3aed; padding-top: 8px; }
+
+        .validity-box { background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; font-size: 11px; color: #6d28d9; }
+
+        .notes { background: #f9fafb; border: 1px solid #e5e7eb; padding: 12px; border-radius: 4px; font-size: 11px; color: #555; margin-bottom: 24px; }
+
+        .footer { text-align: center; font-size: 10px; color: #888; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px; }
+        .status-draft    { background: #f3f4f6; color: #374151; }
+        .status-sent     { background: #ede9fe; color: #6d28d9; }
+        .status-accepted { background: #dcfce7; color: #166534; }
+        .status-declined { background: #fee2e2; color: #991b1b; }
+        .status-expired  { background: #fef3c7; color: #92400e; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="company">{{ invoice.user.firstName }} {{ invoice.user.lastName }}</div>
+            <div class="company-info">
+                {% if invoice.user.activityLabel %}{{ invoice.user.activityLabel }}<br>{% endif %}
+                {% if invoice.user.siret %}SIRET : {{ invoice.user.siret }}<br>{% endif %}
+                {% if invoice.user.address %}{{ invoice.user.address }}<br>{% endif %}
+                {% if invoice.user.postalCode or invoice.user.city %}{{ invoice.user.postalCode }} {{ invoice.user.city }}<br>{% endif %}
+                {% if invoice.user.phone %}{{ invoice.user.phone }}<br>{% endif %}
+                {{ invoice.user.email }}
+            </div>
+        </div>
+        <div class="doc-meta">
+            <h1>DEVIS
+                <span class="status-badge status-{{ invoice.status }}">
+                    {% if invoice.status == 'accepted' %}Accepté
+                    {% elseif invoice.status == 'declined' %}Refusé
+                    {% elseif invoice.status == 'sent' %}En attente
+                    {% elseif invoice.status == 'expired' %}Expiré
+                    {% else %}Brouillon{% endif %}
+                </span>
+            </h1>
+            <div class="number">{{ invoice.number }}</div>
+            <div style="font-size:11px;color:#555;margin-top:4px;">
+                Émis le {{ invoice.issuedAt|date('d/m/Y') }}
+                {% if invoice.dueAt %} · Valable jusqu'au {{ invoice.dueAt|date('d/m/Y') }}{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="parties">
+        <div class="party">
+            <div class="party-label">Émetteur</div>
+            <div class="party-name">{{ invoice.user.firstName }} {{ invoice.user.lastName }}</div>
+            {% if invoice.user.siret %}<div class="party-info">SIRET : {{ invoice.user.siret }}</div>{% endif %}
+            {% if invoice.user.email %}<div class="party-info">{{ invoice.user.email }}</div>{% endif %}
+        </div>
+        <div class="party" style="text-align:right;">
+            <div class="party-label">Client</div>
+            <div class="party-name">{{ invoice.client.name }}</div>
+            {% if invoice.client.siret %}<div class="party-info">SIRET : {{ invoice.client.siret }}</div>{% endif %}
+            {% if invoice.client.email %}<div class="party-info">{{ invoice.client.email }}</div>{% endif %}
+            {% if invoice.client.address %}<div class="party-info">{{ invoice.client.fullAddress }}</div>{% endif %}
+        </div>
+    </div>
+
+    {% if invoice.dueAt %}
+    <div class="validity-box">
+        Ce devis est valable jusqu'au {{ invoice.dueAt|date('d/m/Y') }}.
+        Pour l'accepter, veuillez nous contacter ou répondre à cet email.
+    </div>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Qté</th>
+                <th>Prix unitaire HT</th>
+                <th>TVA</th>
+                <th>Total HT</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in invoice.lines %}
+            <tr>
+                <td>{{ line.description }}</td>
+                <td>{{ line.quantity }}</td>
+                <td>{{ line.unitPrice|number_format(2, ',', ' ') }} €</td>
+                <td>{{ line.tvaRate }} %</td>
+                <td>{{ line.totalHt|number_format(2, ',', ' ') }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <table class="totals-table">
+            <tr>
+                <td style="color:#555;">Total HT</td>
+                <td>{{ invoice.totalHt|number_format(2, ',', ' ') }} €</td>
+            </tr>
+            <tr>
+                <td style="color:#555;">TVA</td>
+                <td>{{ invoice.totalTva|number_format(2, ',', ' ') }} €</td>
+            </tr>
+            <tr class="total-ttc">
+                <td>Total TTC</td>
+                <td>{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if invoice.notes %}
+    <div class="notes">{{ invoice.notes }}</div>
+    {% endif %}
+
+    <div class="footer">
+        TVA non applicable, art. 293 B du CGI — Merci de votre confiance.
+    </div>
+</body>
+</html>
