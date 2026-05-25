@@ -36,7 +36,7 @@
 </div>
 {% endif %}
 
-{# Hero CA + graphique #}
+{# ── HERO CA + graphique ─────────────────────────────────────────────── #}
 <div class="hero-card">
 
     {# Colonne gauche : montant + décomposition #}
@@ -96,103 +96,234 @@
 
 </div>
 
-{# 3 KPIs : factures, dépenses, URSSAF #}
+{# ── 3 KPI cards ──────────────────────────────────────────────────────── #}
 <div class="kpi-row">
-    <div class="kpi {% if overdueCount > 0 %}kpi-danger{% elseif pending.count > 0 %}kpi-warning{% endif %}">
-        <div class="kpi-label">Factures en attente</div>
-        <div class="kpi-value">{{ pending.amount|number_format(0, ',', ' ') }} €</div>
+
+    {# KPI 1 : Factures en attente #}
+    <div class="kpi">
+        <div class="kpi-header">
+            <div class="kpi-icon" style="background:rgba(37,99,235,.1);color:#2563eb;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+            </div>
+            <div class="kpi-label">Factures en attente</div>
+        </div>
+        <div class="kpi-value">{{ pending.count }}</div>
         <div class="kpi-sub">
-            {{ pending.count }} facture{{ pending.count != 1 ? 's' : '' }}
-            {% if overdueCount > 0 %} · <span style="color:#dc2626;font-weight:600;">{{ overdueCount }} en retard</span>{% endif %}
+            {% if overdueCount > 0 %}{{ overdueCount }} en retard · {% endif %}{{ pending.amount|number_format(0, ',', ' ') }} €
+        </div>
+        <div class="kpi-pills">
+            {% if invoiceCounts.paid > 0 %}
+            <span class="kpi-pill pill-green">{{ invoiceCounts.paid }} payée{{ invoiceCounts.paid > 1 ? 's' : '' }}</span>
+            {% endif %}
+            {% if invoiceCounts.sent > 0 %}
+            <span class="kpi-pill pill-blue">{{ invoiceCounts.sent }} envoyée{{ invoiceCounts.sent > 1 ? 's' : '' }}</span>
+            {% endif %}
+            {% if invoiceCounts.overdue > 0 %}
+            <span class="kpi-pill pill-red">{{ invoiceCounts.overdue }} en retard</span>
+            {% endif %}
         </div>
     </div>
+
+    {# KPI 2 : Dépenses du mois #}
     <div class="kpi">
-        <div class="kpi-label">Dépenses {{ year }}</div>
-        <div class="kpi-value">{{ expensesYear|number_format(0, ',', ' ') }} €</div>
-        <div class="kpi-sub">Ce mois : {{ expensesMonth|number_format(0, ',', ' ') }} €</div>
+        <div class="kpi-header">
+            <div class="kpi-icon" style="background:rgba(234,88,12,.1);color:#ea580c;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 2V2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+            </div>
+            <div class="kpi-label">Dépenses du mois</div>
+            {% if deltaExpenses is not null %}
+            <span class="kpi-delta {% if deltaExpenses <= 0 %}delta-up{% else %}delta-down{% endif %}" style="margin-left:auto;">
+                {{ deltaExpenses > 0 ? '+' : '' }}{{ deltaExpenses }} %
+            </span>
+            {% endif %}
+        </div>
+        <div class="kpi-value">{{ expensesMonth|number_format(0, ',', ' ') }} €</div>
+        <div class="kpi-sub">{{ expensesScannedCount }} reçu{{ expensesScannedCount > 1 ? 's' : '' }} scannés</div>
     </div>
-    <div class="kpi {% if nextUrssaf %}kpi-warning{% else %}kpi-green{% endif %}">
-        <div class="kpi-label">Cotisations {{ year }}</div>
-        <div class="kpi-value">{{ urssafYear|number_format(0, ',', ' ') }} €</div>
+
+    {# KPI 3 : URSSAF #}
+    <div class="kpi">
+        <div class="kpi-header">
+            <div class="kpi-icon" style="background:rgba(22,163,74,.1);color:#16a34a;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </div>
+            <div class="kpi-label">URSSAF à régler</div>
+        </div>
+        <div class="kpi-value {% if nextUrssaf and urssafDaysLeft <= 7 %}kpi-value-warn{% endif %}">
+            {{ nextUrssaf ? nextUrssaf.cotisationAmount|number_format(0, ',', ' ') ~ ' €' : urssafYear|number_format(0, ',', ' ') ~ ' €' }}
+        </div>
         <div class="kpi-sub">
             {% if nextUrssaf %}
-                À déclarer : {{ nextUrssaf.periodLabel }}
+                Dans {{ urssafDaysLeft }} jour{{ urssafDaysLeft > 1 ? 's' : '' }} · {{ nextUrssaf.periodLabel }}
             {% else %}
                 Tout est déclaré ✓
             {% endif %}
         </div>
-    </div>
-</div>
-
-{# Bottom : recouvrement + factures récentes #}
-<div class="bottom-grid">
-    <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
-            <div class="card-title" style="margin-bottom:0;">Taux de recouvrement {{ year }}</div>
-            <div>
-                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:26px;font-weight:700;color:{% if recoveryRate >= 80 %}#16a34a{% elseif recoveryRate >= 50 %}#f97316{% else %}#ef4444{% endif %};">{{ recoveryRate }} %</span>
-            </div>
-        </div>
-        <div class="progress-bar-wrap" style="margin-bottom:16px;">
-            <div class="progress-bar" style="width:{{ recoveryRate }}%; background:{% if recoveryRate >= 80 %}#16a34a{% elseif recoveryRate >= 50 %}#f97316{% else %}#ef4444{% endif %};"></div>
-        </div>
-
-        {% if topClients %}
-        <div>
-            <div style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Top clients</div>
-            {% set maxVal = topClients[0].total %}
-            {% for c in topClients %}
-            <div style="margin-bottom:10px;">
-                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;">
-                    <span>{{ c.name }}</span>
-                    <strong class="mono">{{ c.total|number_format(0, ',', ' ') }} €</strong>
-                </div>
-                <div class="progress-bar-wrap">
-                    <div class="progress-bar" style="width:{{ maxVal > 0 ? (c.total / maxVal * 100)|round : 0 }}%;"></div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="cat-wrap" style="flex-direction:column;gap:8px;padding:16px 0;">
-            {% if chartCatData != '[]' %}
-                <canvas id="chart-categories" height="140"></canvas>
-            {% else %}
-                <div style="text-align:center;color:#9ca3af;font-size:13px;">Aucune dépense enregistrée</div>
-            {% endif %}
+        {% if nextUrssaf %}
+        <div class="kpi-progress-wrap" style="margin-top:12px;">
+            <div class="kpi-progress-bar" style="width:{{ urssafProgress }}%;background:linear-gradient(90deg,#16a34a,#2563eb);"></div>
         </div>
         {% endif %}
     </div>
 
+</div>
+
+{# ── Strip IA ─────────────────────────────────────────────────────────── #}
+{% if app.user.plan != 'free' %}
+<div class="ai-strip">
+    <div class="ai-strip-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>
+    </div>
+    <div class="ai-strip-body">
+        <div class="ai-strip-title">
+            Demande à GestoPro IA
+            <span class="ai-plan-badge">PLAN PRO</span>
+        </div>
+        <div class="ai-strip-sub">Réponses comptables en 1 seconde, contexte de tes factures inclus.</div>
+        <div class="ai-prompts">
+            <a href="{{ path('app_ai_chat') }}" class="ai-prompt-chip">› Calcule ma TVA du trimestre</a>
+            <a href="{{ path('app_ai_chat') }}" class="ai-prompt-chip">› Relance les factures en retard</a>
+            <a href="{{ path('app_ai_chat') }}" class="ai-prompt-chip">› Récap chiffre d'affaires par client</a>
+            <a href="{{ path('app_ai_chat') }}" class="ai-prompt-chip">› Prépare ma déclaration URSSAF</a>
+        </div>
+    </div>
+    <div class="ai-strip-input">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <a href="{{ path('app_ai_chat') }}" class="ai-placeholder">Écris ta question…</a>
+        <a href="{{ path('app_ai_chat') }}" class="ai-send-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{# ── Bottom : factures récentes + sidebar ─────────────────────────────── #}
+<div class="bottom-grid">
+
+    {# Factures récentes — layout riche #}
     <div class="card">
-        <div class="card-title">Factures récentes</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+            <div>
+                <div class="card-title" style="margin-bottom:2px;">Factures récentes</div>
+                <div style="font-size:11.5px;color:#8a93a3;">Les 6 dernières · {{ pending.amount|number_format(0, ',', ' ') }} € en attente</div>
+            </div>
+            <a href="{{ path('app_invoices') }}" style="font-size:12px;color:#2563eb;font-weight:600;">Tout voir →</a>
+        </div>
+
         {% if recentInvoices is empty %}
             <div style="text-align:center;color:#9ca3af;padding:24px 0;font-size:13px;">Aucune facture</div>
         {% else %}
             {% for invoice in recentInvoices %}
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f3f4f6;">
-                <div>
-                    <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" style="font-weight:600;font-size:13px;color:#111827;">
-                        {{ invoice.number }}
-                    </a>
-                    <div style="font-size:11px;color:#9ca3af;margin-top:1px;">{{ invoice.client.name }} · {{ invoice.issuedAt|date('d/m/Y') }}</div>
+            {% set avatarColors = ['#e53935','#8e24aa','#1e88e5','#00897b','#43a047','#fb8c00','#6d4c41','#546e7a'] %}
+            {% set colorIdx = (invoice.client.name|length) % 8 %}
+            <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="inv-row">
+                <div class="inv-avatar" style="background:{{ avatarColors[colorIdx] }};">
+                    {{ invoice.client.name|first|upper }}{{ invoice.client.name|split(' ')|last|first|upper }}
                 </div>
-                <div style="text-align:right;">
-                    <div class="mono" style="font-size:13px;font-weight:600;">{{ invoice.totalTtc|number_format(0, ',', ' ') }} €</div>
-                    <div style="margin-top:3px;">
-                        {% if invoice.status == 'paid' %}<span class="st-badge st-paid" style="font-size:10px;">Payée</span>
-                        {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent" style="font-size:10px;">Envoyée</span>
-                        {% elseif invoice.status == 'overdue' %}<span class="st-badge st-late" style="font-size:10px;">En retard</span>
-                        {% else %}<span class="st-badge st-draft" style="font-size:10px;">Brouillon</span>
-                        {% endif %}
-                    </div>
+                <div class="inv-info">
+                    <div class="inv-client">{{ invoice.client.name }}</div>
+                    <div class="inv-number">{{ invoice.number }}</div>
                 </div>
+                <div class="inv-status">
+                    {% if invoice.status == 'paid' %}<span class="st-badge st-paid">Payée</span>
+                    {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
+                    {% elseif invoice.status == 'overdue' %}<span class="st-badge st-late">En retard</span>
+                    {% else %}<span class="st-badge st-draft">Brouillon</span>{% endif %}
+                </div>
+                <div class="inv-date" style="{% if invoice.status == 'overdue' %}color:#dc2626;{% endif %}">
+                    {{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}
+                </div>
+                <div class="inv-amount">{{ invoice.totalTtc|number_format(0, ',', ' ') }} €</div>
+            </a>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    {# Sidebar droite : Cette semaine + Reçus scannés #}
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        {# Cette semaine #}
+        <div class="card">
+            <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                Cette semaine
+            </div>
+
+            {% if nextUrssaf %}
+            {% set urssafDue = nextUrssaf.periodEnd|date_modify('first day of next month')|date_modify('last day of this month') %}
+            <div class="upcoming-row">
+                <div class="upcoming-days-box {% if urssafDaysLeft <= 7 %}days-warn{% else %}days-info{% endif %}">
+                    <span class="days-num">{{ urssafDaysLeft }}</span>
+                    <span class="days-label">JOURS</span>
+                </div>
+                <div class="upcoming-info">
+                    <div class="upcoming-title">Déclaration URSSAF</div>
+                    <div class="upcoming-date">{{ nextUrssaf.periodLabel }}</div>
+                </div>
+                <div class="upcoming-amount">{{ nextUrssaf.cotisationAmount|number_format(0, ',', ' ') }} €</div>
+            </div>
+            {% endif %}
+
+            {% for invoice in dueSoonInvoices %}
+            {% set daysLeft = ('now'|date('Y-m-d')|date_modify('0 day') is same as invoice.dueAt) ? 0 : invoice.dueAt|date('U') - 'now'|date('U') %}
+            <div class="upcoming-row">
+                <div class="upcoming-days-box days-info">
+                    <span class="days-num">{{ ((invoice.dueAt|date('U') - 'now'|date('U')) / 86400)|round(0, 'ceil') }}</span>
+                    <span class="days-label">JOURS</span>
+                </div>
+                <div class="upcoming-info">
+                    <div class="upcoming-title">Échéance {{ invoice.number }}</div>
+                    <div class="upcoming-date">{{ invoice.dueAt|date('d/m/Y') }}</div>
+                </div>
+                <div class="upcoming-amount">{{ invoice.totalTtc|number_format(0, ',', ' ') }} €</div>
             </div>
             {% endfor %}
-            <div style="margin-top:12px;text-align:center;">
-                <a href="{{ path('app_invoices') }}" style="font-size:13px;color:#2563eb;">Toutes les factures →</a>
+
+            {% if not nextUrssaf and dueSoonInvoices is empty %}
+            <div style="text-align:center;color:#9ca3af;font-size:13px;padding:16px 0;">Aucune échéance proche</div>
+            {% endif %}
+        </div>
+
+        {# Reçus scannés #}
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:0;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 2V2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+                    Reçus scannés
+                </div>
+                <a href="{{ path('app_expense_new') }}" class="btn btn-secondary btn-sm" style="font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M5 11l7-7 7 7M4 20h16"/></svg>
+                    Importer
+                </a>
             </div>
-        {% endif %}
+
+            {% if recentOcrExpenses is empty %}
+            <div style="text-align:center;color:#9ca3af;font-size:13px;padding:16px 0;">
+                Aucun reçu scanné encore.<br>
+                <a href="{{ path('app_expense_new') }}" style="color:#2563eb;">Scanner un reçu →</a>
+            </div>
+            {% else %}
+            {% for expense in recentOcrExpenses %}
+            <a href="{{ path('app_expense_show', {id: expense.id}) }}" class="receipt-row">
+                <div class="receipt-thumb">📄</div>
+                <div class="receipt-info">
+                    <div class="receipt-vendor">{{ expense.vendor }}</div>
+                    <div class="receipt-meta">{{ expense.date|date('d/m') }} · {{ expense.category ? expense.category.label : '—' }}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div class="receipt-amount">{{ expense.amountTtc|number_format(2, ',', ' ') }} €</div>
+                    {% if expense.ocrConfidence is not null %}
+                    {% set pct = (expense.ocrConfidence * 100)|round %}
+                    <span class="ocr-badge {% if pct >= 80 %}ocr-high{% elseif pct >= 50 %}ocr-medium{% else %}ocr-low{% endif %}">
+                        ● OCR {{ pct }} %
+                    </span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+            {% endif %}
+        </div>
+
     </div>
 </div>
 

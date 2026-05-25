@@ -96,4 +96,36 @@ class ExpenseRepository extends ServiceEntityRepository
             ->getQuery()
             ->getArrayResult();
     }
+
+    /** Dernières dépenses avec OCR (ou toutes si $ocrOnly = false). @return \App\Entity\Expense[] */
+    public function findRecentByUser(User $user, int $limit = 3, bool $ocrOnly = false): array
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->leftJoin('e.category', 'cat')
+            ->addSelect('cat')
+            ->where('e.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('e.date', 'DESC')
+            ->setMaxResults($limit);
+
+        if ($ocrOnly) {
+            $qb->andWhere('e.ocrConfidence IS NOT NULL');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countByUserAndMonth(User $user, int $year, int $month): int
+    {
+        return (int) $this->createQueryBuilder('e')
+            ->select('COUNT(e.id)')
+            ->where('e.user = :user')
+            ->andWhere('YEAR(e.date) = :year')
+            ->andWhere('MONTH(e.date) = :month')
+            ->setParameter('user', $user)
+            ->setParameter('year', $year)
+            ->setParameter('month', $month)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

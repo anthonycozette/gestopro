@@ -244,6 +244,57 @@ class InvoiceRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /** @return array{sent: int, paid: int, overdue: int, draft: int} */
+    public function getStatusCounts(User $user): array
+    {
+        $rows = $this->createQueryBuilder('i')
+            ->select('i.status, COUNT(i.id) as cnt')
+            ->where('i.user = :user')
+            ->andWhere('i.type = :type')
+            ->setParameter('user', $user)
+            ->setParameter('type', Invoice::TYPE_INVOICE)
+            ->groupBy('i.status')
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = ['sent' => 0, 'paid' => 0, 'overdue' => 0, 'draft' => 0];
+        foreach ($rows as $row) {
+            if (isset($counts[$row['status']])) {
+                $counts[$row['status']] = (int) $row['cnt'];
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Retourne les factures (type invoice) envoyées/en retard dont l'échéance
+     * est dans les $days prochains jours.
+     *
+     * @return Invoice[]
+     */
+    public function findDueSoon(User $user, int $days = 14): array
+    {
+        $now  = new \DateTimeImmutable();
+        $limit = $now->modify("+{$days} days");
+
+        return $this->createQueryBuilder('i')
+            ->where('i.user = :user')
+            ->andWhere('i.type = :type')
+            ->andWhere('i.status IN (:statuses)')
+            ->andWhere('i.dueAt >= :now')
+            ->andWhere('i.dueAt <= :limit')
+            ->setParameter('user', $user)
+            ->setParameter('type', Invoice::TYPE_INVOICE)
+            ->setParameter('statuses', [Invoice::STATUS_SENT, Invoice::STATUS_OVERDUE])
+            ->setParameter('now', $now)
+            ->setParameter('limit', $limit)
+            ->orderBy('i.dueAt', 'ASC')
+            ->setMaxResults(3)
+            ->getQuery()
+            ->getResult();
+    }
+
     /**
      * Retourne les devis envoyés sans réponse depuis plus de $intervalDays jours.
      *
