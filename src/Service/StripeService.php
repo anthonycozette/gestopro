@@ -87,12 +87,14 @@ class StripeService
             throw new \RuntimeException('Aucun abonnement actif à résilier.');
         }
 
-        \Stripe\Subscription::update($subscriptionId, [
+        $subscription = \Stripe\Subscription::update($subscriptionId, [
             'cancel_at_period_end' => true,
         ]);
 
-        $subscription = \Stripe\Subscription::retrieve($subscriptionId);
-        $endsAt = new \DateTimeImmutable('@' . $subscription->current_period_end);
+        $periodEnd = $subscription->current_period_end;
+        $endsAt = $periodEnd
+            ? new \DateTimeImmutable('@' . $periodEnd)
+            : new \DateTimeImmutable('+30 days');
 
         $user->setSubscriptionEndsAt($endsAt);
         $this->em->flush();
