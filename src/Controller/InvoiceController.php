@@ -63,7 +63,7 @@ class InvoiceController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: '_edit')]
-    public function edit(Invoice $invoice, Request $request, EntityManagerInterface $em, ClientRepository $clientRepo, InvoiceNumberService $numberService): Response
+    public function edit(Invoice $invoice, Request $request, EntityManagerInterface $em, ClientRepository $clientRepo, InvoiceNumberService $numberService, InvoiceMailer $mailer): Response
     {
         if ($invoice->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
@@ -74,6 +74,9 @@ class InvoiceController extends AbstractController
         if ($request->isMethod('POST')) {
             $result = $this->handleForm($request, $invoice, $em, $numberService, false);
             if ($result instanceof Invoice) {
+                if ($result->getStatus() === Invoice::STATUS_SENT) {
+                    $this->sendInvoiceEmail($result, $mailer);
+                }
                 $this->addFlash('success', 'Facture modifiée.');
                 return $this->redirectToRoute('app_invoice_show', ['id' => $invoice->getId()]);
             }
@@ -198,9 +201,21 @@ class InvoiceController extends AbstractController
             $currency = 'EUR';
         }
 
+        $action = $request->request->get('action', 'draft');
+        if ($action === 'send') {
+            $newStatus = Invoice::STATUS_SENT;
+        } elseif ($isNew) {
+            $newStatus = Invoice::STATUS_DRAFT;
+        } else {
+            // En mode édition : ne pas rétrograder un statut déjà avancé
+            $newStatus = in_array($invoice->getStatus(), [Invoice::STATUS_DRAFT, Invoice::STATUS_SENT])
+                ? Invoice::STATUS_DRAFT
+                : $invoice->getStatus();
+        }
+
         $invoice->setClient($client)
                 ->setUser($this->getUser())
-                ->setStatus($request->request->get('status', Invoice::STATUS_DRAFT))
+                ->setStatus($newStatus)
                 ->setIssuedAt(new \DateTimeImmutable($request->request->get('issued_at') ?: 'now'))
                 ->setCurrency($currency)
                 ->setNotes($request->request->get('notes') ?: null);
@@ -210,6 +225,10 @@ class InvoiceController extends AbstractController
 
         if ($isNew) {
             $invoice->setNumber($numberService->generate($this->getUser()));
+        }
+
+        if ($newStatus === Invoice::STATUS_SENT && $invoice->isQuote() && !$invoice->getSignatureToken()) {
+            $invoice->setSignatureToken(bin2hex(random_bytes(32)));
         }
 
         // Supprimer les anciennes lignes
