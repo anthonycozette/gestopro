@@ -115,7 +115,8 @@
                     <div class="inv-party-name">{{ app.user.fullName }}</div>
                     <div class="inv-party-detail">
                         {% if app.user.siret %}SIRET {{ app.user.siret }}<br>{% endif %}
-                        {% if app.user.tvaNumber %}TVA {{ app.user.tvaNumber }}{% endif %}
+                        {% if app.user.activityLabel %}{{ app.user.activityLabel }}<br>{% endif %}
+                        {% if app.user.address %}{{ app.user.address }}{% if app.user.city %}, {{ app.user.postalCode }} {{ app.user.city }}{% endif %}{% endif %}
                     </div>
                 </div>
                 <div>
