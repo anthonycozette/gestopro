@@ -24,23 +24,28 @@
 
 {% set avatarColors = ['#e53935','#8e24aa','#1e88e5','#00897b','#43a047','#fb8c00','#6d4c41','#546e7a'] %}
 {% set avatarBg = avatarColors[(invoice.client.name|length) % 8] %}
-{% set isPaid  = invoice.status == 'paid' %}
-{% set isLate  = invoice.status == 'overdue' %}
-{% set isSent  = invoice.status == 'sent' %}
-{% set isDraft = invoice.status == 'draft' %}
+{% set isPaid     = invoice.status == 'paid' %}
+{% set isLate     = invoice.status == 'overdue' %}
+{% set isSent     = invoice.status == 'sent' %}
+{% set isDraft    = invoice.status == 'draft' %}
+{% set isAccepted = invoice.status == 'accepted' %}
+{% set isDeclined = invoice.status == 'declined' %}
+{% set isQuote    = invoice.isQuote() %}
 
 {# ── Action bar ─── #}
 <div class="inv-action-bar">
+    {# Statut #}
     {% if isPaid %}<span class="status-chip paid">Payée</span>
-    {% elseif isSent %}<span class="status-chip sent">Envoyée</span>
+    {% elseif isSent %}<span class="status-chip sent">{{ isQuote ? 'Envoyé' : 'Envoyée' }}</span>
     {% elseif isLate %}<span class="status-chip overdue">En retard</span>
     {% elseif isDraft %}<span class="status-chip draft">Brouillon</span>
+    {% elseif isAccepted %}<span class="status-chip accepted">Accepté</span>
+    {% elseif isDeclined %}<span class="status-chip cancelled">Refusé</span>
     {% elseif invoice.status == 'cancelled' %}<span class="status-chip cancelled">Annulée</span>
-    {% elseif invoice.status == 'accepted' %}<span class="status-chip accepted">Accepté</span>
     {% endif %}
 
     {% if isSent or isLate %}
-    <span class="inv-action-bar-info">Émise le <strong>{{ invoice.issuedAt|date('d M Y') }}</strong></span>
+    <span class="inv-action-bar-info">{{ isQuote ? 'Émis le' : 'Émise le' }} <strong>{{ invoice.issuedAt|date('d M Y') }}</strong></span>
     {% endif %}
     {% if isLate %}
     <span class="inv-action-bar-info" style="color:#dc2626;">· Échéance dépassée</span>
@@ -48,39 +53,120 @@
 
     <div style="flex:1;"></div>
 
-    {% if isSent or isLate %}
-    <form method="post" action="{{ path('app_invoice_send_reminder', {id: invoice.id}) }}" style="display:inline;" onsubmit="return confirm('Envoyer une relance à {{ invoice.client.name }} ?')">
-        <input type="hidden" name="_token" value="{{ csrf_token('reminder_' ~ invoice.id) }}">
-        <button type="submit" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-            Relancer
-        </button>
-    </form>
-    {% endif %}
+    {# ── Boutons DEVIS ── #}
+    {% if isQuote %}
 
-    <a href="{{ path('app_invoice_pdf', {id: invoice.id}) }}" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9 14l3 3 3-3"/></svg>
-        Télécharger PDF
-    </a>
+        {# Relancer — devis envoyé sans réponse #}
+        {% if isSent %}
+        <form method="post" action="{{ path('app_invoice_send_reminder', {id: invoice.id}) }}" style="display:inline;" onsubmit="return confirm('Envoyer une relance à {{ invoice.client.name }} ?')">
+            <input type="hidden" name="_token" value="{{ csrf_token('reminder_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                Relancer
+            </button>
+        </form>
+        {% endif %}
 
-    {% if isDraft %}
-    <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'sent'}) }}" style="display:inline;">
-        <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
-        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-            Marquer comme envoyée
-        </button>
-    </form>
-    {% endif %}
+        {# Accepter / Refuser — devis envoyé #}
+        {% if isSent %}
+        <form method="post" action="{{ path('app_invoice_decline', {id: invoice.id}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('decline_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;color:#dc2626;" onclick="return confirm('Marquer ce devis comme refusé ?')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                Refuser
+            </button>
+        </form>
+        <form method="post" action="{{ path('app_invoice_accept', {id: invoice.id}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('accept_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;color:#16a34a;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Accepter
+            </button>
+        </form>
+        {% endif %}
 
-    {% if isSent or isLate %}
-    <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'paid'}) }}" style="display:inline;">
-        <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
-        <button type="submit" class="btn btn-primary" style="background:#16a34a;border-color:#16a34a;display:inline-flex;align-items:center;gap:7px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Marquer payée
-        </button>
-    </form>
+        {# PDF #}
+        <a href="{{ path('app_invoice_pdf', {id: invoice.id}) }}" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9 14l3 3 3-3"/></svg>
+            Télécharger PDF
+        </a>
+
+        {# Convertir en facture — devis accepté non encore converti #}
+        {% if isAccepted and not invoice.convertedInvoice %}
+        <form method="post" action="{{ path('app_invoice_convert', {id: invoice.id}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('convert_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8 12h8M12 8l4 4-4 4"/></svg>
+                Convertir en facture
+            </button>
+        </form>
+        {% elseif (isSent) and not invoice.convertedInvoice %}
+        <form method="post" action="{{ path('app_invoice_convert', {id: invoice.id}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('convert_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px;" onclick="return confirm('Convertir ce devis en facture ?')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8 12h8M12 8l4 4-4 4"/></svg>
+                Convertir en facture
+            </button>
+        </form>
+        {% endif %}
+
+        {# Lien vers la facture générée #}
+        {% if invoice.convertedInvoice %}
+        <a href="{{ path('app_invoice_show', {id: invoice.convertedInvoice.id}) }}" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+            Voir {{ invoice.convertedInvoice.number }} →
+        </a>
+        {% endif %}
+
+        {# Marquer envoyé si brouillon #}
+        {% if isDraft %}
+        <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'sent'}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                Envoyer le devis
+            </button>
+        </form>
+        {% endif %}
+
+    {# ── Boutons FACTURE ── #}
+    {% else %}
+
+        {% if isSent or isLate %}
+        <form method="post" action="{{ path('app_invoice_send_reminder', {id: invoice.id}) }}" style="display:inline;" onsubmit="return confirm('Envoyer une relance à {{ invoice.client.name }} ?')">
+            <input type="hidden" name="_token" value="{{ csrf_token('reminder_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                Relancer
+            </button>
+        </form>
+        {% endif %}
+
+        <a href="{{ path('app_invoice_pdf', {id: invoice.id}) }}" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9 14l3 3 3-3"/></svg>
+            Télécharger PDF
+        </a>
+
+        {% if isDraft %}
+        <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'sent'}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                Envoyer la facture
+            </button>
+        </form>
+        {% endif %}
+
+        {% if isSent or isLate %}
+        <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'paid'}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
+            <button type="submit" class="btn btn-primary" style="background:#16a34a;border-color:#16a34a;display:inline-flex;align-items:center;gap:7px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Marquer payée
+            </button>
+        </form>
+        {% endif %}
+
     {% endif %}
 </div>
 
@@ -336,6 +422,28 @@
             {% else %}
             <p style="font-size:13px;color:#9ca3af;margin:0;">Envoyez le devis pour générer le lien de signature.</p>
             {% endif %}
+        </div>
+        {% endif %}
+
+        {# Lien devis → facture (sur la fiche devis) #}
+        {% if isQuote and invoice.convertedInvoice %}
+        <div class="inv-panel" style="border-color:#dcfce7;background:#f0fdf4;">
+            <div class="inv-panel-title" style="color:#15803d;">Facture générée</div>
+            <p style="font-size:13px;color:#374151;margin-bottom:10px;">Ce devis a été converti en facture.</p>
+            <a href="{{ path('app_invoice_show', {id: invoice.convertedInvoice.id}) }}" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;">
+                Voir {{ invoice.convertedInvoice.number }} →
+            </a>
+        </div>
+        {% endif %}
+
+        {# Lien facture → devis source (sur la fiche facture) #}
+        {% if not isQuote and sourceQuote is defined and sourceQuote %}
+        <div class="inv-panel" style="border-color:#ede9fe;background:#faf5ff;">
+            <div class="inv-panel-title" style="color:#6d28d9;">Issu d'un devis</div>
+            <p style="font-size:13px;color:#374151;margin-bottom:10px;">Cette facture a été créée depuis le devis <strong>{{ sourceQuote.number }}</strong>.</p>
+            <a href="{{ path('app_invoice_show', {id: sourceQuote.id}) }}" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;">
+                Voir {{ sourceQuote.number }} →
+            </a>
         </div>
         {% endif %}
 

@@ -233,6 +233,16 @@ class InvoiceRepository extends ServiceEntityRepository
     }
 
     /** @return Invoice[] */
+    public function findSourceQuote(Invoice $invoice): ?Invoice
+    {
+        return $this->createQueryBuilder('q')
+            ->where('q.convertedInvoice = :invoice')
+            ->setParameter('invoice', $invoice)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function findRecentByUser(User $user, int $limit = 5): array
     {
         return $this->createQueryBuilder('i')

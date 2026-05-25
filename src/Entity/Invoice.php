@@ -145,6 +145,10 @@ class Invoice
     #[Groups(['invoice:read', 'invoice:write'])]
     private Collection $lines;
 
+    #[ORM\OneToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL', name: 'converted_invoice_id')]
+    private ?Invoice $convertedInvoice = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -213,6 +217,9 @@ class Invoice
 
     public function getSignatureData(): ?string { return $this->signatureData; }
     public function setSignatureData(?string $data): static { $this->signatureData = $data; return $this; }
+
+    public function getConvertedInvoice(): ?Invoice { return $this->convertedInvoice; }
+    public function setConvertedInvoice(?Invoice $invoice): static { $this->convertedInvoice = $invoice; return $this; }
 
     public function isSignable(): bool
     {

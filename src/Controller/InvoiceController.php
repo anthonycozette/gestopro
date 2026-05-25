@@ -88,13 +88,18 @@ class InvoiceController extends AbstractController
     }
 
     #[Route('/{id}', name: '_show')]
-    public function show(Invoice $invoice): Response
+    public function show(Invoice $invoice, InvoiceRepository $repo): Response
     {
         if ($invoice->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
 
-        return $this->render('invoice/show.html.twig', ['invoice' => $invoice]);
+        $sourceQuote = !$invoice->isQuote() ? $repo->findSourceQuote($invoice) : null;
+
+        return $this->render('invoice/show.html.twig', [
+            'invoice'     => $invoice,
+            'sourceQuote' => $sourceQuote,
+        ]);
     }
 
     #[Route('/{id}/pdf', name: '_pdf')]
@@ -139,6 +144,93 @@ class InvoiceController extends AbstractController
 
             $this->addFlash('success', 'Statut mis à jour.');
         }
+
+        return $this->redirectToRoute('app_invoice_show', ['id' => $invoice->getId()]);
+    }
+
+    #[Route('/{id}/accept', name: '_accept', methods: ['POST'])]
+    public function accept(Invoice $invoice, Request $request, EntityManagerInterface $em): Response
+    {
+        if ($invoice->getUser() !== $this->getUser() || !$invoice->isQuote()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($this->isCsrfTokenValid('accept_' . $invoice->getId(), $request->request->get('_token'))) {
+            $invoice->setStatus(Invoice::STATUS_ACCEPTED);
+            $em->flush();
+            $this->addFlash('success', 'Devis marqué comme accepté.');
+        }
+
+        return $this->redirectToRoute('app_invoice_show', ['id' => $invoice->getId()]);
+    }
+
+    #[Route('/{id}/decline', name: '_decline', methods: ['POST'])]
+    public function decline(Invoice $invoice, Request $request, EntityManagerInterface $em): Response
+    {
+        if ($invoice->getUser() !== $this->getUser() || !$invoice->isQuote()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($this->isCsrfTokenValid('decline_' . $invoice->getId(), $request->request->get('_token'))) {
+            $invoice->setStatus(Invoice::STATUS_DECLINED);
+            $em->flush();
+            $this->addFlash('success', 'Devis marqué comme refusé.');
+        }
+
+        return $this->redirectToRoute('app_invoice_show', ['id' => $invoice->getId()]);
+    }
+
+    #[Route('/{id}/convert', name: '_convert', methods: ['POST'])]
+    public function convert(Invoice $quote, Request $request, EntityManagerInterface $em, InvoiceNumberService $numberService): Response
+    {
+        if ($quote->getUser() !== $this->getUser() || !$quote->isQuote()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('convert_' . $quote->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($quote->getConvertedInvoice()) {
+            $this->addFlash('error', 'Ce devis a déjà été converti en facture.');
+            return $this->redirectToRoute('app_invoice_show', ['id' => $quote->getConvertedInvoice()->getId()]);
+        }
+
+        if (!in_array($quote->getStatus(), [Invoice::STATUS_SENT, Invoice::STATUS_ACCEPTED])) {
+            $this->addFlash('error', 'Seul un devis envoyé ou accepté peut être converti en facture.');
+            return $this->redirectToRoute('app_invoice_show', ['id' => $quote->getId()]);
+        }
+
+        $invoice = new Invoice();
+        $invoice->setType(Invoice::TYPE_INVOICE)
+                ->setUser($quote->getUser())
+                ->setClient($quote->getClient())
+                ->setNumber($numberService->generate($quote->getUser()))
+                ->setStatus(Invoice::STATUS_DRAFT)
+                ->setIssuedAt(new \DateTimeImmutable())
+                ->setDueAt($quote->getDueAt())
+                ->setCurrency($quote->getCurrency())
+                ->setNotes($quote->getNotes());
+
+        foreach ($quote->getLines() as $line) {
+            $newLine = new InvoiceLine();
+            $newLine->setDescription($line->getDescription())
+                    ->setQuantity($line->getQuantity())
+                    ->setUnitPrice($line->getUnitPrice())
+                    ->setTvaRate($line->getTvaRate())
+                    ->setPosition($line->getPosition());
+            $invoice->addLine($newLine);
+            $em->persist($newLine);
+        }
+
+        $invoice->recalculateTotals();
+        $em->persist($invoice);
+
+        $quote->setStatus(Invoice::STATUS_ACCEPTED)
+              ->setConvertedInvoice($invoice);
+        $em->flush();
+
+        $this->addFlash('success', 'Facture ' . $invoice->getNumber() . ' créée depuis le devis ' . $quote->getNumber() . '.');
 
         return $this->redirectToRoute('app_invoice_show', ['id' => $invoice->getId()]);
     }
