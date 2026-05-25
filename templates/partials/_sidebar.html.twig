@@ -53,16 +53,7 @@
                     <path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4Zm1 4h6v1H5V4Zm0 3h6v1H5V7Zm0 3h4v1H5v-1Z" />
                 </svg>
             </span>
-            Factures
-        </a>
-
-        <a href="{{ path('app_quotes') }}" {% if app.request.attributes.get('_route') starts with 'app_quote' %} class="active" {% endif %}>
-            <span class="nav-icon">
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M4 0a2 2 0 0 0-2 2v12l3-1.5L8 14l3-1.5L14 14V2a2 2 0 0 0-2-2H4Zm1 4h3v1H5V4Zm5 0h-1v1h1V4ZM5 7h6v1H5V7Zm0 3h4v1H5v-1Z" />
-                </svg>
-            </span>
-            Devis
+            Factures &amp; Devis
         </a>
 
         <a href="{{ path('app_expenses') }}" {% if app.request.attributes.get('_route') starts with 'app_expense' %} class="active" {% endif %}>
