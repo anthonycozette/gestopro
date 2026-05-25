@@ -9,7 +9,7 @@
 <div class="topbar">
     <h1>{{ client.name }}</h1>
     <div class="topbar-actions">
-        <a href="{{ path('app_invoice_new') }}?client={{ client.id }}" class="btn btn-primary">+ Nouvelle facture</a>
+        <a href="{{ path('app_invoice_new') }}?client={{ client.id }}" class="btn btn-primary">+ Nouvelle facture ou devis</a>
         <a href="{{ path('app_client_edit', {id: client.id}) }}" class="btn btn-secondary">Modifier</a>
         <a href="{{ path('app_clients') }}" class="btn btn-secondary">Retour</a>
     </div>
