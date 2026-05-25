@@ -7,180 +7,249 @@
 
 {% block topbar %}
 <div class="topbar">
-    <h1>Factures</h1>
-    <div class="topbar-actions">
-        <a href="{{ path('app_export_invoices_csv') }}" class="btn btn-secondary" title="Exporter en CSV">↓ CSV</a>
-        <a href="{{ path('app_export_fec_csv') }}" class="btn btn-secondary" title="Export FEC (Fichier des Écritures Comptables)">↓ FEC</a>
-        <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">+ Nouvelle facture</a>
+    <div>
+        <h1>Factures</h1>
+        <div style="font-size:13px;color:#6b7280;margin-top:2px;">Suivi de tes factures émises, leur statut et leur encaissement.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <a href="{{ path('app_export_invoices_csv') }}" class="btn btn-secondary" title="Exporter CSV">↓ CSV</a>
+        <a href="{{ path('app_export_fec_csv') }}" class="btn btn-secondary" title="Export FEC">↓ FEC</a>
     </div>
 </div>
 {% endblock %}
 
 {% block body %}
 
-{% if invoices is not empty %}
+{% set allInvoices  = invoices %}
+{% set totalEmis    = allInvoices|reduce((c, i) => c + i.totalTtc, 0) %}
+{% set totalPaid    = allInvoices|filter(i => i.status == 'paid')|reduce((c, i) => c + i.totalTtc, 0) %}
+{% set totalPending = allInvoices|filter(i => i.status in ['sent','overdue'])|reduce((c, i) => c + i.totalTtc, 0) %}
+{% set totalLate    = allInvoices|filter(i => i.status == 'overdue')|reduce((c, i) => c + i.totalTtc, 0) %}
+{% set countLate    = allInvoices|filter(i => i.status == 'overdue')|length %}
+{% set countPending = allInvoices|filter(i => i.status in ['sent','overdue'])|length %}
 
-{# Stats #}
-{% set totalEmis    = invoices|reduce((carry, i) => carry + i.totalTtc, 0) %}
-{% set totalPaid    = invoices|filter(i => i.status == 'paid')|reduce((carry, i) => carry + i.totalTtc, 0) %}
-{% set totalPending = invoices|filter(i => i.status == 'sent')|reduce((carry, i) => carry + i.totalTtc, 0) %}
-{% set countLate    = invoices|filter(i => i.status == 'overdue')|length %}
-
+{# ── Stat tiles ─── #}
 <div class="inv-stat-grid">
-    <div class="inv-stat-card">
-        <div class="inv-stat-label">Total émis</div>
-        <div class="inv-stat-value" style="font-size:20px;">{{ totalEmis|number_format(0, ',', ' ') }} €</div>
-        <div class="inv-stat-sub">{{ invoices|length }} facture{{ invoices|length != 1 ? 's' : '' }}</div>
+    <div class="inv-stat-tile">
+        <div class="inv-stat-tile-header">
+            <div class="inv-stat-label">Total émis · {{ 'now'|date('Y') }}</div>
+        </div>
+        <div class="inv-stat-value">{{ totalEmis|number_format(0, ',', ' ') }} €</div>
+        <div class="inv-stat-sub">{{ allInvoices|length }} facture{{ allInvoices|length != 1 ? 's' : '' }}</div>
     </div>
-    <div class="inv-stat-card">
-        <div class="inv-stat-label">Encaissé</div>
-        <div class="inv-stat-value" style="font-size:20px;color:#16a34a;">{{ totalPaid|number_format(0, ',', ' ') }} €</div>
-        <div class="inv-stat-sub">{{ invoices|filter(i => i.status == 'paid')|length }} payée{{ invoices|filter(i => i.status == 'paid')|length != 1 ? 's' : '' }}</div>
+    <div class="inv-stat-tile">
+        <div class="inv-stat-tile-header">
+            <div class="inv-stat-label">Encaissé</div>
+            <svg class="inv-stat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="inv-stat-value" style="color:#16a34a;">{{ totalPaid|number_format(0, ',', ' ') }} €</div>
+        <div class="inv-stat-sub">{{ totalEmis > 0 ? ((totalPaid / totalEmis) * 100)|round : 0 }}% du total</div>
     </div>
-    <div class="inv-stat-card">
-        <div class="inv-stat-label">En attente</div>
-        <div class="inv-stat-value" style="font-size:20px;color:#2563eb;">{{ totalPending|number_format(0, ',', ' ') }} €</div>
-        <div class="inv-stat-sub">{{ invoices|filter(i => i.status == 'sent')|length }} envoyée{{ invoices|filter(i => i.status == 'sent')|length != 1 ? 's' : '' }}</div>
+    <div class="inv-stat-tile">
+        <div class="inv-stat-tile-header">
+            <div class="inv-stat-label">En attente</div>
+            <svg class="inv-stat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <div class="inv-stat-value" style="color:#2563eb;">{{ totalPending|number_format(0, ',', ' ') }} €</div>
+        <div class="inv-stat-sub">{{ countPending }} facture{{ countPending != 1 ? 's' : '' }}</div>
     </div>
-    <div class="inv-stat-card{% if countLate > 0 %} alert-glow{% endif %}">
-        <div class="inv-stat-label">En retard</div>
-        <div class="inv-stat-value" style="font-size:20px;color:{% if countLate > 0 %}#dc2626{% else %}#9ca3af{% endif %};">{{ countLate }}</div>
-        <div class="inv-stat-sub">{% if countLate == 0 %}aucune impayée ✓{% else %}à relancer{% endif %}</div>
+    <div class="inv-stat-tile{% if countLate > 0 %} tile-alert{% endif %}">
+        <div class="inv-stat-tile-header">
+            <div class="inv-stat-label">En retard</div>
+            {% if countLate > 0 %}
+            <svg class="inv-stat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            {% endif %}
+        </div>
+        <div class="inv-stat-value" style="color:{% if countLate > 0 %}#dc2626{% else %}#9ca3af{% endif %};">{{ totalLate|number_format(0, ',', ' ') }} €</div>
+        <div class="inv-stat-sub">{% if countLate == 0 %}Aucune impayée ✓{% else %}{{ countLate }} facture{{ countLate != 1 ? 's' : '' }} · relance auto{% endif %}</div>
     </div>
 </div>
 
-{% endif %}
+{# ── Table card ─── #}
+<div class="inv-table-wrap">
 
-<div class="card">
-    {% if invoices is empty %}
-        <div class="empty-state">
-            <div class="empty-state-icon">🧾</div>
-            <p>Aucune facture pour l'instant.</p>
-            <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">Créer ma première facture</a>
+    {# Toolbar #}
+    <div class="inv-toolbar">
+        <div class="inv-tabs">
+            <button class="inv-tab active" data-filter="all">
+                Toutes <span class="inv-tab-count">{{ allInvoices|length }}</span>
+            </button>
+            <button class="inv-tab" data-filter="paid">
+                <span class="dot dot-paid"></span>Payées
+                <span class="inv-tab-count">{{ allInvoices|filter(i => i.status == 'paid')|length }}</span>
+            </button>
+            <button class="inv-tab" data-filter="sent">
+                <span class="dot dot-sent"></span>Envoyées
+                <span class="inv-tab-count">{{ allInvoices|filter(i => i.status == 'sent')|length }}</span>
+            </button>
+            <button class="inv-tab" data-filter="draft">
+                <span class="dot dot-draft"></span>Brouillons
+                <span class="inv-tab-count">{{ allInvoices|filter(i => i.status == 'draft')|length }}</span>
+            </button>
+            {% if countLate > 0 %}
+            <button class="inv-tab" data-filter="overdue">
+                <span class="dot dot-late"></span>En retard
+                <span class="inv-tab-count">{{ countLate }}</span>
+            </button>
+            {% endif %}
         </div>
+        <div style="flex:1;"></div>
+        <div class="inv-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="inv-search-input" placeholder="Numéro, client, montant…">
+        </div>
+        <a href="{{ path('app_invoice_new') }}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Nouvelle facture
+        </a>
+    </div>
+
+    {% if allInvoices is empty %}
+    <div class="empty-state" style="padding:48px 24px;">
+        <div class="empty-state-icon">🧾</div>
+        <p>Aucune facture pour l'instant.</p>
+        <a href="{{ path('app_invoice_new') }}" class="btn btn-primary">Créer ma première facture</a>
+    </div>
     {% else %}
 
-        <div class="toolbar">
-            <div class="inv-tabs">
-                <button class="inv-tab active" data-filter="all">
-                    <span class="dot dot-all"></span>Toutes
-                    <span class="inv-tab-count">{{ invoices|length }}</span>
-                </button>
-                <button class="inv-tab" data-filter="paid">
-                    <span class="dot dot-paid"></span>Payées
-                    <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'paid')|length }}</span>
-                </button>
-                <button class="inv-tab" data-filter="sent">
-                    <span class="dot dot-sent"></span>Envoyées
-                    <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'sent')|length }}</span>
-                </button>
-                <button class="inv-tab" data-filter="draft">
-                    <span class="dot dot-draft"></span>Brouillons
-                    <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'draft')|length }}</span>
-                </button>
-                {% if invoices|filter(i => i.status == 'overdue')|length > 0 %}
-                <button class="inv-tab" data-filter="overdue">
-                    <span class="dot dot-late"></span>En retard
-                    <span class="inv-tab-count">{{ invoices|filter(i => i.status == 'overdue')|length }}</span>
-                </button>
-                {% endif %}
-            </div>
-            <div style="flex:1;"></div>
-            <a href="{{ path('app_invoice_new') }}" class="btn btn-primary btn-sm">+ Nouvelle facture</a>
-        </div>
+    {% set avatarColors = ['#e53935','#8e24aa','#1e88e5','#00897b','#43a047','#fb8c00','#6d4c41','#546e7a'] %}
 
-        {% set avatarColors = ['#2563eb','#7c3aed','#16a34a','#ea580c','#0891b2','#db2777','#ca8a04'] %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Numéro</th>
-                    <th>Client</th>
-                    <th>Date</th>
-                    <th>Échéance</th>
-                    <th style="text-align:right">Montant TTC</th>
-                    <th>Statut</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for invoice in invoices %}
-                {% set isLate = invoice.status == 'overdue' %}
-                <tr data-status="{{ invoice.status }}" {% if isLate %}style="background:#fff9f9;"{% endif %}>
-                    <td>
-                        <a href="{{ path('app_invoice_show', {id: invoice.id}) }}"
-                           style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#1c1a17;">
-                            {{ invoice.number }}
-                        </a>
-                    </td>
-                    <td>
-                        <div class="inv-client-cell">
-                            <span class="avatar avatar-sm"
-                                  style="background:{{ avatarColors[loop.index0 % 7] }};">
-                                {{ invoice.client.name|first|upper }}
-                            </span>
-                            <div>
-                                <div class="inv-client-name">{{ invoice.client.name }}</div>
-                                {% if invoice.client.email %}
-                                <div class="inv-client-sub">{{ invoice.client.email }}</div>
-                                {% endif %}
-                            </div>
+    <table>
+        <thead>
+            <tr>
+                <th class="inv-cb-col"></th>
+                <th>Numéro</th>
+                <th>Client</th>
+                <th>Émise le</th>
+                <th>Échéance</th>
+                <th>Statut</th>
+                <th style="text-align:right;">Montant TTC</th>
+                <th class="inv-action-col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in allInvoices %}
+            {% set colorIdx = (invoice.client.name|length) % 8 %}
+            {% set isLate = invoice.status == 'overdue' %}
+            <tr data-status="{{ invoice.status }}" data-search="{{ (invoice.number ~ ' ' ~ invoice.client.name ~ ' ' ~ invoice.totalTtc)|lower }}">
+                <td class="inv-cb-col">
+                    <span class="inv-cb"></span>
+                </td>
+                <td class="inv-num-col">
+                    <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="inv-num-link">{{ invoice.number }}</a>
+                </td>
+                <td>
+                    <div class="inv-client-cell">
+                        <span class="avatar avatar-sm" style="background:{{ avatarColors[colorIdx] }};">
+                            {{ invoice.client.name|first|upper }}{{ invoice.client.name|split(' ')|last|first|upper }}
+                        </span>
+                        <div>
+                            <div class="inv-client-name">{{ invoice.client.name }}</div>
                         </div>
-                    </td>
-                    <td style="color:#6b7280;font-size:13px;" class="mono">{{ invoice.issuedAt|date('d/m/Y') }}</td>
-                    <td class="{% if isLate %}overdue-date{% else %}mono{% endif %}" style="font-size:13px;">
+                    </div>
+                </td>
+                <td><span class="inv-date-cell">{{ invoice.issuedAt|date('d/m/Y') }}</span></td>
+                <td>
+                    <span class="inv-date-cell{% if isLate %} overdue{% endif %}">
                         {{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}
-                    </td>
-                    <td style="text-align:right;">
-                        <span class="mono" style="font-weight:700;color:#1c1a17;">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span>
-                    </td>
-                    <td>
-                        {% if invoice.status == 'paid' %}<span class="st-badge st-paid">Payée</span>
-                        {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
-                        {% elseif invoice.status == 'overdue' %}<span class="st-badge st-late">En retard</span>
-                        {% elseif invoice.status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
-                        {% elseif invoice.status == 'cancelled' %}<span class="st-badge st-cancel">Annulée</span>
-                        {% endif %}
-                    </td>
-                    <td style="text-align:right;">
-                        <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </span>
+                </td>
+                <td>
+                    {% if invoice.status == 'paid' %}<span class="st-badge st-paid">Payée</span>
+                    {% elseif invoice.status == 'sent' %}<span class="st-badge st-sent">Envoyée</span>
+                    {% elseif invoice.status == 'overdue' %}<span class="st-badge st-late">En retard</span>
+                    {% elseif invoice.status == 'draft' %}<span class="st-badge st-draft">Brouillon</span>
+                    {% elseif invoice.status == 'cancelled' %}<span class="st-badge st-cancel">Annulée</span>
+                    {% endif %}
+                </td>
+                <td><span class="inv-amount-cell">{{ invoice.totalTtc|number_format(0, ',', ' ') }} €</span></td>
+                <td class="inv-action-col">
+                    <a href="{{ path('app_invoice_show', {id: invoice.id}) }}" class="inv-more-btn" title="Voir">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-        <div style="padding:14px 12px 2px;border-top:1px solid #f0f2f5;display:flex;gap:32px;font-size:13px;">
-            <div>
-                Total émis :
-                <strong class="mono" style="color:#1c1a17;font-size:15px;margin-left:6px;">
-                    {{ invoices|reduce((carry, i) => carry + i.totalTtc, 0)|number_format(2, ',', ' ') }} €
-                </strong>
-            </div>
-            <div>
-                Encaissé :
-                <strong class="mono" style="color:#16a34a;font-size:15px;margin-left:6px;">
-                    {{ invoices|filter(i => i.status == 'paid')|reduce((carry, i) => carry + i.totalTtc, 0)|number_format(2, ',', ' ') }} €
-                </strong>
-            </div>
-        </div>
+    <div class="inv-table-footer">
+        <span id="inv-count">{{ allInvoices|length }} facture{{ allInvoices|length != 1 ? 's' : '' }}</span>
+        <div style="flex:1;"></div>
+        <div class="inv-pagination" id="inv-pagination"></div>
+    </div>
 
     {% endif %}
 </div>
+
 {% endblock %}
 
 {% block javascripts %}
 <script>
-document.querySelectorAll('.inv-tab[data-filter]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const filter = btn.dataset.filter;
+(function() {
+    const tabs   = document.querySelectorAll('.inv-tab[data-filter]');
+    const rows   = [...document.querySelectorAll('tbody tr[data-status]')];
+    const search = document.getElementById('inv-search-input');
+    const count  = document.getElementById('inv-count');
+    const pgWrap = document.getElementById('inv-pagination');
+    const PER    = 15;
+    let currentFilter = 'all';
+    let currentPage   = 1;
 
-        document.querySelectorAll('.inv-tab[data-filter]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    function visible() {
+        const q = search ? search.value.toLowerCase() : '';
+        return rows.filter(r => {
+            const statusOk = currentFilter === 'all' || r.dataset.status === currentFilter;
+            const searchOk = !q || (r.dataset.search || '').includes(q);
+            return statusOk && searchOk;
+        });
+    }
 
-        document.querySelectorAll('tbody tr[data-status]').forEach(row => {
-            row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+    function render() {
+        const vis = visible();
+        const pages = Math.max(1, Math.ceil(vis.length / PER));
+        currentPage = Math.min(currentPage, pages);
+        rows.forEach(r => r.style.display = 'none');
+        vis.slice((currentPage - 1) * PER, currentPage * PER).forEach(r => r.style.display = '');
+        if (count) count.textContent = vis.length + ' facture' + (vis.length !== 1 ? 's' : '');
+        renderPagination(pages);
+    }
+
+    function renderPagination(pages) {
+        if (!pgWrap) return;
+        if (pages <= 1) { pgWrap.innerHTML = ''; return; }
+        const nums = [];
+        if (currentPage > 1) nums.push('‹');
+        for (let p = 1; p <= pages; p++) nums.push(p);
+        if (currentPage < pages) nums.push('›');
+        pgWrap.innerHTML = nums.map(p => {
+            const active = p === currentPage;
+            return `<button class="inv-page-btn${active ? ' active' : ''}" data-page="${p}">${p}</button>`;
+        }).join('');
+        pgWrap.querySelectorAll('[data-page]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const p = btn.dataset.page;
+                if (p === '‹') currentPage--;
+                else if (p === '›') currentPage++;
+                else currentPage = +p;
+                render();
+            });
+        });
+    }
+
+    tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabs.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            currentPage = 1;
+            render();
         });
     });
-});
+
+    if (search) search.addEventListener('input', () => { currentPage = 1; render(); });
+
+    render();
+})();
 </script>
 {% endblock %}

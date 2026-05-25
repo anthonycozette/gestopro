@@ -7,144 +7,190 @@
 
 {% block topbar %}
 <div class="topbar">
-    <div style="display:flex;align-items:center;gap:12px;">
-        <h1 style="margin:0;">{{ invoice.number }}</h1>
-        {% if invoice.status == 'paid' %}<span class="status-chip paid">Payée</span>
-        {% elseif invoice.status == 'sent' %}<span class="status-chip sent">Envoyée</span>
-        {% elseif invoice.status == 'overdue' %}<span class="status-chip overdue">En retard</span>
-        {% elseif invoice.status == 'draft' %}<span class="status-chip draft">Brouillon</span>
-        {% elseif invoice.status == 'cancelled' %}<span class="status-chip cancelled">Annulée</span>
-        {% endif %}
-        <span style="font-size:13px;color:#9ca3af;">
-            {{ invoice.client.name }} · {{ invoice.totalTtc|number_format(2, ',', ' ') }} €
-        </span>
+    <div>
+        <a href="{{ path('app_invoices') }}" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#6b7280;font-weight:500;text-decoration:none;margin-bottom:5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Factures
+        </a>
+        <h1>{{ invoice.number }}</h1>
     </div>
-    <div class="topbar-actions">
-        {% if invoice.status == 'draft' %}
-            <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'sent'}) }}" style="display:inline">
-                <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
-                <button type="submit" class="btn btn-primary">Marquer comme envoyée</button>
-            </form>
-        {% endif %}
-        {% if invoice.status == 'sent' or invoice.status == 'overdue' %}
-            <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'paid'}) }}" style="display:inline">
-                <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
-                <button type="submit" class="btn btn-primary" style="background:#16a34a;border-color:#16a34a;">✓ Marquer payée</button>
-            </form>
-        {% endif %}
-        <a href="{{ path('app_invoice_pdf', {id: invoice.id}) }}" class="btn btn-secondary">↓ PDF</a>
+    <div style="display:flex;gap:8px;align-items:center;">
         <a href="{{ path('app_invoice_edit', {id: invoice.id}) }}" class="btn btn-secondary">Modifier</a>
-        <a href="{{ path('app_invoices') }}" class="btn btn-secondary">Retour</a>
     </div>
 </div>
 {% endblock %}
 
 {% block body %}
 
-{% set avatarColors = ['#2563eb','#7c3aed','#16a34a','#ea580c','#0891b2','#db2777','#ca8a04'] %}
-{% set avatarBg = avatarColors[invoice.client.name|length % 7] %}
-{% set isPaid   = invoice.status == 'paid' %}
-{% set isLate   = invoice.status == 'overdue' %}
-{% set paidPct  = isPaid ? 100 : 0 %}
+{% set avatarColors = ['#e53935','#8e24aa','#1e88e5','#00897b','#43a047','#fb8c00','#6d4c41','#546e7a'] %}
+{% set avatarBg = avatarColors[(invoice.client.name|length) % 8] %}
+{% set isPaid  = invoice.status == 'paid' %}
+{% set isLate  = invoice.status == 'overdue' %}
+{% set isSent  = invoice.status == 'sent' %}
+{% set isDraft = invoice.status == 'draft' %}
 
+{# ── Action bar ─── #}
+<div class="inv-action-bar">
+    {% if isPaid %}<span class="status-chip paid">Payée</span>
+    {% elseif isSent %}<span class="status-chip sent">Envoyée</span>
+    {% elseif isLate %}<span class="status-chip overdue">En retard</span>
+    {% elseif isDraft %}<span class="status-chip draft">Brouillon</span>
+    {% elseif invoice.status == 'cancelled' %}<span class="status-chip cancelled">Annulée</span>
+    {% elseif invoice.status == 'accepted' %}<span class="status-chip accepted">Accepté</span>
+    {% endif %}
+
+    {% if isSent or isLate %}
+    <span class="inv-action-bar-info">Émise le <strong>{{ invoice.issuedAt|date('d M Y') }}</strong></span>
+    {% endif %}
+    {% if isLate %}
+    <span class="inv-action-bar-info" style="color:#dc2626;">· Échéance dépassée</span>
+    {% endif %}
+
+    <div style="flex:1;"></div>
+
+    {% if isSent or isLate %}
+    <form method="post" action="{{ path('app_invoice_send_reminder', {id: invoice.id}) }}" style="display:inline;" onsubmit="return confirm('Envoyer une relance à {{ invoice.client.name }} ?')">
+        <input type="hidden" name="_token" value="{{ csrf_token('reminder_' ~ invoice.id) }}">
+        <button type="submit" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Relancer
+        </button>
+    </form>
+    {% endif %}
+
+    <a href="{{ path('app_invoice_pdf', {id: invoice.id}) }}" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:7px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9 14l3 3 3-3"/></svg>
+        Télécharger PDF
+    </a>
+
+    {% if isDraft %}
+    <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'sent'}) }}" style="display:inline;">
+        <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
+        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Marquer comme envoyée
+        </button>
+    </form>
+    {% endif %}
+
+    {% if isSent or isLate %}
+    <form method="post" action="{{ path('app_invoice_status', {id: invoice.id, status: 'paid'}) }}" style="display:inline;">
+        <input type="hidden" name="_token" value="{{ csrf_token('status_invoice_' ~ invoice.id) }}">
+        <button type="submit" class="btn btn-primary" style="background:#16a34a;border-color:#16a34a;display:inline-flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Marquer payée
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+{# ── 2-column layout ─── #}
 <div class="inv-layout">
 
-    {# Left: formal invoice document #}
+    {# Document #}
     <div class="inv-doc">
         <div class="inv-doc-top">
-            <div class="inv-doc-number">{{ invoice.number }}</div>
+            <div class="inv-doc-hd">
+                <div>
+                    <div class="inv-doc-type">{{ invoice.isQuote() ? 'Devis' : (invoice.type == 'credit' ? 'Avoir' : 'Facture') }}</div>
+                    <div class="inv-doc-number">{{ invoice.number }}</div>
+                    <div class="inv-doc-meta">
+                        <span>Émise le <strong>{{ invoice.issuedAt|date('d M Y') }}</strong></span>
+                        {% if invoice.dueAt %}
+                        <span class="inv-doc-meta-sep">·</span>
+                        <span>Échéance <strong {% if isLate %}style="color:#dc2626;"{% endif %}>{{ invoice.dueAt|date('d M Y') }}</strong></span>
+                        {% endif %}
+                        {% if isPaid and invoice.paidAt %}
+                        <span class="inv-doc-meta-sep">·</span>
+                        <span>Payée le <strong style="color:#16a34a;">{{ invoice.paidAt|date('d M Y') }}</strong></span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="inv-doc-logo">G</div>
+            </div>
 
             <div class="inv-parties">
                 <div>
                     <div class="inv-party-label">De</div>
-                    <div class="inv-party-name">Mon entreprise</div>
+                    <div class="inv-party-name">{{ app.user.fullName }}</div>
+                    <div class="inv-party-detail">
+                        {% if app.user.siret %}SIRET {{ app.user.siret }}<br>{% endif %}
+                        {% if app.user.tvaNumber %}TVA {{ app.user.tvaNumber }}{% endif %}
+                    </div>
                 </div>
                 <div>
-                    <div class="inv-party-label">Facturé à</div>
+                    <div class="inv-party-label">{{ invoice.isQuote() ? 'Devis pour' : 'Facturé à' }}</div>
                     <div class="inv-party-name">{{ invoice.client.name }}</div>
                     <div class="inv-party-detail">
+                        {% if invoice.client.siret %}SIRET {{ invoice.client.siret }}<br>{% endif %}
                         {% if invoice.client.email %}{{ invoice.client.email }}<br>{% endif %}
                         {% if invoice.client.fullAddress %}{{ invoice.client.fullAddress }}{% endif %}
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="inv-doc-dates">
-                <div class="inv-date-item">
-                    <div class="inv-date-label">Date d'émission</div>
-                    <div class="inv-date-value">{{ invoice.issuedAt|date('d/m/Y') }}</div>
-                </div>
-                {% if invoice.dueAt %}
-                <div class="inv-date-item">
-                    <div class="inv-date-label">Échéance</div>
-                    <div class="inv-date-value{% if isLate %} overdue{% endif %}">
-                        {{ invoice.dueAt|date('d/m/Y') }}{% if isLate %} · En retard{% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                {% if isPaid and invoice.paidAt %}
-                <div class="inv-date-item">
-                    <div class="inv-date-label">Payée le</div>
-                    <div class="inv-date-value" style="color:#16a34a;">{{ invoice.paidAt|date('d/m/Y') }}</div>
-                </div>
-                {% endif %}
+        {# Lines #}
+        <div class="inv-doc-lines">
+            <div class="inv-doc-lines-inner">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th style="text-align:right;width:60px;">Qté</th>
+                            <th style="text-align:right;width:100px;">P.U. HT</th>
+                            <th style="text-align:right;width:70px;">TVA</th>
+                            <th style="text-align:right;width:100px;">Total HT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in invoice.lines %}
+                        <tr>
+                            <td>
+                                <div class="inv-line-desc">{{ line.description }}</div>
+                            </td>
+                            <td style="text-align:right;font-variant-numeric:tabular-nums;">{{ line.quantity }}</td>
+                            <td style="text-align:right;color:#6b7280;font-variant-numeric:tabular-nums;">{{ line.unitPrice|number_format(2, ',', ' ') }} €</td>
+                            <td style="text-align:right;color:#6b7280;">{{ line.tvaRate }} %</td>
+                            <td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;">{{ line.totalHt|number_format(2, ',', ' ') }} €</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="inv-doc-lines">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th style="text-align:right">Qté</th>
-                        <th style="text-align:right">PU HT</th>
-                        <th style="text-align:right">TVA</th>
-                        <th style="text-align:right">Total HT</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for line in invoice.lines %}
-                    <tr>
-                        <td>{{ line.description }}</td>
-                        <td style="text-align:right"><span class="mono">{{ line.quantity }}</span></td>
-                        <td style="text-align:right"><span class="mono">{{ line.unitPrice|number_format(2, ',', ' ') }} €</span></td>
-                        <td style="text-align:right"><span class="mono">{{ line.tvaRate }} %</span></td>
-                        <td style="text-align:right"><strong class="mono">{{ line.totalHt|number_format(2, ',', ' ') }} €</strong></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
+        {# Totals #}
         <div class="inv-totals-wrap">
             <div class="inv-totals">
                 <div class="inv-totals-row">
-                    <span>Total HT</span>
+                    <span>Sous-total HT</span>
                     <span class="val">{{ invoice.totalHt|number_format(2, ',', ' ') }} €</span>
                 </div>
                 <div class="inv-totals-row">
                     <span>TVA</span>
                     <span class="val" style="color:#2563eb;">{{ invoice.totalTva|number_format(2, ',', ' ') }} €</span>
                 </div>
-                <div class="inv-totals-row total">
-                    <span>Total TTC</span>
-                    <span class="val">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span>
+                <div style="height:1px;background:#e6e8ee;margin:6px 14px;"></div>
+                <div class="inv-totals-row" style="font-weight:700;color:#1c1a17;font-size:14px;">
+                    <span style="padding-left:14px;">Total TTC</span>
+                    <span class="val" style="padding-right:14px;">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span>
                 </div>
                 {% if not isPaid %}
-                <div class="reste-du">
-                    <div class="reste-du-label">Reste dû TTC</div>
-                    <div class="reste-du-amount">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</div>
+                <div class="inv-reste-du" style="margin:12px 14px 0;">
+                    <span class="inv-reste-du-label">Reste dû TTC</span>
+                    <span class="inv-reste-du-amount">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span>
                 </div>
                 {% endif %}
             </div>
         </div>
 
         {% if invoice.notes %}
-        <div class="inv-doc-notes">{{ invoice.notes }}</div>
+        <div class="inv-doc-notes"><strong style="color:#374151;">Conditions de paiement :</strong> {{ invoice.notes }}</div>
         {% endif %}
     </div>
 
-    {# Right sidebar #}
+    {# Sidebar #}
     <div class="inv-aside">
 
         {# Client #}
@@ -152,16 +198,19 @@
             <div class="inv-panel-title">Client</div>
             <div class="inv-client-row">
                 <span class="avatar avatar-md" style="background:{{ avatarBg }};">
-                    {{ invoice.client.name|first|upper }}
+                    {{ invoice.client.name|first|upper }}{{ invoice.client.name|split(' ')|last|first|upper }}
                 </span>
                 <div>
-                    <div style="font-weight:700;font-size:14px;color:#1c1a17;">{{ invoice.client.name }}</div>
-                    {% if invoice.client.email %}
-                    <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ invoice.client.email }}</div>
-                    {% endif %}
+                    <div style="font-weight:700;font-size:13.5px;color:#1c1a17;">{{ invoice.client.name }}</div>
+                    {% if invoice.client.siret %}<div style="font-size:11.5px;color:#8a93a3;">SIRET {{ invoice.client.siret }}</div>{% endif %}
                 </div>
             </div>
-            <a href="{{ path('app_client_show', {id: invoice.client.id}) }}" class="btn btn-secondary btn-sm" style="width:100%;">
+            <div class="inv-info-grid">
+                {% if invoice.client.contactName %}<span class="inv-info-key">Contact</span><span class="inv-info-val">{{ invoice.client.contactName }}</span>{% endif %}
+                {% if invoice.client.email %}<span class="inv-info-key">Email</span><span class="inv-info-val"><a href="mailto:{{ invoice.client.email }}">{{ invoice.client.email }}</a></span>{% endif %}
+                {% if invoice.client.fullAddress %}<span class="inv-info-key">Adresse</span><span class="inv-info-val">{{ invoice.client.fullAddress }}</span>{% endif %}
+            </div>
+            <a href="{{ path('app_client_show', {id: invoice.client.id}) }}" class="btn btn-secondary btn-sm" style="width:100%;margin-top:12px;justify-content:center;">
                 Voir le client →
             </a>
         </div>
@@ -169,31 +218,31 @@
         {# Paiement #}
         <div class="inv-panel">
             <div class="inv-panel-title">Paiement</div>
-            <div class="inv-info-row">
-                <span class="inv-info-key">Montant TTC</span>
-                <span class="inv-info-val mono">{{ invoice.totalTtc|number_format(2, ',', ' ') }} €</span>
-            </div>
-            <div class="inv-info-row">
-                <span class="inv-info-key">Statut</span>
-                <span class="inv-info-val">
-                    {% if isPaid %}Payée{% elseif isLate %}En retard{% elseif invoice.status == 'sent' %}En attente{% else %}Brouillon{% endif %}
-                </span>
-            </div>
-            {% if invoice.dueAt %}
-            <div class="inv-info-row">
+            <div class="inv-info-grid">
+                {% if invoice.dueAt %}
                 <span class="inv-info-key">Échéance</span>
-                <span class="inv-info-val {% if isLate %}mono" style="color:#dc2626;{% else %}mono"{% endif %}>{{ invoice.dueAt|date('d/m/Y') }}</span>
+                <span class="inv-info-val" {% if isLate %}style="color:#dc2626;font-weight:600;"{% endif %}>
+                    {{ invoice.dueAt|date('d M Y') }}{% if isLate %} · En retard{% endif %}
+                </span>
+                {% endif %}
+                {% if invoice.paymentConditions %}
+                <span class="inv-info-key">Conditions</span>
+                <span class="inv-info-val">{{ invoice.paymentConditions }}</span>
+                {% endif %}
+            </div>
+            {% if not isPaid %}
+            <div class="inv-pay-box">
+                <div class="inv-pay-box-label">Reste à payer</div>
+                <div class="inv-pay-box-amount">{{ invoice.totalTtc|number_format(0, ',', ' ') }} €</div>
+                <div class="inv-pay-bar">
+                    <div class="inv-pay-bar-fill" style="width:0%;background:#2563eb;"></div>
+                </div>
+            </div>
+            {% else %}
+            <div style="margin-top:10px;padding:10px 12px;border-radius:9px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;font-weight:600;color:#15803d;">
+                ✓ Paiement reçu{{ invoice.paidAt ? ' · ' ~ invoice.paidAt|date('d/m/Y') : '' }}
             </div>
             {% endif %}
-            <div class="pay-progress-wrap">
-                <div class="pay-progress-bar">
-                    <div class="pay-progress-fill" style="width:{{ paidPct }}%;{% if isLate %}background:linear-gradient(90deg,#dc2626,#f87171);{% endif %}"></div>
-                </div>
-                <div class="pay-progress-labels">
-                    <span>0 €</span>
-                    <span>{{ isPaid ? invoice.totalTtc|number_format(2, ',', ' ') ~ ' €' : '0,00 €' }} encaissé</span>
-                </div>
-            </div>
         </div>
 
         {# Activité #}
@@ -201,42 +250,52 @@
             <div class="inv-panel-title">Activité</div>
             <div class="activity-list">
                 <div class="activity-item">
-                    <div class="activity-dot created">C</div>
+                    <div class="activity-icon" style="background:rgba(107,114,128,.1);color:#6b7280;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                    </div>
                     <div class="activity-body">
                         <div class="activity-title">Facture créée</div>
-                        <div class="activity-date">{{ invoice.issuedAt|date('d/m/Y') }}</div>
+                        <div class="activity-date">{{ invoice.createdAt ? invoice.createdAt|date('d/m · H:i') : invoice.issuedAt|date('d/m') }}</div>
                     </div>
                 </div>
                 {% if invoice.status != 'draft' %}
                 <div class="activity-item">
-                    <div class="activity-dot sent">E</div>
+                    <div class="activity-icon" style="background:rgba(37,99,235,.1);color:#2563eb;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </div>
                     <div class="activity-body">
-                        <div class="activity-title">Envoyée au client</div>
-                        <div class="activity-date">{{ invoice.issuedAt|date('d/m/Y') }}</div>
+                        <div class="activity-title">Facture envoyée par email</div>
+                        <div class="activity-date">{{ invoice.issuedAt|date('d/m') }}</div>
                     </div>
                 </div>
                 {% endif %}
                 {% if isPaid %}
                 <div class="activity-item">
-                    <div class="activity-dot paid">✓</div>
+                    <div class="activity-icon" style="background:rgba(22,163,74,.1);color:#16a34a;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
                     <div class="activity-body">
                         <div class="activity-title">Paiement reçu</div>
-                        <div class="activity-date">{{ invoice.paidAt ? invoice.paidAt|date('d/m/Y') : '—' }}</div>
+                        <div class="activity-date">{{ invoice.paidAt ? invoice.paidAt|date('d/m · H:i') : '—' }}</div>
                     </div>
                 </div>
                 {% endif %}
                 {% if invoice.signedAt %}
                 <div class="activity-item">
-                    <div class="activity-dot paid">✍</div>
+                    <div class="activity-icon" style="background:rgba(22,163,74,.1);color:#16a34a;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                    </div>
                     <div class="activity-body">
                         <div class="activity-title" style="color:#15803d;">Devis signé</div>
-                        <div class="activity-date">{{ invoice.signedAt|date('d/m/Y') }}</div>
+                        <div class="activity-date">{{ invoice.signedAt|date('d/m · H:i') }}</div>
                     </div>
                 </div>
                 {% endif %}
                 {% if isLate %}
                 <div class="activity-item">
-                    <div class="activity-dot overdue">!</div>
+                    <div class="activity-icon" style="background:rgba(220,38,38,.1);color:#dc2626;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+                    </div>
                     <div class="activity-body">
                         <div class="activity-title" style="color:#dc2626;">Paiement en retard</div>
                         <div class="activity-date">Échéance dépassée</div>
@@ -251,38 +310,37 @@
         <div class="inv-panel">
             <div class="inv-panel-title">Signature électronique</div>
             {% if invoice.signedAt %}
-            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;margin-bottom:10px;">
-                <div style="font-size:13px;font-weight:600;color:#15803d;margin-bottom:4px;">✓ Signé</div>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:10px;">
+                <div style="font-size:13px;font-weight:600;color:#15803d;margin-bottom:3px;">✓ Signé</div>
                 <div style="font-size:12px;color:#6b7280;">Le {{ invoice.signedAt|date('d/m/Y à H:i') }}</div>
-                {% if invoice.signerIp %}
-                <div style="font-size:11px;color:#9ca3af;margin-top:2px;">IP : {{ invoice.signerIp }}</div>
-                {% endif %}
+                {% if invoice.signerIp %}<div style="font-size:11px;color:#9ca3af;margin-top:2px;">IP : {{ invoice.signerIp }}</div>{% endif %}
             </div>
             {% if invoice.signatureData %}
-            <div style="margin-bottom:10px;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
+            <div style="border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:10px;">
                 <img src="{{ invoice.signatureData }}" alt="Signature" style="max-width:100%;display:block;background:#fff;">
             </div>
             {% endif %}
             {% elseif invoice.signatureToken %}
-            <div style="margin-bottom:10px;font-size:13px;color:#6b7280;">En attente de signature du client.</div>
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:10px;word-break:break-all;">
-                <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">Lien de signature</div>
-                <a href="{{ url('app_quote_sign', {token: invoice.signatureToken}) }}" target="_blank"
-                   style="font-size:12px;color:#2563eb;">{{ url('app_quote_sign', {token: invoice.signatureToken}) }}</a>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:10px;">En attente de signature du client.</p>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px;margin-bottom:10px;word-break:break-all;">
+                <div style="font-size:10.5px;color:#9ca3af;margin-bottom:3px;">Lien de signature</div>
+                <a href="{{ url('app_quote_sign', {token: invoice.signatureToken}) }}" target="_blank" style="font-size:12px;color:#2563eb;">
+                    {{ url('app_quote_sign', {token: invoice.signatureToken}) }}
+                </a>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" style="width:100%;font-size:12px;"
+            <button type="button" class="btn btn-secondary btn-sm" style="width:100%;"
                     onclick="navigator.clipboard.writeText('{{ url('app_quote_sign', {token: invoice.signatureToken}) }}').then(()=>this.textContent='✓ Copié !').catch(()=>{})">
                 Copier le lien
             </button>
             {% else %}
-            <div style="font-size:13px;color:#9ca3af;">Envoyez le devis pour générer le lien de signature.</div>
+            <p style="font-size:13px;color:#9ca3af;margin:0;">Envoyez le devis pour générer le lien de signature.</p>
             {% endif %}
         </div>
         {% endif %}
 
         {# Danger #}
         <div class="inv-danger-panel">
-            <div style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Zone de danger</div>
+            <div style="font-size:10.5px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Zone de danger</div>
             <form method="post" action="{{ path('app_invoice_delete', {id: invoice.id}) }}"
                   data-confirm="Supprimer cette facture définitivement ?" data-confirm-variant="danger">
                 <input type="hidden" name="_token" value="{{ csrf_token('delete_invoice_' ~ invoice.id) }}">
