@@ -31,7 +31,7 @@ services:
             $projectId:       '%env(GOOGLE_CLOUD_PROJECT_ID)%'
             $processorId:     '%env(GOOGLE_DOCUMENT_AI_PROCESSOR_ID)%'
             $location:        '%env(GOOGLE_DOCUMENT_AI_LOCATION)%'
-            $credentialsPath: '%env(GOOGLE_APPLICATION_CREDENTIALS)%'
+            $credentialsPath: '%kernel.project_dir%/config/google-credentials.json'
 
     App\Service\AiAssistantService:
         arguments:
