@@ -7,180 +7,308 @@
 
 {% block topbar %}
 <div class="topbar">
-    <h1>Dépenses</h1>
-    <div class="topbar-actions">
-        <a href="{{ path('app_export_expenses_csv') }}" class="btn btn-secondary" title="Exporter en CSV">↓ CSV</a>
-        <a href="{{ path('app_expense_new') }}" class="btn btn-primary">+ Nouvelle dépense</a>
+    <div>
+        <h1>Dépenses</h1>
+        <div style="font-size:13px;color:#6b7280;margin-top:2px;">Suivi de tes dépenses professionnelles, TVA et justificatifs.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <a href="{{ path('app_export_expenses_csv') }}" class="btn btn-secondary" title="Exporter CSV">↓ CSV</a>
+        <a href="{{ path('app_expense_new') }}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Scanner un reçu
+        </a>
     </div>
 </div>
 {% endblock %}
 
 {% block body %}
 
-{% if expenses is not empty %}
+{# ── Stats ──────────────────────────────────────────────────────────────── #}
+{% set totalTtc    = expenses|reduce((carry, e) => carry + e.amountTtc, 0) %}
+{% set totalTva    = expenses|filter(e => e.deductible)|reduce((carry, e) => carry + e.tva, 0) %}
+{% set toVerify    = expenses|filter(e => e.ocrConfidence is not null and e.ocrConfidence < 80)|length %}
+{% set withReceipt = expenses|filter(e => e.receiptPath is not null)|length %}
+{% set noReceipt   = expenses|length - withReceipt %}
 
-{# Stats calculées #}
-{% set totalTtc = expenses|reduce((carry, e) => carry + e.amountTtc, 0) %}
-{% set totalTva = expenses|filter(e => e.deductible)|reduce((carry, e) => carry + e.tva, 0) %}
-{% set toVerify = expenses|filter(e => e.ocrConfidence is not null and e.ocrConfidence < 80)|length %}
-
-<div class="stat-grid">
-    <div class="stat-card">
-        <div class="stat-card-label">Total dépenses</div>
-        <div class="stat-card-value">{{ totalTtc|number_format(0, ',', ' ') }} €</div>
-        <div class="stat-card-sub">{{ expenses|length }} dépense{{ expenses|length != 1 ? 's' : '' }}</div>
+<div class="exp-stat-grid">
+    <div class="exp-stat-tile">
+        <div class="exp-stat-header">
+            <div class="exp-stat-label">Total dépenses</div>
+        </div>
+        <div class="exp-stat-value">{{ totalTtc|number_format(0, ',', ' ') }} €</div>
+        <div class="exp-stat-sub">{{ expenses|length }} dépense{{ expenses|length != 1 ? 's' : '' }}</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card-label">TVA déductible</div>
-        <div class="stat-card-value" style="color:#16a34a;">{{ totalTva|number_format(2, ',', ' ') }} €</div>
-        <div class="stat-card-sub">récupérable</div>
+    <div class="exp-stat-tile">
+        <div class="exp-stat-header">
+            <div class="exp-stat-label">TVA déductible</div>
+            <svg class="exp-stat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="exp-stat-value" style="color:#16a34a;">{{ totalTva|number_format(0, ',', ' ') }} €</div>
+        <div class="exp-stat-sub">récupérable</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card-label">À vérifier (OCR)</div>
-        <div class="stat-card-value" style="color:{% if toVerify > 0 %}#d97706{% else %}#16a34a{% endif %};">{{ toVerify }}</div>
-        <div class="stat-card-sub">{% if toVerify == 0 %}tout est validé ✓{% else %}confiance OCR faible{% endif %}</div>
+    <div class="exp-stat-tile{% if toVerify > 0 %} tile-alert{% endif %}">
+        <div class="exp-stat-header">
+            <div class="exp-stat-label">À vérifier (OCR)</div>
+            {% if toVerify > 0 %}
+            <svg class="exp-stat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            {% endif %}
+        </div>
+        <div class="exp-stat-value" style="color:{% if toVerify > 0 %}#d97706{% else %}#16a34a{% endif %};">{{ toVerify }}</div>
+        <div class="exp-stat-sub">{% if toVerify == 0 %}tout validé ✓{% else %}confiance OCR faible{% endif %}</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card-label">Déductibles</div>
-        <div class="stat-card-value">{{ expenses|filter(e => e.deductible)|length }}</div>
-        <div class="stat-card-sub">sur {{ expenses|length }} dépenses</div>
+    <div class="exp-stat-tile">
+        <div class="exp-stat-header">
+            <div class="exp-stat-label">Sans justificatif</div>
+        </div>
+        <div class="exp-stat-value" style="color:{% if noReceipt > 0 %}#d97706{% else %}#16a34a{% endif %};">{{ noReceipt }}</div>
+        <div class="exp-stat-sub">{{ withReceipt }} avec reçu scanné</div>
     </div>
 </div>
 
+{# ── Category breakdown ──────────────────────────────────────────────────── #}
+{% if expenses is not empty %}
+{% set catColors = {
+    'Transport':   '#f59e0b',
+    'Logiciel':    '#8b5cf6',
+    'Matériel':    '#3b82f6',
+    'Repas pro':   '#eab308',
+    'Hébergement': '#ec4899',
+    'Formation':   '#22c55e',
+    'Marketing':   '#f43f5e',
+    'Télécoms':    '#06b6d4',
+    'Bureautique': '#84cc16'
+} %}
+{% set catData = {} %}
+{% for expense in expenses %}
+    {% set lbl = expense.category ? expense.category.label : 'Autre' %}
+    {% set cur = catData[lbl] is defined ? catData[lbl] : {label: lbl, total: 0, count: 0} %}
+    {% set catData = catData|merge({(lbl): {label: lbl, total: cur.total + expense.amountTtc, count: cur.count + 1}}) %}
+{% endfor %}
+
+{% if catData|length > 1 %}
+<div class="exp-cat-card">
+    <div class="exp-cat-card-head">
+        <div style="font-size:13.5px;font-weight:700;">Répartition par catégorie</div>
+        <div style="font-size:12px;color:#6b7280;">{{ expenses|length }} dépense{{ expenses|length != 1 ? 's' : '' }}</div>
+    </div>
+    <div class="exp-cat-bar-wrap">
+        {% for key, cat in catData %}
+            {% set pct = totalTtc > 0 ? (cat.total / totalTtc * 100)|round(1) : 0 %}
+            {% set color = catColors[cat.label] ?? '#94a3b8' %}
+            <div class="exp-cat-bar-seg" style="width:{{ pct }}%;background:{{ color }};"></div>
+        {% endfor %}
+    </div>
+    <div class="exp-cat-legend">
+        {% for key, cat in catData %}
+            {% set pct = totalTtc > 0 ? (cat.total / totalTtc * 100)|round : 0 %}
+            {% set color = catColors[cat.label] ?? '#94a3b8' %}
+            <div class="exp-cat-legend-item">
+                <div class="exp-cat-legend-name">
+                    <div class="exp-cat-legend-dot" style="background:{{ color }};"></div>
+                    {{ cat.label }}
+                </div>
+                <div class="exp-cat-legend-val">{{ cat.total|number_format(0, ',', ' ') }} €</div>
+                <div class="exp-cat-legend-sub">{{ pct }} % · {{ cat.count }} dép.</div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 {% endif %}
 
-<div class="card">
+{# ── Table card ─────────────────────────────────────────────────────────── #}
+<div class="exp-table-wrap">
+
     {% if expenses is empty %}
-        <div class="empty-state">
-            <div class="empty-state-icon">🧾</div>
-            <p>Aucune dépense enregistrée.</p>
-            <a href="{{ path('app_expense_new') }}" class="btn btn-primary">Ajouter ma première dépense</a>
-        </div>
+    <div class="empty-state" style="padding:48px 24px;">
+        <div class="empty-state-icon">🧾</div>
+        <p>Aucune dépense enregistrée.</p>
+        <a href="{{ path('app_expense_new') }}" class="btn btn-primary">Scanner mon premier reçu</a>
+    </div>
     {% else %}
-        <div class="toolbar">
-            <div class="tab-bar">
-                <button class="tab-btn active" data-filter="all">Toutes <span class="tab-count">{{ expenses|length }}</span></button>
-                <button class="tab-btn" data-filter="deductible">Déductibles <span class="tab-count">{{ expenses|filter(e => e.deductible)|length }}</span></button>
-                {% if toVerify > 0 %}
-                <button class="tab-btn" data-filter="ocr-low" style="color:#d97706;">À vérifier <span class="tab-count">{{ toVerify }}</span></button>
-                {% endif %}
-            </div>
-            <div style="flex:1;"></div>
-            <a href="{{ path('app_expense_new') }}" class="btn btn-primary btn-sm">+ Nouvelle dépense</a>
-        </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th style="width:36px;"></th>
-                    <th>Libellé</th>
-                    <th>Catégorie</th>
-                    <th>Date</th>
-                    <th style="text-align:right">TTC</th>
-                    <th style="text-align:right">TVA</th>
-                    <th>Déductible</th>
-                    {% if expenses|filter(e => e.ocrConfidence is not null)|length > 0 %}
-                    <th>Confiance OCR</th>
-                    {% endif %}
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for expense in expenses %}
-                {% set ocr = expense.ocrConfidence %}
-                {% set ocrClass = ocr is not null ? (ocr >= 80 ? 'ok' : (ocr >= 50 ? 'warn' : 'bad')) : null %}
-                <tr data-deductible="{{ expense.deductible ? '1' : '0' }}"
-                    data-ocr-low="{{ ocr is not null and ocr < 80 ? '1' : '0' }}"
-                    {% if ocr is not null and ocr < 50 %}style="background:#fff9f5;"{% endif %}>
-                    <td><div class="receipt-thumb"></div></td>
-                    <td>
-                        <a href="{{ path('app_expense_show', {id: expense.id}) }}" style="font-weight:600;font-size:13px;color:#1c1a17;">
-                            {{ expense.vendor }}
-                        </a>
-                        {% if expense.notes %}
-                        <div style="font-size:11px;color:#9ca3af;margin-top:1px;">{{ expense.notes|slice(0,60) }}{% if expense.notes|length > 60 %}…{% endif %}</div>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if expense.category %}
-                            {% set catSlug = expense.category.label|lower|replace({' ': '-', 'é': 'e', 'è': 'e', 'ê': 'e', 'à': 'a', 'î': 'i', 'ô': 'o', 'û': 'u'}) %}
-                            <span class="cat-chip cat-{{ catSlug }}">{{ expense.category.label }}</span>
-                        {% else %}
-                            <span style="color:#9ca3af;font-size:13px;">—</span>
-                        {% endif %}
-                    </td>
-                    <td style="color:#6b7280;font-size:13px;" class="mono">{{ expense.date|date('d/m/Y') }}</td>
-                    <td style="text-align:right;">
-                        <span class="mono" style="font-weight:700;">{{ expense.amountTtc|number_format(2, ',', ' ') }} €</span>
-                    </td>
-                    <td style="text-align:right;">
-                        {% if expense.tva > 0 %}
-                        <span class="mono" style="color:#2563eb;font-weight:600;">{{ expense.tva|number_format(2, ',', ' ') }} €</span>
-                        {% else %}
-                        <span style="color:#d1d5db;">—</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if expense.deductible %}
-                            <span class="st-badge st-paid" style="font-size:10px;">Oui</span>
-                        {% else %}
-                            <span class="st-badge st-draft" style="font-size:10px;">Non</span>
-                        {% endif %}
-                    </td>
-                    {% if expenses|filter(e => e.ocrConfidence is not null)|length > 0 %}
-                    <td>
-                        {% if ocr is not null %}
-                        <div class="ocr-meter">
-                            <div class="ocr-bar"><div class="ocr-fill ocr-fill-{{ ocrClass }}" style="width:{{ ocr }}%;"></div></div>
-                            <span class="ocr-score ocr-score-{{ ocrClass }}">{{ ocr }}%</span>
-                        </div>
-                        {% else %}
-                        <span style="color:#d1d5db;font-size:12px;">—</span>
-                        {% endif %}
-                    </td>
-                    {% endif %}
-                    <td style="text-align:right;">
-                        <a href="{{ path('app_expense_show', {id: expense.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        {# Totaux footer #}
-        <div style="padding:14px 12px 2px;border-top:1px solid #f0f2f5;display:flex;gap:32px;font-size:13px;">
-            <div>
-                Total TTC :
-                <strong class="mono" style="color:#1c1a17;font-size:15px;margin-left:6px;">
-                    {{ totalTtc|number_format(2, ',', ' ') }} €
-                </strong>
-            </div>
-            <div>
-                TVA déductible :
-                <strong class="mono" style="color:#2563eb;font-size:15px;margin-left:6px;">
-                    {{ totalTva|number_format(2, ',', ' ') }} €
-                </strong>
-            </div>
+    {# Toolbar #}
+    <div class="exp-toolbar">
+        <div class="exp-tabs">
+            <button class="exp-tab active" data-filter="all">
+                Toutes <span class="exp-tab-count">{{ expenses|length }}</span>
+            </button>
+            <button class="exp-tab" data-filter="validated">
+                <span class="exp-tab-dot" style="background:#16a34a;"></span>
+                Validées <span class="exp-tab-count">{{ expenses|filter(e => e.ocrVerified)|length }}</span>
+            </button>
+            {% if toVerify > 0 %}
+            <button class="exp-tab" data-filter="to-verify">
+                <span class="exp-tab-dot" style="background:#d97706;"></span>
+                À vérifier <span class="exp-tab-count">{{ toVerify }}</span>
+            </button>
+            {% endif %}
+            <button class="exp-tab" data-filter="no-receipt">
+                Sans justif <span class="exp-tab-count">{{ noReceipt }}</span>
+            </button>
         </div>
+        <div style="flex:1;"></div>
+        <div class="exp-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="exp-search-input" placeholder="Fournisseur, catégorie, montant…">
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="exp-cb-col"></th>
+                <th class="exp-thumb-col"></th>
+                <th>Libellé</th>
+                <th>Catégorie</th>
+                <th>Date</th>
+                <th class="r">TTC</th>
+                <th class="r">TVA</th>
+                <th>Confiance OCR</th>
+                <th class="exp-action-col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            {% set ocr = expense.ocrConfidence %}
+            {% set ocrClass = ocr is not null ? (ocr >= 80 ? 'ok' : (ocr >= 50 ? 'warn' : 'bad')) : null %}
+            <tr data-filter-ocr="{{ ocr is not null and ocr < 80 ? 'to-verify' : 'ok' }}"
+                data-filter-verified="{{ expense.ocrVerified ? 'validated' : 'unvalidated' }}"
+                data-filter-receipt="{{ expense.receiptPath ? 'has-receipt' : 'no-receipt' }}"
+                data-search="{{ (expense.vendor ~ ' ' ~ (expense.category ? expense.category.label : '') ~ ' ' ~ expense.amountTtc ~ ' ' ~ expense.date|date('d/m/Y'))|lower }}">
+                <td class="exp-cb-col"><span class="exp-cb"></span></td>
+                <td class="exp-thumb-col"><div class="receipt-thumb"></div></td>
+                <td>
+                    <a href="{{ path('app_expense_show', {id: expense.id}) }}" style="font-weight:600;font-size:13px;color:#1c1a17;text-decoration:none;">
+                        {{ expense.vendor }}
+                    </a>
+                    {% if expense.notes %}
+                    <div style="font-size:11px;color:#9ca3af;margin-top:1px;">{{ expense.notes|slice(0,55) }}{% if expense.notes|length > 55 %}…{% endif %}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if expense.category %}
+                        {% set slug = expense.category.label|lower|replace({' ': '-', 'é': 'e', 'è': 'e', 'ê': 'e', 'à': 'a', 'î': 'i', 'ô': 'o', 'û': 'u'}) %}
+                        <span class="cat-chip cat-{{ slug }}">{{ expense.category.label }}</span>
+                    {% else %}
+                        <span style="color:#9ca3af;font-size:12px;">—</span>
+                    {% endif %}
+                </td>
+                <td style="color:#6b7280;font-size:13px;" class="mono">{{ expense.date|date('d/m/Y') }}</td>
+                <td class="r">
+                    <span class="mono" style="font-weight:700;">{{ expense.amountTtc|number_format(2, ',', ' ') }} €</span>
+                </td>
+                <td class="r">
+                    {% if expense.tva > 0 %}
+                    <span class="mono" style="color:#2563eb;font-weight:600;">{{ expense.tva|number_format(2, ',', ' ') }} €</span>
+                    {% else %}
+                    <span style="color:#d1d5db;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ocr is not null %}
+                    <div class="ocr-meter">
+                        <div class="ocr-bar"><div class="ocr-fill ocr-fill-{{ ocrClass }}" style="width:{{ ocr }}%;"></div></div>
+                        <span class="ocr-score ocr-score-{{ ocrClass }}">{{ ocr }}%</span>
+                    </div>
+                    {% else %}
+                    <span style="color:#d1d5db;font-size:12px;">—</span>
+                    {% endif %}
+                </td>
+                <td class="exp-action-col">
+                    <a href="{{ path('app_expense_show', {id: expense.id}) }}" class="exp-more-btn" title="Voir">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="exp-table-footer">
+        <span id="exp-count">{{ expenses|length }} dépense{{ expenses|length != 1 ? 's' : '' }}</span>
+        <div style="flex:1;"></div>
+        <div style="font-weight:600;font-size:12px;color:#1c1a17;margin-right:16px;">
+            Total : <span class="mono">{{ totalTtc|number_format(2, ',', ' ') }} €</span>
+            &nbsp;·&nbsp; TVA : <span class="mono" style="color:#2563eb;">{{ totalTva|number_format(2, ',', ' ') }} €</span>
+        </div>
+        <div class="exp-pagination" id="exp-pagination"></div>
+    </div>
+
     {% endif %}
 </div>
+
 {% endblock %}
 
 {% block javascripts %}
 <script>
-document.querySelectorAll('.tab-btn[data-filter]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const filter = btn.dataset.filter;
-        document.querySelectorAll('.tab-btn[data-filter]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelectorAll('tbody tr[data-deductible]').forEach(row => {
-            let show = false;
-            if (filter === 'all')        show = true;
-            if (filter === 'deductible') show = row.dataset.deductible === '1';
-            if (filter === 'ocr-low')    show = row.dataset.ocrLow === '1';
-            row.style.display = show ? '' : 'none';
+(function () {
+    const tabs   = document.querySelectorAll('.exp-tab[data-filter]');
+    const rows   = [...document.querySelectorAll('tbody tr[data-search]')];
+    const search = document.getElementById('exp-search-input');
+    const count  = document.getElementById('exp-count');
+    const pgWrap = document.getElementById('exp-pagination');
+    const PER    = 15;
+    let currentFilter = 'all';
+    let currentPage   = 1;
+
+    function visible() {
+        const q = search ? search.value.toLowerCase() : '';
+        return rows.filter(r => {
+            let filterOk = true;
+            if (currentFilter === 'to-verify')  filterOk = r.dataset.filterOcr === 'to-verify';
+            if (currentFilter === 'validated')   filterOk = r.dataset.filterVerified === 'validated';
+            if (currentFilter === 'no-receipt')  filterOk = r.dataset.filterReceipt === 'no-receipt';
+            const searchOk = !q || (r.dataset.search || '').includes(q);
+            return filterOk && searchOk;
+        });
+    }
+
+    function render() {
+        const vis   = visible();
+        const pages = Math.max(1, Math.ceil(vis.length / PER));
+        currentPage = Math.min(currentPage, pages);
+        rows.forEach(r => r.style.display = 'none');
+        vis.slice((currentPage - 1) * PER, currentPage * PER).forEach(r => r.style.display = '');
+        if (count) count.textContent = vis.length + ' dépense' + (vis.length !== 1 ? 's' : '');
+        renderPagination(pages);
+    }
+
+    function renderPagination(pages) {
+        if (!pgWrap) return;
+        if (pages <= 1) { pgWrap.innerHTML = ''; return; }
+        const nums = [];
+        if (currentPage > 1) nums.push('‹');
+        for (let p = 1; p <= pages; p++) nums.push(p);
+        if (currentPage < pages) nums.push('›');
+        pgWrap.innerHTML = nums.map(p => {
+            const active = p === currentPage;
+            return `<button class="exp-page-btn${active ? ' active' : ''}" data-page="${p}">${p}</button>`;
+        }).join('');
+        pgWrap.querySelectorAll('[data-page]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const p = btn.dataset.page;
+                if (p === '‹') currentPage--;
+                else if (p === '›') currentPage++;
+                else currentPage = +p;
+                render();
+            });
+        });
+    }
+
+    tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabs.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            currentPage   = 1;
+            render();
         });
     });
-});
+
+    if (search) search.addEventListener('input', () => { currentPage = 1; render(); });
+
+    render();
+})();
 </script>
 {% endblock %}

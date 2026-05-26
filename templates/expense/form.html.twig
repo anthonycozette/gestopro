@@ -8,9 +8,6 @@
 {% block topbar %}
 <div class="topbar">
     <h1>{{ title }}</h1>
-    <div class="topbar-actions">
-        <a href="{{ path('app_expenses') }}" class="btn btn-secondary">Annuler</a>
-    </div>
 </div>
 {% endblock %}
 
@@ -18,79 +15,137 @@
 <form method="post" id="expense-form" enctype="multipart/form-data">
     {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
 
-    <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
+    {# ── Action bar ──────────────────────────────────────────────────────── #}
+    <div class="exp-form-bar">
+        {% if app.user.plan != 'free' %}
+        <span class="exp-ocr-chip exp-ocr-chip-pending" id="bar-ocr-chip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Scan en attente
+        </span>
+        {% endif %}
+        <div style="flex:1;"></div>
+        <a href="{{ path('app_expenses') }}" class="btn btn-secondary">Annuler</a>
+        <button type="submit" class="btn btn-primary">Valider la dépense</button>
+    </div>
+
+    <div class="exp-form-layout">
 
         {# ── Colonne gauche ──────────────────────────────────────────────── #}
-        <div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
 
-            {# Zone de scan OCR #}
+            {# OCR Zone #}
             {% if app.user.plan != 'free' %}
-            <div class="card ocr-card" id="ocr-card">
-                <div class="card-title" style="display:flex;align-items:center;gap:8px;">
-                    Scan du reçu
-                    <span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:.5px;">IA</span>
+            <div class="exp-form-card" style="gap:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div>
+                        <div class="exp-section-title">Scan du reçu</div>
+                        <div class="exp-section-sub">Claude extrait automatiquement les données.</div>
+                    </div>
+                    <span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.5px;">IA</span>
                 </div>
 
-                <div class="ocr-dropzone" id="ocr-dropzone">
+                <div class="ocr-hero" id="ocr-dropzone">
+                    <div class="ocr-hero-glow"></div>
                     <input type="file" id="ocr-file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" style="display:none">
 
+                    {# Idle #}
                     <div id="ocr-idle">
-                        <div class="ocr-drop-icon">📄</div>
-                        <div class="ocr-drop-label">Glissez votre reçu ici</div>
-                        <div class="ocr-drop-or">ou</div>
-                        <button type="button" class="btn btn-secondary" style="font-size:13px;padding:6px 16px;"
-                                onclick="document.getElementById('ocr-file').click()">
-                            Parcourir…
-                        </button>
-                        <div class="ocr-drop-hint">JPEG · PNG · WebP · PDF — max 10 Mo</div>
+                        <div class="ocr-hero-inner">
+                            <div class="ocr-hero-icon idle">📄</div>
+                            <div style="flex:1;">
+                                <div class="ocr-hero-title">Glissez votre reçu ici</div>
+                                <div class="ocr-hero-sub">Claude lit et extrait montants, date et fournisseur.</div>
+                                <div class="ocr-hero-actions">
+                                    <a class="ocr-hero-link" onclick="document.getElementById('ocr-file').click();return false;">Parcourir un fichier</a>
+                                    <span class="ocr-hero-sep">·</span>
+                                    <span class="ocr-drop-hint">JPEG · PNG · PDF · max 10 Mo</span>
+                                </div>
+                            </div>
+                            <div class="ocr-steps">
+                                <div class="ocr-step wait">1</div>
+                                <div class="ocr-step-line" style="background:var(--bd);"></div>
+                                <div class="ocr-step wait">2</div>
+                                <div class="ocr-step-line" style="background:var(--bd);"></div>
+                                <div class="ocr-step wait">3</div>
+                            </div>
+                        </div>
+                        <div class="ocr-sources">
+                            <span>Acceptés :</span>
+                            <span class="ocr-source-item">📷 Photo</span>
+                            <span class="ocr-source-item">📄 PDF</span>
+                            <span class="ocr-source-item">📱 Scan mobile</span>
+                        </div>
                     </div>
 
-                    <div id="ocr-loading" style="display:none;text-align:center;padding:24px 0;">
-                        <div class="ocr-spinner"></div>
-                        <div style="margin-top:10px;color:#6b7280;font-size:13px;">Claude analyse le reçu…</div>
+                    {# Loading #}
+                    <div id="ocr-loading" style="display:none;">
+                        <div class="ocr-hero-inner">
+                            <div class="ocr-hero-icon loading" style="font-size:0;">
+                                <div class="ocr-spinner"></div>
+                            </div>
+                            <div style="flex:1;">
+                                <div class="ocr-hero-title">Analyse en cours…</div>
+                                <div class="ocr-hero-sub">Claude extrait les données du reçu.</div>
+                            </div>
+                            <div class="ocr-steps">
+                                <div class="ocr-step done">✓</div>
+                                <div class="ocr-step-line"></div>
+                                <div class="ocr-step wait" style="opacity:.6;">⋯</div>
+                                <div class="ocr-step-line" style="background:var(--bd);"></div>
+                                <div class="ocr-step wait">3</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div id="ocr-result" style="display:none;margin-top:12px;">
+                <div id="ocr-result" style="display:none;">
                     <div id="ocr-badge"></div>
-                    <div style="font-size:12px;color:#6b7280;margin-top:6px;">
-                        Champs pré-remplis ci-dessous — vérifiez avant d'enregistrer.
-                    </div>
-                    <button type="button" class="ocr-retry-btn" onclick="resetOcr()">↺ Scanner un autre reçu</button>
+                    <div style="font-size:12px;color:#6b7280;margin-top:6px;">Champs pré-remplis ci-dessous — vérifiez avant d'enregistrer.</div>
+                    <button type="button" class="ocr-retry-btn" style="margin-top:8px;" onclick="resetOcr()">↺ Scanner un autre reçu</button>
                 </div>
-
-                <div id="ocr-error" style="display:none;margin-top:10px;">
+                <div id="ocr-error" style="display:none;">
                     <div class="ocr-error-msg" id="ocr-error-msg"></div>
                     <button type="button" class="ocr-retry-btn" onclick="resetOcr()">Réessayer</button>
                 </div>
             </div>
             {% else %}
-            <div class="card" style="background:#f9fafb;border:1px dashed #d1d5db;text-align:center;padding:28px;">
-                <div style="font-size:2rem;margin-bottom:8px;">📷</div>
-                <div style="font-weight:600;color:#374151;margin-bottom:4px;">Scan OCR disponible en Pro</div>
-                <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">Photographiez vos reçus, Claude extrait les données automatiquement.</div>
+            <div class="exp-form-card" style="align-items:center;text-align:center;background:var(--card2);border-style:dashed;">
+                <div style="font-size:2rem;">📷</div>
+                <div>
+                    <div style="font-weight:700;color:#374151;margin-bottom:4px;">Scan OCR disponible en Pro</div>
+                    <div style="font-size:12px;color:#6b7280;">Photographiez vos reçus, Claude extrait les données automatiquement.</div>
+                </div>
                 <a href="{{ path('app_subscription_manage') }}" class="btn btn-primary" style="font-size:13px;">Passer au Pro</a>
             </div>
             {% endif %}
 
-            {# Formulaire principal #}
-            <div class="card">
-                <div class="card-title">Informations de la dépense</div>
+            {# Informations #}
+            <div class="exp-form-card">
+                <div>
+                    <div class="exp-section-title">Informations</div>
+                    <div class="exp-section-sub">Données principales de la dépense.</div>
+                </div>
 
-                <div class="form-group">
-                    <label>Fournisseur <span style="color:#ef4444">*</span></label>
+                <div>
+                    <div class="exp-field-header">
+                        <label for="field-vendor">Fournisseur <span style="color:#ef4444">*</span></label>
+                    </div>
                     <input type="text" name="vendor" id="field-vendor" class="form-control"
                            value="{{ expense.vendor }}" placeholder="Ex : SNCF, Amazon, Adobe…" required autofocus>
                 </div>
 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Date <span style="color:#ef4444">*</span></label>
+                <div class="exp-form-grid">
+                    <div>
+                        <div class="exp-field-header">
+                            <label for="field-date">Date <span style="color:#ef4444">*</span></label>
+                        </div>
                         <input type="date" name="date" id="field-date" class="form-control"
                                value="{{ expense.date ? expense.date|date('Y-m-d') : 'now'|date('Y-m-d') }}" required>
                     </div>
-                    <div class="form-group">
-                        <label>Catégorie</label>
+                    <div>
+                        <div class="exp-field-header">
+                            <label for="field-category">Catégorie</label>
+                        </div>
                         <select name="category_id" id="field-category" class="form-control">
                             <option value="" data-slug="">— Sans catégorie —</option>
                             {% for cat in categories %}
@@ -103,14 +158,18 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Notes</label>
+                <div>
+                    <div class="exp-field-header">
+                        <label for="field-notes">Notes</label>
+                    </div>
                     <textarea name="notes" id="field-notes" class="form-control" rows="2"
                               placeholder="Détails, numéro de facture fournisseur…">{{ expense.notes }}</textarea>
                 </div>
 
-                <div class="form-group">
-                    <label>Mode de paiement</label>
+                <div>
+                    <div class="exp-field-header">
+                        <label>Mode de paiement</label>
+                    </div>
                     <select name="payment_method" class="form-control">
                         <option value="">— Non précisé —</option>
                         <option value="carte"       {% if expense.paymentMethod == 'carte' %}selected{% endif %}>Carte bancaire</option>
@@ -121,26 +180,30 @@
                     </select>
                 </div>
             </div>
-        </div>
 
-        {# ── Colonne droite ──────────────────────────────────────────────── #}
-        <div>
-            <div class="card">
-                <div class="card-title">Montant</div>
+            {# Montants #}
+            <div class="exp-form-card">
+                <div>
+                    <div class="exp-section-title">Montants</div>
+                </div>
 
-                <div class="form-group">
-                    <label>Montant TTC <span style="color:#ef4444">*</span></label>
+                <div>
+                    <div class="exp-field-header">
+                        <label for="amount-ttc">Montant TTC <span style="color:#ef4444">*</span></label>
+                    </div>
                     <div style="position:relative;">
                         <input type="number" name="amount_ttc" id="amount-ttc" class="form-control"
                                value="{{ expense.amountTtc != '0.00' ? expense.amountTtc : '' }}"
                                min="0" step="0.01" placeholder="0,00" oninput="recalc()" required
-                               style="padding-right:32px; font-family:'JetBrains Mono',monospace;">
+                               style="padding-right:32px;font-family:'JetBrains Mono',monospace;">
                         <span style="position:absolute;right:11px;top:50%;transform:translateY(-50%);color:#6b7280;font-size:13px;">€</span>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Taux de TVA</label>
+                <div>
+                    <div class="exp-field-header">
+                        <label for="tva-rate">Taux de TVA</label>
+                    </div>
                     <select name="tva_rate" id="tva-rate" class="form-control" onchange="recalc()">
                         <option value="0"   {% if expense.tvaRate == '0.00' or expense.tvaRate == '0' %}selected{% endif %}>0 % (exonéré)</option>
                         <option value="5.5" {% if expense.tvaRate == '5.50' %}selected{% endif %}>5,5 %</option>
@@ -149,61 +212,95 @@
                     </select>
                 </div>
 
-                <div class="expense-totals">
-                    <div class="expense-totals-row">
+                <div class="exp-totals-box">
+                    <div class="exp-totals-row">
                         <span>Montant HT</span>
-                        <span id="display-ht" class="mono">{{ expense.amountHt|number_format(2, ',', ' ') }} €</span>
+                        <span id="display-ht" class="mono" style="font-weight:600;color:#1c1a17;">{{ expense.amountHt|number_format(2, ',', ' ') }} €</span>
                     </div>
-                    <div class="expense-totals-row">
+                    <div class="exp-totals-row">
                         <span>TVA</span>
-                        <span id="display-tva" class="mono" style="color:#2563eb;">{{ expense.tva|number_format(2, ',', ' ') }} €</span>
+                        <span id="display-tva" class="mono" style="color:#2563eb;font-weight:600;">{{ expense.tva|number_format(2, ',', ' ') }} €</span>
                     </div>
-                    <div class="expense-totals-row">
+                    <div class="exp-totals-row" style="font-weight:700;color:#1c1a17;">
                         <span>Total TTC</span>
                         <span id="display-ttc" class="mono">{{ expense.amountTtc|number_format(2, ',', ' ') }} €</span>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom:4px;">
-                    <label style="display:flex; align-items:center; gap:9px; cursor:pointer; font-size:13px;">
-                        <input type="checkbox" name="deductible" value="1"
-                               {% if expense.id is null or expense.deductible %}checked{% endif %}
-                               style="width:16px;height:16px;accent-color:#2563eb;">
-                        <span>Dépense déductible</span>
-                    </label>
-                </div>
-
-                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;">
-                    Enregistrer
-                </button>
+                <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;">
+                    <input type="checkbox" name="deductible" value="1"
+                           {% if expense.id is null or expense.deductible %}checked{% endif %}
+                           style="width:16px;height:16px;accent-color:#2563eb;">
+                    <span>Dépense déductible</span>
+                </label>
             </div>
+        </div>
 
-            {# Justificatif #}
-            <div class="card" style="margin-top:0;">
-                <div class="card-title">Justificatif</div>
+        {# ── Colonne droite ──────────────────────────────────────────────── #}
+        <div class="exp-right-col">
+
+            {# Justificatif / receipt preview #}
+            <div class="exp-panel">
+                <div class="exp-panel-title">Justificatif original</div>
 
                 {% if expense.receiptPath %}
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
-                    <span style="font-size:18px;">📎</span>
+                <div style="display:flex;align-items:center;gap:8px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:12px;">
+                    <span>📎</span>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-size:13px;font-weight:500;color:#15803d;">Justificatif existant</div>
+                        <div style="font-size:12px;font-weight:600;color:#15803d;">Justificatif existant</div>
                         <a href="{{ path('app_expense_receipt', {id: expense.id}) }}" target="_blank"
-                           style="font-size:12px;color:#2563eb;">Voir le fichier</a>
+                           style="font-size:11px;color:#2563eb;">Voir le fichier ↗</a>
                     </div>
                 </div>
-                <div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Remplacer par un nouveau fichier :</div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">Remplacer par un nouveau fichier :</div>
+                {% else %}
+                <div class="receipt-preview-placeholder" style="margin-bottom:12px;">
+                    <span style="font-size:2rem;">🧾</span>
+                    <div style="font-weight:500;">Aucun justificatif</div>
+                    <div style="font-size:10.5px;color:#9ca3af;">Ajoutez un reçu ou scannez-le via l'IA</div>
+                </div>
                 {% endif %}
 
-                <label id="receipt-upload-label" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed #d1d5db;border-radius:8px;padding:20px;cursor:pointer;background:#fafafa;transition:border-color .2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#d1d5db'">
-                    <span style="font-size:24px;">📁</span>
-                    <span style="font-size:13px;color:#6b7280;text-align:center;">Glisser un fichier ici ou <span style="color:#2563eb;">parcourir</span></span>
+                <label id="receipt-upload-label" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--bd);border-radius:8px;padding:16px;cursor:pointer;background:var(--card2);transition:border-color .2s;"
+                    onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor=''">
+                    <span style="font-size:20px;">📁</span>
+                    <span style="font-size:12px;color:#6b7280;text-align:center;">Glisser un fichier ou <span style="color:#2563eb;">parcourir</span></span>
                     <span style="font-size:11px;color:#9ca3af;">JPEG, PNG, WebP, PDF — max 10 Mo</span>
                     <input type="file" name="receipt_file" id="receipt-file-input" accept=".jpg,.jpeg,.png,.webp,.pdf" style="display:none;" onchange="showSelectedFile(this)">
                 </label>
                 <div id="receipt-file-name" style="font-size:12px;color:#2563eb;margin-top:6px;display:none;"></div>
             </div>
-        </div>
 
+            {# AI analysis #}
+            <div class="exp-ai-card">
+                <div class="exp-ai-card-head">
+                    <div class="exp-ai-card-icon">✦</div>
+                    <div>
+                        <div style="font-size:13px;font-weight:700;">Analyse IA</div>
+                        <div style="font-size:11px;color:var(--muted);">Recommandations Claude</div>
+                    </div>
+                </div>
+                <div class="exp-ai-items">
+                    <div class="exp-ai-item">
+                        <span class="exp-ai-item-icon">💡</span>
+                        <div>Scannez le reçu pour obtenir une analyse automatique de la déductibilité et de la catégorie TVA.</div>
+                    </div>
+                    <div class="exp-ai-item">
+                        <span class="exp-ai-item-icon">📊</span>
+                        <div>Claude vérifiera la cohérence des montants TTC, HT et TVA déclarés.</div>
+                    </div>
+                </div>
+            </div>
+
+            {# Similar expenses #}
+            <div class="exp-panel">
+                <div class="exp-panel-title">Dépenses similaires</div>
+                <div style="color:var(--muted);font-size:12px;text-align:center;padding:12px 0;line-height:1.6;">
+                    Scannez un reçu ou renseignez un fournisseur pour voir les dépenses similaires.
+                </div>
+            </div>
+
+        </div>
     </div>
 
     {# Champs cachés OCR — remplis par le JS après scan #}
@@ -228,6 +325,7 @@ const SCAN_URL = '{{ path('app_expense_scan_receipt') }}';
 
 const dropzone  = document.getElementById('ocr-dropzone');
 const fileInput = document.getElementById('ocr-file');
+const barChip   = document.getElementById('bar-ocr-chip');
 
 dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
 dropzone.addEventListener('dragleave', ()  => dropzone.classList.remove('drag-over'));
@@ -237,7 +335,7 @@ dropzone.addEventListener('drop', e => {
     if (e.dataTransfer.files[0]) scanFile(e.dataTransfer.files[0]);
 });
 dropzone.addEventListener('click', e => {
-    if (e.target.tagName !== 'BUTTON') fileInput.click();
+    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') fileInput.click();
 });
 fileInput.addEventListener('change', () => {
     if (fileInput.files[0]) scanFile(fileInput.files[0]);
@@ -267,6 +365,11 @@ async function scanFile(file) {
         document.getElementById('ocr_data_field').value       = JSON.stringify(data);
         document.getElementById('ocr-result').style.display   = 'block';
 
+        if (barChip) {
+            barChip.className = 'exp-ocr-chip';
+            barChip.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> OCR extrait';
+        }
+
     } catch {
         document.getElementById('ocr-loading').style.display = 'none';
         showOcrError('Erreur de connexion. Vérifiez votre réseau.');
@@ -283,7 +386,7 @@ function fillFormFromOcr(data) {
     }
 
     if (data.tva_rate != null) {
-        const opts   = [0, 5.5, 10, 20];
+        const opts    = [0, 5.5, 10, 20];
         const closest = opts.reduce((a, b) =>
             Math.abs(b - data.tva_rate) < Math.abs(a - data.tva_rate) ? b : a
         );
@@ -300,7 +403,6 @@ function fillFormFromOcr(data) {
 
     recalc();
 
-    // Scroll doux vers le formulaire
     document.getElementById('field-vendor').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -330,6 +432,10 @@ function resetOcr() {
     document.getElementById('ocr-loading').style.display  = 'none';
     document.getElementById('ocr-result').style.display   = 'none';
     document.getElementById('ocr-error').style.display    = 'none';
+    if (barChip) {
+        barChip.className = 'exp-ocr-chip exp-ocr-chip-pending';
+        barChip.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Scan en attente';
+    }
 }
 {% endif %}
 </script>
