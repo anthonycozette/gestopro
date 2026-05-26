@@ -68,21 +68,37 @@
 {# ── Category breakdown ──────────────────────────────────────────────────── #}
 {% if expenses is not empty %}
 {% set catColors = {
-    'Transport':   '#f59e0b',
-    'Logiciel':    '#8b5cf6',
-    'Matériel':    '#3b82f6',
-    'Repas pro':   '#eab308',
-    'Hébergement': '#ec4899',
-    'Formation':   '#22c55e',
-    'Marketing':   '#f43f5e',
-    'Télécoms':    '#06b6d4',
-    'Bureautique': '#84cc16'
+    'repas':       '#f97316',
+    'carburant':   '#ef4444',
+    'transport':   '#f59e0b',
+    'hebergement': '#ec4899',
+    'materiel':    '#3b82f6',
+    'logiciel':    '#8b5cf6',
+    'telecom':     '#06b6d4',
+    'formation':   '#22c55e',
+    'marketing':   '#f43f5e',
+    'bancaire':    '#6366f1',
+    'autre':       '#94a3b8'
+} %}
+{% set catEmojis = {
+    'repas':       '🍽️',
+    'carburant':   '⛽',
+    'transport':   '🚗',
+    'hebergement': '🏨',
+    'materiel':    '📦',
+    'logiciel':    '💻',
+    'telecom':     '📱',
+    'formation':   '📚',
+    'marketing':   '📢',
+    'bancaire':    '🏦',
+    'autre':       '📌'
 } %}
 {% set catData = {} %}
 {% for expense in expenses %}
-    {% set lbl = expense.category ? expense.category.label : 'Autre' %}
-    {% set cur = catData[lbl] is defined ? catData[lbl] : {label: lbl, total: 0, count: 0} %}
-    {% set catData = catData|merge({(lbl): {label: lbl, total: cur.total + expense.amountTtc, count: cur.count + 1}}) %}
+    {% set slug = expense.category ? expense.category.slug : 'autre' %}
+    {% set lbl  = expense.category ? expense.category.label : 'Autre' %}
+    {% set cur  = catData[slug] is defined ? catData[slug] : {label: lbl, slug: slug, total: 0, count: 0} %}
+    {% set catData = catData|merge({(slug): {label: lbl, slug: slug, total: cur.total + expense.amountTtc, count: cur.count + 1}}) %}
 {% endfor %}
 
 {% if catData|length > 1 %}
@@ -94,18 +110,18 @@
     <div class="exp-cat-bar-wrap">
         {% for key, cat in catData %}
             {% set pct = totalTtc > 0 ? (cat.total / totalTtc * 100)|round(1) : 0 %}
-            {% set color = catColors[cat.label] ?? '#94a3b8' %}
-            <div class="exp-cat-bar-seg" style="width:{{ pct }}%;background:{{ color }};"></div>
+            {% set color = catColors[cat.slug] ?? '#94a3b8' %}
+            <div class="exp-cat-bar-seg" style="width:{{ pct }}%;background:{{ color }};" title="{{ cat.label }} — {{ pct }} %"></div>
         {% endfor %}
     </div>
     <div class="exp-cat-legend">
         {% for key, cat in catData %}
             {% set pct = totalTtc > 0 ? (cat.total / totalTtc * 100)|round : 0 %}
-            {% set color = catColors[cat.label] ?? '#94a3b8' %}
+            {% set color = catColors[cat.slug] ?? '#94a3b8' %}
             <div class="exp-cat-legend-item">
                 <div class="exp-cat-legend-name">
                     <div class="exp-cat-legend-dot" style="background:{{ color }};"></div>
-                    {{ cat.label }}
+                    {{ catEmojis[cat.slug] ?? '📌' }} {{ cat.label }}
                 </div>
                 <div class="exp-cat-legend-val">{{ cat.total|number_format(0, ',', ' ') }} €</div>
                 <div class="exp-cat-legend-sub">{{ pct }} % · {{ cat.count }} dép.</div>
@@ -188,10 +204,10 @@
                 </td>
                 <td>
                     {% if expense.category %}
-                        {% set slug = expense.category.label|lower|replace({' ': '-', 'é': 'e', 'è': 'e', 'ê': 'e', 'à': 'a', 'î': 'i', 'ô': 'o', 'û': 'u'}) %}
-                        <span class="cat-chip cat-{{ slug }}">{{ expense.category.label }}</span>
+                        {% set cslug = expense.category.slug %}
+                        <span class="cat-chip cat-{{ cslug }}">{{ catEmojis[cslug] ?? '📌' }} {{ expense.category.label }}</span>
                     {% else %}
-                        <span style="color:#9ca3af;font-size:12px;">—</span>
+                        <span class="cat-chip cat-autre">📌 Sans catégorie</span>
                     {% endif %}
                 </td>
                 <td style="color:#6b7280;font-size:13px;" class="mono">{{ expense.date|date('d/m/Y') }}</td>
