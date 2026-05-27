@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Cabinet{% endblock %} — GestoPro Expert</title>
+    <link rel="stylesheet" href="{{ asset('styles/expert.css') }}">
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="ec-body">
+
+{# ══════════════════════════ SIDEBAR ═══════════════════════════════ #}
+<aside class="ec-sidebar">
+    <div class="ec-sidebar-header">
+        <div class="ec-brand-inner">
+            <div class="ec-brand-logo">G</div>
+            <div>
+                <div class="ec-brand-name">GestoPro</div>
+                <div class="ec-brand-tag">✓ Espace Expert</div>
+            </div>
+        </div>
+        <div class="ec-cabinet-section">
+            <div class="ec-cabinet-label">Cabinet</div>
+            <div class="ec-cabinet-user">
+                <div class="ec-avatar ec-avatar-sm ec-av-expert">
+                    {{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}
+                </div>
+                <div style="min-width:0;flex:1;">
+                    <div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        {{ app.user.firstName }} {{ app.user.lastName }}
+                    </div>
+                    {% if app.user.firm %}
+                    <div style="font-size:10px;color:rgba(228,235,231,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        {{ app.user.firm }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="ec-nav">
+        <div class="ec-nav-section">Cabinet</div>
+
+        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item {{ active_nav == 'dashboard' ? 'active' }}">
+            <span class="ec-nav-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </span>
+            Tableau de bord
+        </a>
+
+        <a href="{{ path('expert_clients') }}" class="ec-nav-item {{ active_nav == 'clients' ? 'active' }}">
+            <span class="ec-nav-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            Mes clients
+            {% if topbar_clients > 0 %}<span class="ec-nav-count">{{ topbar_clients }}</span>{% endif %}
+        </a>
+
+        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item {{ active_nav == 'queue' ? 'active' }}">
+            <span class="ec-nav-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </span>
+            Bilans à valider
+            {% if topbar_pending > 0 %}<span class="ec-nav-badge warn">{{ topbar_pending }}</span>{% endif %}
+        </a>
+
+        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item {{ active_nav == 'messages' ? 'active' }}">
+            <span class="ec-nav-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </span>
+            Messages
+            {% if topbar_msgs > 0 %}<span class="ec-nav-badge">{{ topbar_msgs }}</span>{% endif %}
+        </a>
+
+        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item {{ active_nav == 'signs' ? 'active' }}">
+            <span class="ec-nav-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </span>
+            Signatures
+        </a>
+
+        <div class="ec-nav-section" style="margin-top:14px;">Pilotage</div>
+
+        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item">
+            <span class="ec-nav-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </span>
+            Statistiques
+        </a>
+
+        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item">
+            <span class="ec-nav-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
+            Échéances clients
+        </a>
+
+        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item">
+            <span class="ec-nav-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </span>
+            Facturation cabinet
+        </a>
+
+        <div class="ec-nav-section" style="margin-top:14px;">Recherche rapide</div>
+        <div class="ec-search-shortcut">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <span>Aller à un client…</span>
+            <kbd>⌘K</kbd>
+        </div>
+    </nav>
+
+    {# SLA footer #}
+    <div class="ec-sla-wrap">
+        <div class="ec-sla-card">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span class="ec-sla-dot"></span>
+                <span style="font-size:11px;font-weight:700;color:#fff;">SLA · cette semaine</span>
+            </div>
+            {% set sla = topbar_pending == 0 ? 100 : (topbar_pending <= 2 ? 96 : 88) %}
+            <div class="ec-sla-val">{{ sla }} <span style="font-size:12px;color:rgba(228,235,231,.6);font-weight:600;">%</span></div>
+            <div style="font-size:10px;color:rgba(228,235,231,.5);margin-top:2px;">
+                {{ topbar_pending }} bilan{{ topbar_pending != 1 ? 's' : '' }} en attente
+            </div>
+        </div>
+    </div>
+</aside>
+
+{# ══════════════════════════ MAIN ══════════════════════════════════ #}
+<div class="ec-main">
+
+    {# Topbar #}
+    <header class="ec-topbar">
+        <div class="ec-breadcrumb">
+            <span class="ec-breadcrumb-mono">~/cabinet</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            <span style="color:var(--ec-fg);font-weight:600;">{% block breadcrumb %}Tableau de bord{% endblock %}</span>
+        </div>
+
+        <div class="ec-topbar-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <span>Rechercher un client, un bilan, une facture…</span>
+            <kbd>⌘K</kbd>
+        </div>
+
+        <div style="flex:1;"></div>
+
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div class="ec-topbar-metric">
+                <span class="ec-topbar-dot" style="background:var(--ec-warm);box-shadow:0 0 0 3px rgba(217,119,6,.15);"></span>
+                <div>
+                    <div class="ec-topbar-metric-label">EN ATTENTE</div>
+                    <div class="ec-topbar-metric-val">{{ topbar_pending }}</div>
+                </div>
+            </div>
+            <span class="ec-topbar-sep"></span>
+            <div class="ec-topbar-metric">
+                <span class="ec-topbar-dot" style="background:var(--ec-accent);box-shadow:0 0 0 3px rgba(13,138,94,.15);"></span>
+                <div>
+                    <div class="ec-topbar-metric-label">VALIDÉS AUJD.</div>
+                    <div class="ec-topbar-metric-val">{{ topbar_validated_today }}</div>
+                </div>
+            </div>
+            <span class="ec-topbar-sep"></span>
+            <div class="ec-topbar-metric">
+                <div>
+                    <div class="ec-topbar-metric-label">CLIENTS ACTIFS</div>
+                    <div class="ec-topbar-metric-val">{{ topbar_clients }}</div>
+                </div>
+            </div>
+        </div>
+
+        <span class="ec-topbar-sep"></span>
+
+        <a href="{{ path('expert_logout') }}" class="ec-btn ec-btn-ghost ec-btn-sq" title="Déconnexion">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </a>
+        <div class="ec-avatar ec-avatar-sm ec-av-expert">
+            {{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}
+        </div>
+    </header>
+
+    <main class="ec-content">
+        {% for msg in app.flashes('success') %}<div class="ec-flash ec-flash-success">{{ msg }}</div>{% endfor %}
+        {% for msg in app.flashes('info') %}<div class="ec-flash ec-flash-info">{{ msg }}</div>{% endfor %}
+        {% for msg in app.flashes('error') %}<div class="ec-flash ec-flash-error">{{ msg }}</div>{% endfor %}
+
+        {% block body %}{% endblock %}
+    </main>
+</div>
+
+{% block javascripts %}{% endblock %}
+</body>
+</html>

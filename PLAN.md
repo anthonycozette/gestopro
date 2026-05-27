@@ -192,6 +192,7 @@ Accountant ────────────────┘
 - [x] Messagerie directe client ↔ expert (`ExpertMessage`)
 - [x] Profil public expert (bio, cabinet, numéro d'inscription)
 - [x] Un expert peut gérer N clients
+- [x] Interface PRO expert-comptable : dashboard KPI, file de validation, alertes risque, portefeuille clients, outil de validation bilan
 - [ ] Tampon numérique (image + signature expert) — optionnel
 - [ ] Notifications email à chaque changement de statut bilan — optionnel
 

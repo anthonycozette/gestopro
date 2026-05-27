@@ -1,0 +1,301 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Bilan {{ sheet.period }} — {{ invitation.user.firstName }} {{ invitation.user.lastName }}{% endblock %}
+{% block breadcrumb %}{{ invitation.user.firstName }} {{ invitation.user.lastName }} / Bilan {{ sheet.period }}{% endblock %}
+
+{% block body %}
+
+{# ── Bilan header ──────────────────────────────────────────────────── #}
+<div class="ec-val-header">
+    <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+        <div class="ec-avatar ec-avatar-md ec-av-green">
+            {{ invitation.user.firstName|first|upper }}{{ invitation.user.lastName|first|upper }}
+        </div>
+        <div>
+            <div style="font-size:16px;font-weight:700;color:var(--ec-fg);">
+                {{ invitation.user.firstName }} {{ invitation.user.lastName }}
+            </div>
+            <div style="font-size:12px;color:var(--ec-fg-muted);margin-top:2px;">
+                Bilan {{ sheet.period }}
+                <span style="margin:0 6px;opacity:.4;">·</span>
+                #{{ sheet.id }}
+                <span style="margin:0 6px;opacity:.4;">·</span>
+                Soumis le {{ sheet.createdAt|date('d/m/Y à H:i') }}
+            </div>
+        </div>
+    </div>
+
+    {# Status badge #}
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span class="ec-bilan-badge {{ sheet.status }}" style="font-size:13px;padding:4px 12px;">
+            {% if sheet.status == 'validated' %}✓ Validé
+            {% elseif sheet.status == 'pending_review' %}En attente de validation
+            {% elseif sheet.status == 'annotated' %}Annoté — retour client
+            {% else %}Brouillon{% endif %}
+        </span>
+
+        {% if sheet.status == 'pending_review' %}
+        <div style="font-size:12px;color:var(--ec-warm);font-weight:600;">
+            {% set now = date() %}
+            {# Age indicator #}
+            En attente
+        </div>
+        {% endif %}
+    </div>
+
+    {# Progress steps #}
+    <div style="display:flex;align-items:center;gap:4px;margin-left:20px;">
+        {% set steps = [
+            {label: 'Soumis', done: true},
+            {label: 'Examiné', done: sheet.status in ['annotated','validated']},
+            {label: 'Validé', done: sheet.status == 'validated'},
+        ] %}
+        {% for step in steps %}
+        <div style="display:flex;align-items:center;gap:4px;">
+            <div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+                background:{{ step.done ? 'var(--ec-accent)' : 'var(--ec-side-hover)' }};
+                color:{{ step.done ? '#fff' : 'var(--ec-fg-muted)' }};">
+                {{ step.done ? '✓' : loop.index }}
+            </div>
+            <span style="font-size:10px;color:{{ step.done ? 'var(--ec-accent)' : 'var(--ec-fg-muted)' }};font-weight:600;">{{ step.label }}</span>
+        </div>
+        {% if not loop.last %}
+        <div style="width:24px;height:1px;background:rgba(255,255,255,.12);margin:0 2px;"></div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+{# ── 3-col layout ──────────────────────────────────────────────────── #}
+<div class="ec-val-grid">
+
+    {# Col 1 — sections sidebar ─────────────────────────────────────── #}
+    <div class="ec-val-sections">
+        <div style="font-size:11px;font-weight:700;color:var(--ec-fg-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
+            Sections du bilan
+        </div>
+
+        {% set sections = [
+            'Résumé exécutif',
+            'Chiffre d\'affaires',
+            'Charges & dépenses',
+            'Résultat net',
+            'Cotisations URSSAF',
+            'TVA',
+            'Trésorerie',
+            'Projections N+1',
+            'Recommandations IA',
+        ] %}
+
+        {% for section in sections %}
+        <div class="ec-annot-section {{ loop.index == 1 ? 'active' }}" onclick="scrollToSection({{ loop.index }})">
+            <span class="ec-annot-dot" style="background:{{ sheet.status == 'validated' ? 'var(--ec-accent)' : (loop.index <= 4 ? 'var(--ec-accent)' : 'rgba(255,255,255,.15)') }};"></span>
+            <span>{{ section }}</span>
+        </div>
+        {% endfor %}
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:var(--ec-fg-muted);margin-bottom:8px;">Métadonnées</div>
+            <div style="font-size:11px;color:var(--ec-fg-muted);line-height:1.8;">
+                <div><strong>Période :</strong> {{ sheet.period }}</div>
+                <div><strong>Du :</strong> {{ sheet.periodStart|date('d/m/Y') }}</div>
+                <div><strong>Au :</strong> {{ sheet.periodEnd|date('d/m/Y') }}</div>
+                {% if sheet.validatedAt %}<div><strong>Validé le :</strong> {{ sheet.validatedAt|date('d/m/Y') }}</div>{% endif %}
+                {% if sheet.accountant %}<div><strong>Expert :</strong> {{ sheet.accountant.firstName }} {{ sheet.accountant.lastName }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Col 2 — document viewer ──────────────────────────────────────── #}
+    <div class="ec-val-doc">
+        <div class="ec-toolbar">
+            <div style="font-size:12px;font-weight:600;color:var(--ec-fg);">Document</div>
+            <div style="display:flex;gap:6px;">
+                <button class="ec-btn ec-btn-xs ec-btn-ghost" title="Zoom -">−</button>
+                <button class="ec-btn ec-btn-xs ec-btn-ghost" title="Zoom +">+</button>
+                <button class="ec-btn ec-btn-xs ec-btn-ghost">100%</button>
+            </div>
+        </div>
+
+        <div class="ec-val-page">
+            {# Bilan header #}
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #e5e7eb;">
+                <div>
+                    {% if invitation.user.logoPath %}
+                    <img src="{{ asset(invitation.user.logoPath) }}" alt="Logo" style="max-height:50px;max-width:140px;object-fit:contain;">
+                    {% else %}
+                    <div style="font-size:18px;font-weight:700;color:#0d8a5e;">{{ invitation.user.firstName }} {{ invitation.user.lastName }}</div>
+                    {% endif %}
+                    <div style="font-size:11px;color:#666;margin-top:4px;">
+                        {% if invitation.user.siret %}SIRET : {{ invitation.user.siret }}<br>{% endif %}
+                        {{ invitation.user.email }}
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:22px;font-weight:700;color:#0d8a5e;">BILAN</div>
+                    <div style="font-size:13px;color:#555;">{{ sheet.period }}</div>
+                    <div style="font-size:11px;color:#888;margin-top:4px;">Généré le {{ sheet.createdAt|date('d/m/Y') }}</div>
+                </div>
+            </div>
+
+            {% if sheet.aiAnalysis %}
+            <div style="font-size:13px;line-height:1.7;color:#222;white-space:pre-wrap;">{{ sheet.aiAnalysis }}</div>
+            {% elseif sheet.financialData %}
+            {# Structured financial data display #}
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                {% for key, value in sheet.financialData %}
+                <tr>
+                    <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;color:#666;font-weight:600;width:50%;">{{ key }}</td>
+                    <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;text-align:right;font-variant-numeric:tabular-nums;">{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <div style="text-align:center;padding:60px 20px;color:#aaa;">
+                <div style="font-size:32px;margin-bottom:12px;">📄</div>
+                <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Aucun contenu de bilan</div>
+                <div style="font-size:12px;">Le contenu du bilan n'a pas encore été généré.</div>
+            </div>
+            {% endif %}
+
+            {% if sheet.stampPath %}
+            <div style="margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;text-align:right;">
+                <img src="{{ asset(sheet.stampPath) }}" alt="Tampon expert" style="max-height:80px;max-width:200px;object-fit:contain;opacity:.9;">
+                <div style="font-size:10px;color:#888;margin-top:4px;">
+                    Validé par {{ sheet.accountant ? sheet.accountant.firstName ~ ' ' ~ sheet.accountant.lastName : '' }}
+                    le {{ sheet.validatedAt|date('d/m/Y') }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Col 3 — actions panel ───────────────────────────────────────── #}
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+        {# Validate / already validated #}
+        <div class="ec-panel">
+            <div class="ec-panel-head">
+                <span class="ec-panel-title">Validation</span>
+            </div>
+            <div style="padding:16px;">
+                {% if sheet.status == 'validated' %}
+                <div style="text-align:center;padding:16px 0;">
+                    <div style="font-size:28px;margin-bottom:6px;">✓</div>
+                    <div style="font-size:13px;font-weight:700;color:var(--ec-accent);">Bilan validé</div>
+                    {% if sheet.validatedAt %}
+                    <div style="font-size:11px;color:var(--ec-fg-muted);margin-top:4px;">
+                        Le {{ sheet.validatedAt|date('d/m/Y à H:i') }}
+                    </div>
+                    {% endif %}
+                    {% if sheet.stampPath %}
+                    <div style="margin-top:12px;">
+                        <img src="{{ asset(sheet.stampPath) }}" alt="Tampon" style="max-height:60px;max-width:160px;object-fit:contain;border-radius:4px;background:#fff;padding:4px;">
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p style="font-size:12px;color:var(--ec-fg-muted);margin-bottom:14px;">
+                    En validant ce bilan, votre tampon numérique sera apposé et le client sera notifié.
+                </p>
+                <form method="post" action="{{ path('expert_bilan_validate', {id: sheet.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('bilan_validate_' ~ sheet.id) }}">
+                    <button type="submit" class="ec-btn ec-btn-primary" style="width:100%;justify-content:center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Valider &amp; signer
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Comment / annotation #}
+        {% if sheet.status != 'validated' %}
+        <div class="ec-panel">
+            <div class="ec-panel-head">
+                <span class="ec-panel-title">Annoter &amp; retourner</span>
+            </div>
+            <div style="padding:16px;">
+                {% if sheet.accountantComment %}
+                <div class="ec-annot-existing">
+                    <div style="font-size:10px;font-weight:700;color:var(--ec-fg-muted);text-transform:uppercase;margin-bottom:6px;">Commentaire actuel</div>
+                    <p style="font-size:12px;color:var(--ec-fg);line-height:1.6;">{{ sheet.accountantComment }}</p>
+                </div>
+                {% endif %}
+                <form method="post" action="{{ path('expert_bilan_comment', {id: sheet.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('bilan_comment_' ~ sheet.id) }}">
+                    <textarea
+                        name="comment"
+                        placeholder="Vos annotations pour le client…"
+                        style="width:100%;background:var(--ec-side-hover);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:10px;color:var(--ec-fg);font-size:12px;resize:vertical;min-height:90px;font-family:inherit;"
+                    >{{ sheet.accountantComment }}</textarea>
+                    <button type="submit" class="ec-btn ec-btn-ghost" style="width:100%;margin-top:8px;justify-content:center;font-size:12px;">
+                        Envoyer annotation
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Messages thread #}
+        <div class="ec-panel" style="flex:1;">
+            <div class="ec-panel-head">
+                <span class="ec-panel-title">Messages</span>
+                {% set clientMsgs = messages|filter(m => m.fromClient) %}
+                {% if clientMsgs|length > 0 %}
+                    <span class="ec-nav-badge" style="position:static;display:inline-flex;">{{ clientMsgs|length }}</span>
+                {% endif %}
+            </div>
+
+            <div class="ec-chat">
+                {% if messages is empty %}
+                <div style="text-align:center;padding:20px;color:var(--ec-fg-muted);font-size:12px;">
+                    Aucun message pour ce dossier
+                </div>
+                {% else %}
+                {% for msg in messages %}
+                <div class="ec-bubble-{{ msg.fromClient ? 'cli' : 'exp' }}">
+                    <div style="font-size:11px;opacity:.7;margin-bottom:4px;">
+                        {{ msg.fromClient ? invitation.user.firstName : 'Vous' }}
+                        <span style="margin-left:4px;">{{ msg.createdAt|date('d/m H:i') }}</span>
+                    </div>
+                    <div style="font-size:12px;line-height:1.5;">{{ msg.content }}</div>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+
+            <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.06);">
+                <form method="post" action="{{ path('expert_bilan_message', {id: sheet.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('expert_msg_' ~ sheet.id) }}">
+                    <div style="display:flex;gap:8px;">
+                        <input
+                            type="text"
+                            name="content"
+                            placeholder="Votre message…"
+                            style="flex:1;background:var(--ec-side-hover);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:8px 12px;color:var(--ec-fg);font-size:12px;min-width:0;"
+                            required
+                        >
+                        <button type="submit" class="ec-btn ec-btn-primary ec-btn-sq" title="Envoyer">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function scrollToSection(idx) {
+    document.querySelectorAll('.ec-annot-section').forEach((el, i) => {
+        el.classList.toggle('active', i + 1 === idx);
+    });
+}
+</script>
+{% endblock %}

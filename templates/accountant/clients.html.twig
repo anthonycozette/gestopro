@@ -1,0 +1,206 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Mes clients{% endblock %}
+{% block breadcrumb %}Mes clients{% endblock %}
+
+{% block body %}
+
+{# ── KPI row ─────────────────────────────────────────────────────── #}
+<div class="ec-kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">CLIENTS TOTAUX</div>
+        <div class="ec-kpi-val">{{ clientsData|length }}</div>
+        <div class="ec-kpi-sub">Portefeuille actif</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">CA TOTAL GÉRÉ</div>
+        <div class="ec-kpi-val" style="font-size:22px;">{{ (totalCa / 1000)|number_format(0, ',', ' ') }}k <span style="font-size:14px;color:var(--ec-fg-muted);">€</span></div>
+        <div class="ec-kpi-sub">Cumul {{ year }}</div>
+    </div>
+
+    <div class="ec-kpi {{ riskCount > 0 ? 'alert' }}">
+        <div class="ec-kpi-label">CLIENTS À RISQUE</div>
+        <div class="ec-kpi-val">{{ riskCount }}</div>
+        <div class="ec-kpi-sub">Plafond AE ≥ 65 %</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">BILANS VALIDÉS</div>
+        <div class="ec-kpi-val">{{ bilansYtd }}</div>
+        <div class="ec-kpi-sub">Cette année</div>
+    </div>
+
+</div>
+
+{# ── Pending invitations ───────────────────────────────────────────── #}
+{% if pending is not empty %}
+<div class="ec-panel" style="margin-bottom:16px;border-left:3px solid var(--ec-warm);">
+    <div class="ec-panel-head">
+        <span class="ec-panel-title">Demandes d'invitation en attente</span>
+        <span class="ec-tag-orange">{{ pending|length }}</span>
+    </div>
+    {% for inv in pending %}
+    <div class="ec-risk-row">
+        <div class="ec-avatar ec-avatar-sm ec-av-blue">
+            {{ inv.user.firstName|first|upper }}{{ inv.user.lastName|first|upper }}
+        </div>
+        <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:var(--ec-fg);">{{ inv.user.firstName }} {{ inv.user.lastName }}</div>
+            <div style="font-size:11px;color:var(--ec-fg-muted);margin-top:2px;">{{ inv.user.email }}</div>
+        </div>
+        <div style="font-size:11px;color:var(--ec-fg-muted);">
+            {{ inv.createdAt|date('d/m/Y') }}
+        </div>
+        <div style="display:flex;gap:8px;">
+            <form method="post" action="{{ path('expert_invitation_accept', {id: inv.id}) }}" style="display:inline;">
+                <input type="hidden" name="_token" value="{{ csrf_token('inv_accept_' ~ inv.id) }}">
+                <button type="submit" class="ec-btn ec-btn-xs ec-btn-primary">Accepter</button>
+            </form>
+            <form method="post" action="{{ path('expert_invitation_decline', {id: inv.id}) }}" style="display:inline;">
+                <input type="hidden" name="_token" value="{{ csrf_token('inv_decline_' ~ inv.id) }}">
+                <button type="submit" class="ec-btn ec-btn-xs ec-btn-ghost">Refuser</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ── Clients table ────────────────────────────────────────────────── #}
+<div class="ec-panel">
+    <div class="ec-panel-head" style="padding-bottom:12px;">
+        <span class="ec-panel-title">Portefeuille clients</span>
+        <div style="display:flex;gap:6px;">
+            <button class="ec-tab-btn active" onclick="filterClients(this,'all')">Tous</button>
+            <button class="ec-tab-btn" onclick="filterClients(this,'expert')">Plan Expert</button>
+            <button class="ec-tab-btn" onclick="filterClients(this,'pro')">Plan Pro</button>
+            <button class="ec-tab-btn" onclick="filterClients(this,'risk')">À risque</button>
+        </div>
+    </div>
+
+    {% if clientsData is empty %}
+    <div style="padding:48px;text-align:center;color:var(--ec-fg-muted);">
+        <div style="font-size:32px;margin-bottom:12px;">👤</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Aucun client pour le moment</div>
+        <div style="font-size:12px;">Les clients qui acceptent votre invitation apparaîtront ici.</div>
+    </div>
+    {% else %}
+    <table class="ec-tbl" id="clients-table">
+        <thead>
+            <tr>
+                <th>Client</th>
+                <th>Plan</th>
+                <th>CA {{ year }}</th>
+                <th>Plafond AE</th>
+                <th>Dernier bilan</th>
+                <th>Messages</th>
+                <th>Risque</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in clientsData %}
+        {% set u = item.user %}
+        <tr data-plan="{{ u.plan }}" data-risk="{{ item.risk }}">
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="ec-avatar ec-avatar-sm ec-av-green">
+                        {{ u.firstName|first|upper }}{{ u.lastName|first|upper }}
+                    </div>
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--ec-fg);">{{ u.firstName }} {{ u.lastName }}</div>
+                        <div style="font-size:11px;color:var(--ec-fg-muted);">{{ u.email }}</div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                {% if u.plan == 'expert' %}
+                    <span class="ec-plan-expert">Expert</span>
+                {% elseif u.plan == 'pro' %}
+                    <span class="ec-plan-pro">Pro</span>
+                {% else %}
+                    <span class="ec-tag-gray">Gratuit</span>
+                {% endif %}
+            </td>
+            <td>
+                <div style="font-size:13px;font-weight:600;color:var(--ec-fg);">{{ item.caYear|number_format(0, ',', ' ') }} €</div>
+            </td>
+            <td>
+                <div style="min-width:120px;">
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ec-fg-muted);margin-bottom:4px;">
+                        <span>{{ item.pct }} %</span>
+                        <span>{{ plafond|number_format(0, ',', ' ') }} €</span>
+                    </div>
+                    <div class="ec-prog-bar">
+                        <div class="ec-prog-fill" style="width:{{ item.pct }}%;background:{{
+                            item.risk == 'high' ? '#dc2626' :
+                            (item.risk == 'med' ? 'var(--ec-warm)' : 'var(--ec-accent)')
+                        }};"></div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                {% if item.latestBilan %}
+                    <span class="ec-bilan-badge {{ item.latestBilan.status }}">
+                        {% if item.latestBilan.status == 'validated' %}Validé
+                        {% elseif item.latestBilan.status == 'pending_review' %}En attente
+                        {% elseif item.latestBilan.status == 'annotated' %}Annoté
+                        {% else %}Brouillon{% endif %}
+                    </span>
+                    <div style="font-size:10px;color:var(--ec-fg-muted);margin-top:3px;">{{ item.latestBilan.period }}</div>
+                {% else %}
+                    <span style="font-size:11px;color:var(--ec-fg-muted);">—</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if item.msgCount > 0 %}
+                    <span class="ec-nav-badge" style="position:static;display:inline-flex;">{{ item.msgCount }}</span>
+                {% else %}
+                    <span style="font-size:11px;color:var(--ec-fg-muted);">—</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if item.risk == 'high' %}
+                    <span class="ec-risk-badge high">Élevé</span>
+                {% elseif item.risk == 'med' %}
+                    <span class="ec-risk-badge med">Moyen</span>
+                {% else %}
+                    <span class="ec-risk-badge low">Faible</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if item.latestBilan and item.latestBilan.status == 'pending_review' %}
+                    <a href="{{ path('expert_bilan_show', {id: item.latestBilan.id}) }}" class="ec-btn ec-btn-xs ec-btn-primary">
+                        Traiter
+                    </a>
+                {% elseif item.latestBilan %}
+                    <a href="{{ path('expert_bilan_show', {id: item.latestBilan.id}) }}" class="ec-btn ec-btn-xs ec-btn-ghost">
+                        Voir
+                    </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function filterClients(btn, filter) {
+    document.querySelectorAll('.ec-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const rows = document.querySelectorAll('#clients-table tbody tr');
+    rows.forEach(row => {
+        if (filter === 'all') { row.style.display = ''; return; }
+        if (filter === 'risk') { row.style.display = (row.dataset.risk === 'high' || row.dataset.risk === 'med') ? '' : 'none'; return; }
+        row.style.display = row.dataset.plan === filter ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
