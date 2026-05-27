@@ -1,0 +1,123 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% set u = invitation.user %}
+{% block title %}{{ u.firstName }} {{ u.lastName }}{% endblock %}
+{% block breadcrumb %}Clients / {{ u.firstName }} {{ u.lastName }}{% endblock %}
+
+{% block body %}
+
+{# ── Header ─────────────────────────────────────────────────────────── #}
+<div class="ec-val-header" style="margin-bottom:16px;">
+    <div class="ec-avatar ec-avatar-lg ec-av-green">
+        {{ u.firstName|first|upper }}{{ u.lastName|first|upper }}
+    </div>
+    <div style="flex:1;min-width:0;">
+        <div style="font-size:17px;font-weight:700;color:var(--ec-fg);">{{ u.firstName }} {{ u.lastName }}</div>
+        <div style="font-size:12px;color:var(--ec-fg-muted);margin-top:3px;">
+            {{ u.email }}
+            {% if u.siret %}<span style="margin:0 8px;opacity:.4;">·</span>SIRET {{ u.siret }}{% endif %}
+        </div>
+    </div>
+    <span class="ec-tag-green">Client actif</span>
+    <a href="{{ path('expert_clients') }}" class="ec-btn ec-btn-ghost ec-btn-sm">← Retour</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start;">
+
+    {# Left: bilans list ───────────────────────────────────────────────── #}
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <span class="ec-panel-title">Bilans de {{ u.firstName }}</span>
+            <span style="font-size:11px;color:var(--ec-fg-muted);">{{ bilans|length }} bilan{{ bilans|length != 1 ? 's' }}</span>
+        </div>
+
+        {% if bilans is empty %}
+        <div style="padding:40px;text-align:center;color:var(--ec-fg-muted);font-size:13px;">
+            <div style="font-size:28px;margin-bottom:8px;">📄</div>
+            Aucun bilan généré pour ce client
+        </div>
+        {% else %}
+        <table class="ec-tbl">
+            <thead>
+                <tr>
+                    <th>Période</th>
+                    <th>Statut</th>
+                    <th>Soumis le</th>
+                    <th>Validé le</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for bilan in bilans %}
+            <tr>
+                <td>
+                    <div style="font-weight:600;color:var(--ec-fg);">{{ bilan.period }}</div>
+                </td>
+                <td>
+                    <span class="ec-bilan-badge {{ bilan.status }}">
+                        {% if bilan.status == 'validated' %}✓ Validé
+                        {% elseif bilan.status == 'pending_review' %}En attente
+                        {% elseif bilan.status == 'annotated' %}Annoté
+                        {% else %}Brouillon{% endif %}
+                    </span>
+                </td>
+                <td style="font-size:12px;color:var(--ec-fg-muted);">{{ bilan.createdAt|date('d/m/Y') }}</td>
+                <td style="font-size:12px;color:var(--ec-fg-muted);">
+                    {{ bilan.validatedAt ? bilan.validatedAt|date('d/m/Y') : '—' }}
+                </td>
+                <td>
+                    <a href="{{ path('expert_bilan_show', {id: bilan.id}) }}"
+                       class="ec-btn ec-btn-xs {{ bilan.status == 'pending_review' ? 'ec-btn-primary' : 'ec-btn-ghost' }}">
+                        {{ bilan.status == 'pending_review' ? 'Traiter' : 'Voir' }}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    {# Right: messages ───────────────────────────────────────────────── #}
+    <div class="ec-panel" id="messages">
+        <div class="ec-panel-head">
+            <span class="ec-panel-title">Messages</span>
+            {% set unread = messages|filter(m => m.fromClient)|length %}
+            {% if unread > 0 %}<span class="ec-nav-badge" style="position:static;display:inline-flex;">{{ unread }}</span>{% endif %}
+        </div>
+
+        <div class="ec-chat" style="max-height:320px;">
+            {% if messages is empty %}
+            <div style="padding:24px;text-align:center;color:var(--ec-fg-muted);font-size:12px;">
+                Aucun message échangé avec ce client
+            </div>
+            {% else %}
+            {% for msg in messages %}
+            <div class="ec-bubble-{{ msg.fromClient ? 'cli' : 'exp' }}">
+                <div style="font-size:11px;opacity:.7;margin-bottom:4px;">
+                    {{ msg.fromClient ? u.firstName : 'Vous' }}
+                    <span style="margin-left:4px;">{{ msg.createdAt|date('d/m H:i') }}</span>
+                </div>
+                <div style="font-size:12px;line-height:1.5;">{{ msg.content }}</div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <div style="padding:12px 0 0;border-top:1px solid rgba(0,0,0,.06);margin-top:8px;">
+            <form method="post" action="{{ path('expert_client_message', {id: invitation.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('expert_msg_' ~ invitation.id) }}">
+                <div style="display:flex;gap:8px;">
+                    <input type="text" name="content" placeholder="Votre message…" required
+                        style="flex:1;border:1px solid var(--ec-bd);border-radius:6px;padding:8px 11px;font-size:12px;font-family:inherit;color:var(--ec-fg);background:var(--ec-bg);">
+                    <button type="submit" class="ec-btn ec-btn-primary ec-btn-sq" title="Envoyer">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

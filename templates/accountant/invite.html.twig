@@ -1,0 +1,57 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Inviter un client{% endblock %}
+{% block breadcrumb %}Inviter un client{% endblock %}
+
+{% block body %}
+<div style="max-width:580px;">
+
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <span class="ec-panel-title">Envoyer une invitation</span>
+        </div>
+
+        <p style="font-size:12.5px;color:var(--ec-muted);margin-bottom:20px;line-height:1.65;">
+            Saisissez l'email du client GestoPro que vous souhaitez accompagner.
+            Il recevra un lien pour accepter ou refuser la mise en relation.
+            Une fois acceptée, vous pourrez consulter et valider ses bilans.
+        </p>
+
+        {% if error %}
+        <div class="ec-flash ec-flash-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="post">
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:11px;font-weight:700;color:var(--ec-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">
+                    Email du client <span style="color:var(--ec-red);">*</span>
+                </label>
+                <input type="email" name="email" required autofocus placeholder="client@exemple.fr"
+                    style="width:100%;padding:9px 12px;border:1px solid var(--ec-bd);border-radius:8px;font-size:13px;color:var(--ec-fg);background:var(--ec-bg);font-family:inherit;">
+            </div>
+            <button type="submit" class="ec-btn ec-btn-primary">Créer l'invitation</button>
+        </form>
+
+        {% if link %}
+        <div style="margin-top:24px;padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;">
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px;">✓ Invitation créée</div>
+            <div style="font-size:12px;color:var(--ec-fg);margin-bottom:8px;line-height:1.5;">
+                Transmettez ce lien à votre client par email ou message :
+            </div>
+            <div style="font-size:11.5px;background:#fff;border:1px solid var(--ec-bd);border-radius:6px;padding:10px 12px;word-break:break-all;font-family:monospace;color:var(--ec-fg);">
+                {{ link }}
+            </div>
+            <div style="font-size:11px;color:var(--ec-muted);margin-top:8px;">Valable 7 jours.</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="ec-panel" style="margin-top:12px;border-left:3px solid var(--ec-accent);">
+        <p style="font-size:12px;color:var(--ec-muted);line-height:1.6;">
+            <strong>Alternative :</strong> le client peut aussi vous trouver directement dans l'annuaire GestoPro
+            et vous envoyer une demande — elle apparaîtra dans votre dashboard.
+        </p>
+    </div>
+
+</div>
+{% endblock %}

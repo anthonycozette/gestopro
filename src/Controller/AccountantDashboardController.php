@@ -6,6 +6,7 @@ use App\Entity\Accountant;
 use App\Entity\AccountantInvitation;
 use App\Entity\BalanceSheet;
 use App\Entity\ExpertMessage;
+use App\Entity\User;
 use App\Repository\AccountantInvitationRepository;
 use App\Repository\ExpertMessageRepository;
 use App\Repository\InvoiceRepository;
@@ -14,6 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 #[Route('/expert/cabinet', name: 'expert_')]
 class AccountantDashboardController extends AbstractController
@@ -378,5 +380,110 @@ class AccountantDashboardController extends AbstractController
         }
 
         return $this->redirectToRoute('expert_bilan_show', ['id' => $sheet->getId()]);
+    }
+
+    #[Route('/profile', name: 'profile')]
+    public function profile(Request $request): Response
+    {
+        $accountant = $this->accountant();
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('expert_profile', $request->request->get('_token'))) {
+                throw $this->createAccessDeniedException();
+            }
+            $accountant->setFirm(trim($request->request->get('firm', '')) ?: null)
+                       ->setRegistrationNumber(trim($request->request->get('registrationNumber', '')) ?: null)
+                       ->setBio(trim($request->request->get('bio', '')) ?: null);
+            $this->em->flush();
+            $this->addFlash('success', 'Profil mis à jour.');
+            return $this->redirectToRoute('expert_profile');
+        }
+
+        return $this->render('accountant/profile.html.twig', array_merge($this->topbarVars(), [
+            'active_nav' => 'profile',
+        ]));
+    }
+
+    #[Route('/invite', name: 'invite')]
+    public function invite(Request $request): Response
+    {
+        $accountant = $this->accountant();
+        $error = null;
+        $link  = null;
+
+        if ($request->isMethod('POST')) {
+            $email = trim($request->request->get('email', ''));
+            $user  = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+
+            if (!$email) {
+                $error = 'Veuillez saisir une adresse email.';
+            } elseif (!$user) {
+                $error = 'Aucun compte GestoPro trouvé pour cet email.';
+            } elseif ($this->invRepo->existsPendingForEmail($accountant, $email)) {
+                $error = 'Une invitation est déjà en attente pour cet utilisateur.';
+            } else {
+                $inv = new AccountantInvitation();
+                $inv->setAccountant($accountant)->setUser($user);
+                $this->em->persist($inv);
+                $this->em->flush();
+
+                $link = $this->generateUrl(
+                    'app_invitation_respond',
+                    ['token' => $inv->getToken()],
+                    UrlGeneratorInterface::ABSOLUTE_URL
+                );
+                $this->addFlash('success', 'Invitation créée pour ' . $email . '.');
+            }
+        }
+
+        return $this->render('accountant/invite.html.twig', array_merge($this->topbarVars(), [
+            'error'      => $error,
+            'link'       => $link,
+            'active_nav' => 'invite',
+        ]));
+    }
+
+    #[Route('/clients/{id}', name: 'client_detail', requirements: ['id' => '\d+'])]
+    public function clientDetail(AccountantInvitation $invitation): Response
+    {
+        $accountant = $this->accountant();
+        if ($invitation->getAccountant() !== $accountant || $invitation->getStatus() !== AccountantInvitation::STATUS_ACCEPTED) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $messages = $this->msgRepo->findByInvitation($invitation);
+        $bilans   = $this->em->getRepository(BalanceSheet::class)
+                             ->findBy(['user' => $invitation->getUser()], ['createdAt' => 'DESC']);
+
+        return $this->render('accountant/client_detail.html.twig', array_merge($this->topbarVars(), [
+            'invitation' => $invitation,
+            'messages'   => $messages,
+            'bilans'     => $bilans,
+            'active_nav' => 'clients',
+        ]));
+    }
+
+    #[Route('/clients/{id}/message', name: 'client_message', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function clientMessage(AccountantInvitation $invitation, Request $request): Response
+    {
+        $accountant = $this->accountant();
+        if ($invitation->getAccountant() !== $accountant) {
+            throw $this->createAccessDeniedException();
+        }
+        if (!$this->isCsrfTokenValid('expert_msg_' . $invitation->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $content = trim($request->request->get('content', ''));
+        if ($content !== '') {
+            $msg = (new ExpertMessage())
+                ->setInvitation($invitation)
+                ->setSenderType(ExpertMessage::SENDER_EXPERT)
+                ->setContent($content);
+            $this->em->persist($msg);
+            $this->em->flush();
+        }
+
+        return $this->redirectToRoute('expert_client_detail', ['id' => $invitation->getId(), '#' => 'messages']);
     }
 }

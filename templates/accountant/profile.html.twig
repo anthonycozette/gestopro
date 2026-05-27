@@ -1,0 +1,82 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Mon profil{% endblock %}
+{% block breadcrumb %}Mon profil{% endblock %}
+
+{% block body %}
+<div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;">
+
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <span class="ec-panel-title">Informations professionnelles</span>
+        </div>
+
+        <form method="post" style="padding-top:4px;">
+            <input type="hidden" name="_token" value="{{ csrf_token('expert_profile') }}">
+
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:11px;font-weight:700;color:var(--ec-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Cabinet / Société</label>
+                <input type="text" name="firm" value="{{ app.user.firm }}" placeholder="Cabinet Lambert & Associés"
+                    style="width:100%;padding:9px 12px;border:1px solid var(--ec-bd);border-radius:8px;font-size:13px;color:var(--ec-fg);background:var(--ec-bg);font-family:inherit;">
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:11px;font-weight:700;color:var(--ec-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">
+                    N° inscription <span style="font-weight:400;text-transform:none;">(ORIAS / Ordre des EC)</span>
+                </label>
+                <input type="text" name="registrationNumber" value="{{ app.user.registrationNumber }}" placeholder="OEC-75-12345"
+                    style="width:100%;padding:9px 12px;border:1px solid var(--ec-bd);border-radius:8px;font-size:13px;color:var(--ec-fg);background:var(--ec-bg);font-family:inherit;">
+            </div>
+
+            <div style="margin-bottom:18px;">
+                <label style="display:block;font-size:11px;font-weight:700;color:var(--ec-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">
+                    Présentation <span style="font-weight:400;text-transform:none;">(visible par les clients)</span>
+                </label>
+                <textarea name="bio" rows="6" placeholder="Décrivez votre expertise, vos spécialités, votre approche…"
+                    style="width:100%;padding:9px 12px;border:1px solid var(--ec-bd);border-radius:8px;font-size:13px;color:var(--ec-fg);background:var(--ec-bg);font-family:inherit;resize:vertical;">{{ app.user.bio }}</textarea>
+            </div>
+
+            <button type="submit" class="ec-btn ec-btn-primary">Enregistrer le profil</button>
+        </form>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <div class="ec-panel">
+            <div class="ec-panel-head">
+                <span class="ec-panel-title">Aperçu de votre fiche</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;">
+                <div class="ec-avatar ec-avatar-lg ec-av-expert">
+                    {{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}
+                </div>
+                <div>
+                    <div style="font-weight:700;font-size:15px;color:var(--ec-fg);">{{ app.user.firstName }} {{ app.user.lastName }}</div>
+                    <div style="font-size:13px;color:var(--ec-muted);margin-top:2px;">{{ app.user.firm ?: '—' }}</div>
+                    {% if app.user.registrationNumber %}
+                    <div style="font-size:11px;color:var(--ec-subtle);margin-top:2px;font-family:monospace;">{{ app.user.registrationNumber }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% if app.user.bio %}
+                <p style="font-size:12.5px;color:var(--ec-fg);line-height:1.6;">{{ app.user.bio }}</p>
+            {% else %}
+                <p style="font-size:12px;color:var(--ec-subtle);font-style:italic;">Aucune présentation renseignée.</p>
+            {% endif %}
+        </div>
+
+        <div class="ec-panel" style="border-left:3px solid var(--ec-warm);">
+            <p style="font-size:12px;color:var(--ec-muted);line-height:1.6;">
+                Une présentation complète augmente vos chances d'être sélectionné par les clients.
+                Mentionnez vos spécialités : auto-entrepreneurs, e-commerce, professions libérales…
+            </p>
+        </div>
+
+        <a href="{{ path('expert_invite') }}" class="ec-btn ec-btn-ghost" style="justify-content:center;">
+            Inviter un client →
+        </a>
+
+    </div>
+
+</div>
+{% endblock %}
