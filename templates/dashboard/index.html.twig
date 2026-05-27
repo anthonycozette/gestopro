@@ -362,7 +362,7 @@
             {% if linkedAccountant.registrationNumber %}
             <div style="font-size:11px;color:#9ca3af;margin-bottom:10px;">N° {{ linkedAccountant.registrationNumber }}</div>
             {% endif %}
-            <a href="mailto:{{ linkedAccountant.email }}" class="btn btn-secondary" style="width:100%;justify-content:center;font-size:12px;">
+            <a href="{{ path('app_experts') }}" class="btn btn-secondary" style="width:100%;justify-content:center;font-size:12px;">
                 Contacter mon expert →
             </a>
             {% else %}
