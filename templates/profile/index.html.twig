@@ -8,6 +8,49 @@
 {% endblock %}
 
 {% block body %}
+
+{# ── Logo ──────────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-title">Logo de votre entreprise</div>
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+        <div style="flex-shrink:0;">
+            {% if app.user.logoPath %}
+                <img src="{{ asset(app.user.logoPath) }}" alt="Logo"
+                     style="height:80px;max-width:200px;object-fit:contain;border:1px solid var(--bd,#e5e7eb);border-radius:8px;padding:8px;background:#fafafa;">
+            {% else %}
+                <div style="width:80px;height:80px;border-radius:8px;border:2px dashed #d1d5db;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#9ca3af;background:#f9fafb;">
+                    {{ app.user.firstName|first|upper }}
+                </div>
+            {% endif %}
+        </div>
+        <div style="flex:1;min-width:200px;">
+            {% for msg in app.flashes('logo_success') %}
+                <div class="alert alert-success" style="margin-bottom:12px;">{{ msg }}</div>
+            {% endfor %}
+            {% for msg in app.flashes('logo_error') %}
+                <div class="alert alert-error" style="margin-bottom:12px;">{{ msg }}</div>
+            {% endfor %}
+            <div style="font-size:13px;color:#6b7280;margin-bottom:12px;">
+                Apparaît sur vos factures et devis. Formats acceptés : JPG, PNG, SVG, WebP — max 2 Mo.
+            </div>
+            <form method="post" action="{{ path('app_profile_logo') }}" enctype="multipart/form-data"
+                  style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="file" name="logo" id="logo-input" accept="image/*"
+                       style="flex:1;min-width:0;font-size:13px;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;">
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </form>
+            {% if app.user.logoPath %}
+            <form method="post" action="{{ path('app_profile_logo_delete') }}" style="margin-top:8px;"
+                  onsubmit="return confirm('Supprimer votre logo ?')">
+                <button type="submit" class="btn btn-secondary" style="font-size:12px;padding:4px 12px;color:#dc2626;border-color:#fca5a5;">
+                    Supprimer le logo
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
 
     {# ── Informations personnelles ─────────────────────────────── #}

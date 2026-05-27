@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -60,6 +61,71 @@ class ProfileController extends AbstractController
         }
 
         return $this->render('profile/index.html.twig', ['error' => $error]);
+    }
+
+    #[Route('/logo', name: '_logo', methods: ['POST'])]
+    public function uploadLogo(Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $file = $request->files->get('logo');
+
+        if (!$file instanceof UploadedFile) {
+            $this->addFlash('logo_error', 'Aucun fichier sélectionné.');
+            return $this->redirectToRoute('app_profile');
+        }
+
+        $allowed = ['image/jpeg', 'image/png', 'image/svg+xml', 'image/gif', 'image/webp'];
+        if (!in_array($file->getMimeType(), $allowed, true)) {
+            $this->addFlash('logo_error', 'Format non supporté. Utilisez JPG, PNG, SVG ou WebP.');
+            return $this->redirectToRoute('app_profile');
+        }
+
+        if ($file->getSize() > 2 * 1024 * 1024) {
+            $this->addFlash('logo_error', 'Fichier trop volumineux (max 2 Mo).');
+            return $this->redirectToRoute('app_profile');
+        }
+
+        if ($user->getLogoPath()) {
+            $old = $this->getParameter('kernel.project_dir') . '/public/' . $user->getLogoPath();
+            if (is_file($old)) {
+                unlink($old);
+            }
+        }
+
+        $ext      = $file->guessExtension() ?? 'png';
+        $filename = 'logo_' . $user->getId() . '.' . $ext;
+        $dir      = $this->getParameter('kernel.project_dir') . '/public/uploads/logos';
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $file->move($dir, $filename);
+        $user->setLogoPath('uploads/logos/' . $filename);
+        $em->flush();
+
+        $this->addFlash('logo_success', 'Logo mis à jour.');
+        return $this->redirectToRoute('app_profile');
+    }
+
+    #[Route('/logo/delete', name: '_logo_delete', methods: ['POST'])]
+    public function deleteLogo(EntityManagerInterface $em): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($user->getLogoPath()) {
+            $path = $this->getParameter('kernel.project_dir') . '/public/' . $user->getLogoPath();
+            if (is_file($path)) {
+                unlink($path);
+            }
+            $user->setLogoPath(null);
+            $em->flush();
+        }
+
+        $this->addFlash('logo_success', 'Logo supprimé.');
+        return $this->redirectToRoute('app_profile');
     }
 
     #[Route('/password', name: '_password', methods: ['POST'])]

@@ -48,7 +48,12 @@
 <body>
     <div class="header">
         <div>
-            <div class="company">{{ invoice.user.firstName }} {{ invoice.user.lastName }}</div>
+            {% if invoice.user.logoPath %}
+                <img src="{{ absolute_url(asset(invoice.user.logoPath)) }}" alt="Logo"
+                     style="max-height:60px;max-width:180px;object-fit:contain;display:block;margin-bottom:6px;">
+            {% else %}
+                <div class="company">{{ invoice.user.firstName }} {{ invoice.user.lastName }}</div>
+            {% endif %}
             <div class="company-info">
                 {% if invoice.user.activityLabel %}{{ invoice.user.activityLabel }}<br>{% endif %}
                 {% if invoice.user.siret %}SIRET : {{ invoice.user.siret }}<br>{% endif %}

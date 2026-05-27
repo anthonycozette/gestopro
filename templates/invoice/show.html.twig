@@ -192,7 +192,12 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="inv-doc-logo">G</div>
+                {% if app.user.logoPath %}
+                    <img src="{{ asset(app.user.logoPath) }}" alt="Logo"
+                         style="max-height:56px;max-width:160px;object-fit:contain;border-radius:4px;">
+                {% else %}
+                    <div class="inv-doc-logo">{{ app.user.firstName|first|upper }}</div>
+                {% endif %}
             </div>
 
             <div class="inv-parties">

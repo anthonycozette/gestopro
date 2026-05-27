@@ -62,6 +62,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $activityLabel = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $logoPath = null;
+
     #[ORM\Column(length: 20, options: ['default' => self::PLAN_FREE])]
     private string $plan = self::PLAN_FREE;
 
@@ -151,6 +154,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getActivityLabel(): ?string { return $this->activityLabel; }
     public function setActivityLabel(?string $label): static { $this->activityLabel = $label; return $this; }
+
+    public function getLogoPath(): ?string { return $this->logoPath; }
+    public function setLogoPath(?string $logoPath): static { $this->logoPath = $logoPath; return $this; }
 
     public function getPlan(): string { return $this->plan; }
     public function setPlan(string $plan): static { $this->plan = $plan; return $this; }
