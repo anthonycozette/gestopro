@@ -2,13 +2,19 @@
 {% block title %}Bilans comptables — GestoPro{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="{{ asset('styles/accounting.css') }}">
+<link rel="stylesheet" href="{{ asset('styles/bilan.css') }}">
 {% endblock %}
 
 {% block topbar %}
 <div class="topbar">
-    <h1>Bilans comptables</h1>
+    <div>
+        <h1>Bilans comptables</h1>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">{{ curYear }} · Plan Expert</div>
+    </div>
     <div class="topbar-actions">
+        <a href="{{ path('app_balance_sheet_my_expert') }}" class="btn btn-secondary">
+            👤 Mon expert
+        </a>
         <a href="{{ path('app_balance_sheet_new') }}" class="btn btn-primary">+ Nouveau bilan</a>
     </div>
 </div>
@@ -16,149 +22,221 @@
 
 {% block body %}
 
-{% set totalRevenue  = 0 %}
-{% set totalExpenses = 0 %}
-{% set totalNet      = 0 %}
-{% for s in sheets %}
-    {% set fd = s.financialData %}
-    {% set totalRevenue  = totalRevenue  + fd.revenue_ht %}
-    {% set totalExpenses = totalExpenses + fd.expenses_ttc %}
-    {% set totalNet      = totalNet      + fd.net_result %}
-{% endfor %}
+{# ── Stat tiles ─────────────────────────────────────────────────────── #}
+<div class="bl-stat-grid">
 
-{% set countDraft    = sheets|filter(s => s.status == 'draft')|length %}
-{% set countPending  = sheets|filter(s => s.status == 'pending_review')|length %}
-{% set countAnnotated= sheets|filter(s => s.status == 'annotated')|length %}
-{% set countValid    = sheets|filter(s => s.status == 'validated')|length %}
-
-{# ── Stat tiles ───────────────────────────────────────────────── #}
-{% if sheets is not empty %}
-<div class="acc-stat-grid" style="grid-template-columns:repeat(3,1fr);">
-
-    <div class="acc-stat-card">
-        <div class="acc-stat-label">CA HT total</div>
-        <div class="acc-stat-value">{{ totalRevenue|number_format(0, ',', ' ') }} €</div>
-        <div class="acc-stat-sub">{{ sheets|length }} bilan{{ sheets|length != 1 ? 's' : '' }}</div>
+    <div class="bl-stat-tile">
+        <div class="bl-stat-label">
+            Bilans générés
+            <span class="bl-stat-icon">📄</span>
+        </div>
+        <div class="bl-stat-val">{{ countGenerated }}</div>
+        <div class="bl-stat-sub">Toutes périodes</div>
     </div>
 
-    <div class="acc-stat-card">
-        <div class="acc-stat-label">Dépenses TTC total</div>
-        <div class="acc-stat-value c-negative">{{ totalExpenses|number_format(0, ',', ' ') }} €</div>
-        <div class="acc-stat-sub">Toutes périodes confondues</div>
+    <div class="bl-stat-tile">
+        <div class="bl-stat-label">
+            Bilans validés
+            <span class="bl-stat-icon">✅</span>
+        </div>
+        <div class="bl-stat-val" style="color:{% if countValidated > 0 %}#16a34a{% else %}var(--text){% endif %};">
+            {{ countValidated }}
+        </div>
+        <div class="bl-stat-sub">Par expert-comptable</div>
     </div>
 
-    <div class="acc-stat-card">
-        <div class="acc-stat-label">Résultat net cumulé</div>
-        <div class="acc-stat-value {{ totalNet >= 0 ? 'c-positive' : 'c-negative' }}">
-            {{ totalNet|number_format(0, ',', ' ') }} €
+    <div class="bl-stat-tile">
+        <div class="bl-stat-label">
+            CA {{ latestYear }}
+            <span class="bl-stat-icon">📈</span>
         </div>
-        <div class="acc-stat-sub">
-            {% if countValid > 0 %}{{ countValid }} validé{{ countValid != 1 ? 's' : '' }}{% else %}Aucun bilan validé{% endif %}
-        </div>
-    </div>
-
-</div>
-{% endif %}
-
-{# ── Filter tabs ──────────────────────────────────────────────── #}
-{% if sheets is not empty %}
-<div class="acc-tabs">
-    <button class="acc-tab active" data-filter="all">
-        <span class="acc-tab-dot" style="background:#6b7280;"></span>
-        Tout <span style="opacity:.55;margin-left:2px;">{{ sheets|length }}</span>
-    </button>
-    {% if countDraft > 0 %}
-    <button class="acc-tab" data-filter="draft">
-        <span class="acc-tab-dot" style="background:#9ca3af;"></span>
-        Brouillon <span style="opacity:.55;margin-left:2px;">{{ countDraft }}</span>
-    </button>
-    {% endif %}
-    {% if countPending > 0 %}
-    <button class="acc-tab" data-filter="pending_review">
-        <span class="acc-tab-dot" style="background:#f97316;"></span>
-        En révision <span style="opacity:.55;margin-left:2px;">{{ countPending }}</span>
-    </button>
-    {% endif %}
-    {% if countAnnotated > 0 %}
-    <button class="acc-tab" data-filter="annotated">
-        <span class="acc-tab-dot" style="background:#2563eb;"></span>
-        Annoté <span style="opacity:.55;margin-left:2px;">{{ countAnnotated }}</span>
-    </button>
-    {% endif %}
-    {% if countValid > 0 %}
-    <button class="acc-tab" data-filter="validated">
-        <span class="acc-tab-dot" style="background:#16a34a;"></span>
-        Validé <span style="opacity:.55;margin-left:2px;">{{ countValid }}</span>
-    </button>
-    {% endif %}
-</div>
-{% endif %}
-
-{# ── Table ────────────────────────────────────────────────────── #}
-<div class="card">
-    {% if sheets is empty %}
-        <div class="empty-state">
-            <div class="empty-state-icon">📊</div>
-            <p>Aucun bilan comptable créé.</p>
-            <a href="{{ path('app_balance_sheet_new') }}" class="btn btn-primary">Créer mon premier bilan</a>
-        </div>
-    {% else %}
-    <table>
-        <thead>
-            <tr>
-                <th>Période</th>
-                <th style="text-align:right;">CA HT</th>
-                <th style="text-align:right;">Dépenses</th>
-                <th style="text-align:right;">Résultat net</th>
-                <th>Statut</th>
-                <th>Expert</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for s in sheets %}
-        {% set fd = s.financialData %}
-        <tr data-status="{{ s.status }}">
-            <td>
-                <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}"
-                   style="font-weight:600;color:#111827;text-decoration:none;">
-                    {{ s.period }}
-                </a>
-                <div style="font-size:11px;color:#9ca3af;margin-top:2px;">
-                    {{ s.periodStart|date('d/m/Y') }} → {{ s.periodEnd|date('d/m/Y') }}
-                </div>
-            </td>
-            <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;">
-                {{ fd.revenue_ht|number_format(2, ',', ' ') }} €
-            </td>
-            <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:#dc2626;">
-                − {{ fd.expenses_ttc|number_format(2, ',', ' ') }} €
-            </td>
-            <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;
-                       color:{{ fd.net_result >= 0 ? '#16a34a' : '#dc2626' }};">
-                {{ fd.net_result|number_format(2, ',', ' ') }} €
-            </td>
-            <td>
-                {% if s.status == 'validated' %}
-                    <span class="chip chip-green"><span class="chip-dot"></span>Validé</span>
-                {% elseif s.status == 'annotated' %}
-                    <span class="chip chip-blue"><span class="chip-dot"></span>Annoté</span>
-                {% elseif s.status == 'pending_review' %}
-                    <span class="chip chip-orange"><span class="chip-dot"></span>En révision</span>
+        <div class="bl-stat-val">{{ latestCa|number_format(0, ',', ' ') }}&nbsp;€</div>
+        <div class="bl-stat-sub">
+            {% if prevCa > 0 %}
+                {% set diff = latestCa - prevCa %}
+                {% if diff >= 0 %}
+                    <span style="color:#16a34a;">+{{ diff|number_format(0, ',', ' ') }} € vs {{ curYear - 1 }}</span>
                 {% else %}
-                    <span class="chip chip-gray"><span class="chip-dot"></span>Brouillon</span>
+                    <span style="color:#dc2626;">{{ diff|number_format(0, ',', ' ') }} € vs {{ curYear - 1 }}</span>
                 {% endif %}
-            </td>
-            <td style="font-size:12px;color:#6b7280;">
-                {% if s.accountant %}{{ s.accountant.fullName }}{% else %}—{% endif %}
-            </td>
-            <td style="text-align:right;">
-                <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}" class="btn btn-secondary btn-sm">Voir</a>
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+            {% else %}
+                Dernier bilan annuel
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bl-stat-tile">
+        <div class="bl-stat-label">
+            Résultat net
+            <span class="bl-stat-icon">💰</span>
+        </div>
+        <div class="bl-stat-val" style="color:{% if latestResult >= 0 %}#16a34a{% else %}#dc2626{% endif %};">
+            {{ latestResult|number_format(0, ',', ' ') }}&nbsp;€
+        </div>
+        <div class="bl-stat-sub">Après charges &amp; cotisations</div>
+    </div>
+
+</div>
+
+{# ── AI generation CTA ──────────────────────────────────────────────── #}
+<div class="bl-gen-card">
+    <div class="bl-gen-card-bg"></div>
+    <div class="bl-gen-icon">✨</div>
+    <div class="bl-gen-body">
+        <div class="bl-gen-title">
+            Générer un bilan IA
+            <span class="bl-claude-badge">Claude</span>
+        </div>
+        <div class="bl-gen-desc">
+            Obtenez une analyse comptable complète générée automatiquement par l'IA à partir de vos données GestoPro.
+            Synthèse financière, recommandations et export PDF en quelques secondes.
+        </div>
+        <div class="bl-gen-pills">
+            <span class="bl-gen-pill">
+                <span class="bl-gen-pill-dot" style="background:#2563eb;"></span>
+                Synthèse intelligente
+            </span>
+            <span class="bl-gen-pill">
+                <span class="bl-gen-pill-dot" style="background:oklch(58% 0.16 290);"></span>
+                Recommandations
+            </span>
+            <span class="bl-gen-pill">
+                <span class="bl-gen-pill-dot" style="background:oklch(58% 0.11 145);"></span>
+                Export PDF
+            </span>
+            <span class="bl-gen-pill">
+                <span class="bl-gen-pill-dot" style="background:oklch(64% 0.14 50);"></span>
+                Validation expert
+            </span>
+        </div>
+    </div>
+    <a href="{{ path('app_balance_sheet_new') }}" class="bl-gen-btn">
+        ✨ Générer un bilan
+    </a>
+</div>
+
+{# ── Bilan list ─────────────────────────────────────────────────────── #}
+<div class="bl-list-wrap">
+
+    <div class="bl-list-head">
+        <div style="flex:1;">
+            <div class="bl-list-title">Bilans archivés</div>
+            <div class="bl-list-sub">{{ sheets|length }} bilan{{ sheets|length != 1 ? 's' : '' }} au total</div>
+        </div>
+        {% if sheets is not empty %}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="bl-tab-btn active" data-filter="all">Tous</button>
+            {% if sheets|filter(s => s.status == 'draft')|length > 0 %}
+            <button class="bl-tab-btn" data-filter="draft">Brouillons</button>
+            {% endif %}
+            {% if sheets|filter(s => s.status == 'pending_review')|length > 0 %}
+            <button class="bl-tab-btn" data-filter="pending_review">En révision</button>
+            {% endif %}
+            {% if sheets|filter(s => s.status == 'annotated')|length > 0 %}
+            <button class="bl-tab-btn" data-filter="annotated">Annotés</button>
+            {% endif %}
+            {% if sheets|filter(s => s.status == 'validated')|length > 0 %}
+            <button class="bl-tab-btn" data-filter="validated">Validés</button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if sheets is empty %}
+    <div style="padding:60px 24px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">📊</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;">Aucun bilan créé</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">
+            Générez votre premier bilan IA à partir de vos données comptables.
+        </div>
+        <a href="{{ path('app_balance_sheet_new') }}" class="bl-gen-btn" style="margin:0 auto;">
+            ✨ Créer mon premier bilan
+        </a>
+    </div>
+    {% else %}
+
+    {% for s in sheets %}
+    {% set fd = s.financialData ?? {} %}
+    <div class="bl-row" data-status="{{ s.status }}">
+
+        {# PDF thumb #}
+        <div>
+            <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}" style="text-decoration:none;">
+                <div class="bl-pdf-thumb">
+                    <div class="bl-pdf-thumb-corner"></div>
+                    <div class="bl-pdf-type">PDF</div>
+                </div>
+            </a>
+        </div>
+
+        {# Period info #}
+        <div>
+            <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}"
+               style="font-size:14px;font-weight:700;color:var(--text);text-decoration:none;display:block;margin-bottom:2px;">
+                Bilan {{ s.period }}
+            </a>
+            <div style="font-size:11.5px;color:var(--muted);">
+                {{ s.periodStart|date('d/m/Y') }} → {{ s.periodEnd|date('d/m/Y') }}
+            </div>
+            {% if s.accountant %}
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+                🧑‍💼 {{ s.accountant.fullName }}{% if s.accountant.firm %} · {{ s.accountant.firm }}{% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {# Status #}
+        <div>
+            {% if s.status == 'validated' %}
+                <span class="bl-badge bl-badge-green">✓ Validé</span>
+                {% if s.validatedAt %}
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ s.validatedAt|date('d/m/Y') }}</div>
+                {% endif %}
+            {% elseif s.status == 'annotated' %}
+                <span class="bl-badge bl-badge-blue">💬 Annoté</span>
+            {% elseif s.status == 'pending_review' %}
+                <span class="bl-badge bl-badge-orange">⏳ En révision</span>
+            {% else %}
+                <span class="bl-badge bl-badge-gray">○ Brouillon</span>
+            {% endif %}
+        </div>
+
+        {# Financial summary #}
+        <div style="font-family:var(--font-mono);font-size:12px;">
+            <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:3px;">
+                <span style="color:var(--muted);">CA HT</span>
+                <span style="font-weight:600;">{{ (fd.revenue_ht ?? 0)|number_format(0, ',', ' ') }} €</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:3px;">
+                <span style="color:var(--muted);">Charges</span>
+                <span style="color:#dc2626;">−{{ ((fd.expenses_ttc ?? 0) + (fd.cotisations ?? 0))|number_format(0, ',', ' ') }} €</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--bd);padding-top:3px;margin-top:3px;">
+                <span style="color:var(--muted);">Net</span>
+                <span style="font-weight:700;color:{% if (fd.net_result ?? 0) >= 0 %}#16a34a{% else %}#dc2626{% endif %};">
+                    {{ (fd.net_result ?? 0)|number_format(0, ',', ' ') }} €
+                </span>
+            </div>
+        </div>
+
+        {# Created at #}
+        <div style="font-size:11.5px;color:var(--muted);text-align:right;">
+            <div>Créé le</div>
+            <div style="margin-top:2px;">{{ s.createdAt|date('d/m/Y') }}</div>
+        </div>
+
+        {# Action #}
+        <div style="text-align:right;">
+            <a href="{{ path('app_balance_sheet_show', {id: s.id}) }}"
+               style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+                      border-radius:8px;border:1px solid var(--bd);background:#fff;
+                      color:var(--muted);text-decoration:none;font-size:14px;transition:all .15s;"
+               title="Voir le bilan">→</a>
+        </div>
+
+    </div>
+    {% endfor %}
+
     {% endif %}
 </div>
 
@@ -166,12 +244,12 @@
 
 {% block javascripts %}
 <script>
-document.querySelectorAll('.acc-tab').forEach(btn => {
+document.querySelectorAll('.bl-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.acc-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.bl-tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const f = btn.dataset.filter;
-        document.querySelectorAll('tbody tr').forEach(row => {
+        document.querySelectorAll('.bl-row').forEach(row => {
             row.style.display = (f === 'all' || row.dataset.status === f) ? '' : 'none';
         });
     });

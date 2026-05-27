@@ -3,8 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\BalanceSheet;
+use App\Entity\ExpertMessage;
 use App\Entity\User;
+use App\Repository\AccountantInvitationRepository;
 use App\Repository\BalanceSheetRepository;
+use App\Repository\ExpertMessageRepository;
 use App\Repository\ExpenseRepository;
 use App\Repository\InvoiceRepository;
 use App\Repository\UrssafDeclarationRepository;
@@ -33,8 +36,41 @@ class BalanceSheetController extends AbstractController
     {
         if ($redirect = $this->requireExpertPlan()) return $redirect;
 
+        /** @var User $user */
+        $user           = $this->getUser();
+        $sheets         = $repo->findByUser($user);
+        $curYear        = (int) date('Y');
+        $prevYear       = $curYear - 1;
+        $countGenerated = count($sheets);
+        $countValidated = count(array_filter($sheets, fn($s) => $s->getStatus() === BalanceSheet::STATUS_VALIDATED));
+
+        $latestCa = $latestResult = $prevCa = 0.0;
+        $latestYear = $curYear;
+
+        foreach ($sheets as $sheet) {
+            $data  = $sheet->getFinancialData() ?? [];
+            $start = $sheet->getPeriodStart();
+            $year  = $start ? (int) $start->format('Y') : $curYear;
+
+            if ($year === $curYear && $latestCa === 0.0) {
+                $latestCa     = (float) ($data['revenue_ht'] ?? 0);
+                $latestResult = (float) ($data['net_result'] ?? 0);
+                $latestYear   = $year;
+            }
+            if ($year === $prevYear && $prevCa === 0.0) {
+                $prevCa = (float) ($data['revenue_ht'] ?? 0);
+            }
+        }
+
         return $this->render('balance_sheet/index.html.twig', [
-            'sheets' => $repo->findByUser($this->getUser()),
+            'sheets'         => $sheets,
+            'curYear'        => $curYear,
+            'countGenerated' => $countGenerated,
+            'countValidated' => $countValidated,
+            'latestCa'       => $latestCa,
+            'latestResult'   => $latestResult,
+            'latestYear'     => $latestYear,
+            'prevCa'         => $prevCa,
         ]);
     }
 
@@ -62,9 +98,9 @@ class BalanceSheetController extends AbstractController
 
             if ($action === 'preview') {
                 $preview = $this->computeFinancialData($this->getUser(), $start, $end, $invoiceRepo, $expenseRepo, $urssafRepo);
-                $preview['label']  = $label;
-                $preview['start']  = $start;
-                $preview['end']    = $end;
+                $preview['label'] = $label;
+                $preview['start'] = $start;
+                $preview['end']   = $end;
             } elseif ($action === 'save') {
                 $financial = $this->computeFinancialData($this->getUser(), $start, $end, $invoiceRepo, $expenseRepo, $urssafRepo);
 
@@ -90,6 +126,65 @@ class BalanceSheetController extends AbstractController
         ]);
     }
 
+    #[Route('/mon-expert', name: '_my_expert')]
+    public function myExpert(
+        AccountantInvitationRepository $invitRepo,
+        ExpertMessageRepository        $msgRepo,
+        BalanceSheetRepository         $sheetRepo,
+    ): Response {
+        if ($redirect = $this->requireExpertPlan()) return $redirect;
+
+        /** @var User $user */
+        $user       = $this->getUser();
+        $invitation = $invitRepo->findActiveByUser($user);
+        $messages   = $invitation ? $msgRepo->findByInvitation($invitation) : [];
+        $submitted  = array_values(array_filter(
+            $sheetRepo->findByUser($user),
+            fn($s) => $s->getStatus() !== BalanceSheet::STATUS_DRAFT
+        ));
+
+        return $this->render('balance_sheet/my_expert.html.twig', [
+            'invitation' => $invitation,
+            'messages'   => $messages,
+            'submitted'  => $submitted,
+        ]);
+    }
+
+    #[Route('/mon-expert/message', name: '_expert_message', methods: ['POST'])]
+    public function sendExpertMessage(
+        Request                        $request,
+        AccountantInvitationRepository $invitRepo,
+        EntityManagerInterface         $em,
+    ): Response {
+        if ($redirect = $this->requireExpertPlan()) return $redirect;
+
+        /** @var User $user */
+        $user       = $this->getUser();
+        $invitation = $invitRepo->findActiveByUser($user);
+
+        if (!$invitation) {
+            $this->addFlash('error', 'Aucun expert-comptable associé.');
+            return $this->redirectToRoute('app_balance_sheet_my_expert');
+        }
+
+        if (!$this->isCsrfTokenValid('expert_msg', $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token CSRF invalide.');
+            return $this->redirectToRoute('app_balance_sheet_my_expert');
+        }
+
+        $content = trim((string) $request->request->get('content'));
+        if ($content !== '') {
+            $msg = (new ExpertMessage())
+                ->setInvitation($invitation)
+                ->setSenderType(ExpertMessage::SENDER_CLIENT)
+                ->setContent($content);
+            $em->persist($msg);
+            $em->flush();
+        }
+
+        return $this->redirectToRoute('app_balance_sheet_my_expert');
+    }
+
     #[Route('/{id}', name: '_show')]
     public function show(BalanceSheet $sheet): Response
     {
@@ -97,7 +192,23 @@ class BalanceSheetController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        return $this->render('balance_sheet/show.html.twig', ['sheet' => $sheet]);
+        $data     = $sheet->getFinancialData() ?? [];
+        $sections = [
+            ['id' => 'info',        'label' => 'Informations générales', 'done' => true,                                       'active' => false, 'hl' => false],
+            ['id' => 'revenue',     'label' => "Chiffre d'affaires",     'done' => isset($data['revenue_ht']),                 'active' => false, 'hl' => false],
+            ['id' => 'expenses',    'label' => 'Dépenses',               'done' => isset($data['expenses_ttc']),               'active' => false, 'hl' => false],
+            ['id' => 'cotisations', 'label' => 'Cotisations URSSAF',     'done' => isset($data['cotisations']),                'active' => false, 'hl' => false],
+            ['id' => 'result',      'label' => 'Résultat net',           'done' => isset($data['net_result']),                 'active' => true,  'hl' => true],
+            ['id' => 'ai',          'label' => 'Analyse IA',             'done' => (bool) $sheet->getAiAnalysis(),             'active' => false, 'hl' => false],
+            ['id' => 'reco',        'label' => 'Recommandations',        'done' => (bool) $sheet->getAiAnalysis(),             'active' => false, 'hl' => false],
+            ['id' => 'annot',       'label' => 'Annotations expert',     'done' => !empty($sheet->getAccountantAnnotations()), 'active' => false, 'hl' => false],
+            ['id' => 'sign',        'label' => 'Signature',              'done' => $sheet->getStatus() === BalanceSheet::STATUS_VALIDATED, 'active' => false, 'hl' => false],
+        ];
+
+        return $this->render('balance_sheet/show.html.twig', [
+            'sheet'    => $sheet,
+            'sections' => $sections,
+        ]);
     }
 
     #[Route('/{id}/submit', name: '_submit', methods: ['POST'])]

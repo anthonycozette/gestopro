@@ -2,162 +2,395 @@
 {% block title %}Bilan {{ sheet.period }} — GestoPro{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="{{ asset('styles/accounting.css') }}">
+<link rel="stylesheet" href="{{ asset('styles/bilan.css') }}">
 {% endblock %}
 
 {% block topbar %}
 <div class="topbar">
-    <h1>Bilan {{ sheet.period }}</h1>
+    <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">
+            Bilan comptable
+        </div>
+        <h1 style="display:flex;align-items:center;gap:10px;">
+            {{ sheet.period }}
+            {% if sheet.status == 'validated' %}
+                <span class="bl-badge bl-badge-green">✓ Validé</span>
+            {% elseif sheet.status == 'annotated' %}
+                <span class="bl-badge bl-badge-blue">💬 Annoté</span>
+            {% elseif sheet.status == 'pending_review' %}
+                <span class="bl-badge bl-badge-orange">⏳ En révision</span>
+            {% else %}
+                <span class="bl-badge bl-badge-gray">○ Brouillon</span>
+            {% endif %}
+        </h1>
+    </div>
     <div class="topbar-actions">
-        {% if sheet.status == 'draft' %}
-            <form method="post" action="{{ path('app_balance_sheet_submit', {id: sheet.id}) }}" style="display:inline;">
-                <input type="hidden" name="_token" value="{{ csrf_token('submit_sheet_' ~ sheet.id) }}">
-                <button type="submit" class="btn btn-primary"
-                        data-confirm="Soumettre ce bilan à votre expert-comptable ?">
-                    Soumettre pour révision
-                </button>
-            </form>
-        {% endif %}
-        <a href="{{ path('app_balance_sheets') }}" class="btn btn-secondary">Retour</a>
+        <a href="{{ path('app_balance_sheets') }}" class="btn btn-secondary">← Retour</a>
     </div>
 </div>
 {% endblock %}
 
 {% block body %}
-{% set fd = sheet.financialData %}
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start;">
+{% set fd = sheet.financialData ?? {} %}
 
-    {# ── Compte de résultat ───────────────────────────────────── #}
-    <div>
-        <div class="acc-doc">
-            <div class="acc-doc-header">
-                <div>
-                    <div class="acc-doc-eyebrow">Compte de résultat simplifié</div>
-                    <div class="acc-doc-period">{{ sheet.period }}</div>
-                    <div class="acc-doc-dates">
-                        {{ sheet.periodStart|date('d/m/Y') }} → {{ sheet.periodEnd|date('d/m/Y') }}
-                    </div>
-                </div>
-                <div style="text-align:right;">
-                    {% if sheet.status == 'validated' %}
-                        <span class="chip chip-green"><span class="chip-dot"></span>Validé</span>
-                    {% elseif sheet.status == 'annotated' %}
-                        <span class="chip chip-blue"><span class="chip-dot"></span>Annoté</span>
-                    {% elseif sheet.status == 'pending_review' %}
-                        <span class="chip chip-orange"><span class="chip-dot"></span>En révision</span>
-                    {% else %}
-                        <span class="chip chip-gray"><span class="chip-dot"></span>Brouillon</span>
-                    {% endif %}
-                </div>
-            </div>
+<div class="bl-show-grid">
 
-            <div class="acc-amounts">
-                <div class="acc-row">
-                    <span class="acc-row-label">Chiffre d'affaires HT</span>
-                    <span class="acc-row-value c-positive">{{ fd.revenue_ht|number_format(2, ',', ' ') }} €</span>
-                </div>
-                <div class="acc-row">
-                    <span class="acc-row-label">Dépenses TTC</span>
-                    <span class="acc-row-value c-negative">− {{ fd.expenses_ttc|number_format(2, ',', ' ') }} €</span>
-                </div>
-                <div class="acc-row">
-                    <span class="acc-row-label">Cotisations URSSAF</span>
-                    <span class="acc-row-value c-negative">− {{ fd.cotisations|number_format(2, ',', ' ') }} €</span>
-                </div>
-                <div class="acc-row-total">
-                    <span class="acc-row-label">Résultat net estimé</span>
-                    <span class="acc-row-value {{ fd.net_result >= 0 ? 'c-positive' : 'c-negative' }}">
-                        {{ fd.net_result|number_format(2, ',', ' ') }} €
-                    </span>
-                </div>
+{# ──────────────────────────────────── LEFT: Table of contents ──── #}
+<div class="bl-toc">
+    <div class="bl-toc-title">Sommaire</div>
+    {% for sec in sections %}
+    <a href="#{{ sec.id }}" class="bl-toc-item
+        {% if sec.done %} bl-toc-done{% endif %}
+        {% if sec.active %} bl-toc-active{% endif %}
+        {% if sec.hl %} bl-toc-hl{% endif %}">
+        <span class="bl-toc-dot"></span>
+        {{ sec.label }}
+    </a>
+    {% endfor %}
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--bd);">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Actions</div>
+        {% if sheet.status == 'draft' %}
+        <form method="post" action="{{ path('app_balance_sheet_submit', {id: sheet.id}) }}" style="margin-bottom:6px;">
+            <input type="hidden" name="_token" value="{{ csrf_token('submit_sheet_' ~ sheet.id) }}">
+            <button type="submit" class="btn btn-primary" style="width:100%;font-size:12px;"
+                    data-confirm="Soumettre ce bilan à votre expert-comptable ?">
+                Soumettre pour révision
+            </button>
+        </form>
+        <form method="post" action="{{ path('app_balance_sheet_delete', {id: sheet.id}) }}"
+              data-confirm="Supprimer ce bilan ?" data-confirm-variant="danger">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_sheet_' ~ sheet.id) }}">
+            <button type="submit" class="btn btn-danger btn-sm" style="width:100%;font-size:12px;">Supprimer</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{# ──────────────────────────────────── CENTER: PDF document ─────── #}
+<div class="bl-pdf-wrap">
+<div class="bl-pdf-doc">
+
+    {# Document header #}
+    <div class="bl-pdf-header">
+        <div>
+            <div class="bl-pdf-eyebrow">Compte de résultat simplifié · Auto-entrepreneur</div>
+            <div class="bl-pdf-period">{{ sheet.period }}</div>
+            <div class="bl-pdf-dates">
+                {{ sheet.periodStart|date('d/m/Y') }} → {{ sheet.periodEnd|date('d/m/Y') }}
             </div>
         </div>
+        <div style="text-align:right;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Généré par</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">GestoPro IA</div>
+            <div style="font-size:11px;color:var(--muted);">{{ sheet.createdAt|date('d/m/Y') }}</div>
+        </div>
+    </div>
 
-        {% if sheet.accountantComment %}
-        <div class="expert-comment">
-            <div class="expert-comment-label">
-                Commentaire de l'expert-comptable
-                {% if sheet.accountant %} — {{ sheet.accountant.fullName }}{% endif %}
+    {# Section: Informations générales #}
+    <div class="bl-pdf-section" id="info">
+        <div class="bl-pdf-section-title">1. Informations générales</div>
+        <div class="bl-pdf-kv-grid">
+            <div class="bl-pdf-kv">
+                <span class="bl-pdf-k">Période</span>
+                <span class="bl-pdf-v">{{ sheet.period }}</span>
             </div>
-            <div class="expert-comment-body">{{ sheet.accountantComment }}</div>
+            <div class="bl-pdf-kv">
+                <span class="bl-pdf-k">Date de début</span>
+                <span class="bl-pdf-v">{{ sheet.periodStart|date('d/m/Y') }}</span>
+            </div>
+            <div class="bl-pdf-kv">
+                <span class="bl-pdf-k">Date de fin</span>
+                <span class="bl-pdf-v">{{ sheet.periodEnd|date('d/m/Y') }}</span>
+            </div>
+            <div class="bl-pdf-kv">
+                <span class="bl-pdf-k">Statut</span>
+                <span class="bl-pdf-v">
+                    {% if sheet.status == 'validated' %}Validé
+                    {% elseif sheet.status == 'annotated' %}Annoté par l'expert
+                    {% elseif sheet.status == 'pending_review' %}En attente de révision
+                    {% else %}Brouillon{% endif %}
+                </span>
+            </div>
+            {% if sheet.accountant %}
+            <div class="bl-pdf-kv">
+                <span class="bl-pdf-k">Expert-comptable</span>
+                <span class="bl-pdf-v">{{ sheet.accountant.fullName }}{% if sheet.accountant.firm %} · {{ sheet.accountant.firm }}{% endif %}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Section: Chiffre d'affaires #}
+    <div class="bl-pdf-section" id="revenue">
+        <div class="bl-pdf-section-title">2. Chiffre d'affaires</div>
+        <div class="bl-pdf-amounts">
+            <div class="bl-pdf-row">
+                <span>Chiffre d'affaires HT</span>
+                <span class="bl-pdf-amt bl-amt-pos">{{ (fd.revenue_ht ?? 0)|number_format(2, ',', ' ') }} €</span>
+            </div>
+        </div>
+    </div>
+
+    {# Section: Dépenses #}
+    <div class="bl-pdf-section" id="expenses">
+        <div class="bl-pdf-section-title">3. Dépenses professionnelles</div>
+        <div class="bl-pdf-amounts">
+            <div class="bl-pdf-row">
+                <span>Total dépenses TTC</span>
+                <span class="bl-pdf-amt bl-amt-neg">−{{ (fd.expenses_ttc ?? 0)|number_format(2, ',', ' ') }} €</span>
+            </div>
+        </div>
+    </div>
+
+    {# Section: Cotisations URSSAF #}
+    <div class="bl-pdf-section" id="cotisations">
+        <div class="bl-pdf-section-title">4. Cotisations sociales URSSAF</div>
+        <div class="bl-pdf-amounts">
+            <div class="bl-pdf-row">
+                <span>Cotisations sociales</span>
+                <span class="bl-pdf-amt bl-amt-neg">−{{ (fd.cotisations ?? 0)|number_format(2, ',', ' ') }} €</span>
+            </div>
+        </div>
+    </div>
+
+    {# Section: Résultat net (highlighted) #}
+    <div class="bl-pdf-section bl-pdf-section-hl" id="result">
+        <div class="bl-pdf-section-title">5. Résultat net estimé</div>
+        <div class="bl-pdf-amounts">
+            <div class="bl-pdf-row">
+                <span>Chiffre d'affaires HT</span>
+                <span class="bl-pdf-amt bl-amt-pos">{{ (fd.revenue_ht ?? 0)|number_format(2, ',', ' ') }} €</span>
+            </div>
+            <div class="bl-pdf-row">
+                <span>− Dépenses TTC</span>
+                <span class="bl-pdf-amt bl-amt-neg">−{{ (fd.expenses_ttc ?? 0)|number_format(2, ',', ' ') }} €</span>
+            </div>
+            <div class="bl-pdf-row">
+                <span>− Cotisations sociales</span>
+                <span class="bl-pdf-amt bl-amt-neg">−{{ (fd.cotisations ?? 0)|number_format(2, ',', ' ') }} €</span>
+            </div>
+            <div class="bl-pdf-row bl-pdf-row-total">
+                <span style="font-weight:700;">Résultat net estimé</span>
+                <span class="bl-pdf-amt {% if (fd.net_result ?? 0) >= 0 %}bl-amt-pos{% else %}bl-amt-neg{% endif %}"
+                      style="font-size:20px;font-weight:800;">
+                    {{ (fd.net_result ?? 0)|number_format(2, ',', ' ') }} €
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {# Section: Analyse IA #}
+    <div class="bl-pdf-section" id="ai">
+        <div class="bl-pdf-section-title" style="display:flex;align-items:center;gap:8px;">
+            6. Analyse IA
+            <span class="bl-claude-badge" style="font-size:9px;">Claude</span>
+        </div>
+        {% if sheet.aiAnalysis %}
+        <div style="font-size:13px;line-height:1.65;color:var(--text);">
+            {{ sheet.aiAnalysis|nl2br }}
+        </div>
+        {% else %}
+        <div class="bl-ai-placeholder">
+            <div style="font-size:24px;margin-bottom:8px;">✨</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Analyse IA non générée</div>
+            <div style="font-size:12px;color:var(--muted);">
+                L'analyse narrative par Claude sera générée lors de la prochaine mise à jour.
+            </div>
         </div>
         {% endif %}
     </div>
 
-    {# ── Sidebar ──────────────────────────────────────────────── #}
-    <div>
-        {# Status timeline #}
-        <div class="card">
-            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">
-                Progression
+    {# Section: Recommandations #}
+    <div class="bl-pdf-section" id="reco">
+        <div class="bl-pdf-section-title">7. Recommandations</div>
+        {% if sheet.aiAnalysis %}
+        <div class="bl-reco-list">
+            <div class="bl-reco-item">
+                <span class="bl-reco-dot" style="background:#2563eb;"></span>
+                <span>Vérifiez régulièrement vos charges déductibles pour optimiser votre résultat net.</span>
             </div>
-            <div class="bs-timeline">
-                <div class="bs-step {{ sheet.status in ['draft','pending_review','annotated','validated'] ? 'done' : '' }}">
-                    <div class="bs-step-label">Brouillon créé</div>
-                    <div class="bs-step-sub">Données calculées automatiquement</div>
-                </div>
-                <div class="bs-step
-                    {{ sheet.status == 'pending_review' ? 'current' : '' }}
-                    {{ sheet.status in ['annotated','validated'] ? 'done' : '' }}">
-                    <div class="bs-step-label">Soumis pour révision</div>
-                    <div class="bs-step-sub">En attente de l'expert-comptable</div>
-                </div>
-                <div class="bs-step
-                    {{ sheet.status == 'annotated' ? 'current' : '' }}
-                    {{ sheet.status == 'validated' ? 'done' : '' }}">
-                    <div class="bs-step-label">Annoté par l'expert</div>
-                    <div class="bs-step-sub">Commentaire ajouté</div>
-                </div>
-                <div class="bs-step {{ sheet.status == 'validated' ? 'validated' : '' }}">
-                    <div class="bs-step-label">Bilan validé</div>
-                    {% if sheet.validatedAt %}
-                    <div class="bs-step-sub" style="color:#16a34a;">
-                        le {{ sheet.validatedAt|date('d/m/Y') }}
-                    </div>
-                    {% else %}
-                    <div class="bs-step-sub">Validation de l'expert requise</div>
-                    {% endif %}
-                </div>
+            <div class="bl-reco-item">
+                <span class="bl-reco-dot" style="background:oklch(58% 0.11 145);"></span>
+                <span>Anticipez le versement libératoire si votre CA dépasse les seuils TVA.</span>
+            </div>
+            <div class="bl-reco-item">
+                <span class="bl-reco-dot" style="background:oklch(64% 0.14 50);"></span>
+                <span>Conservez tous vos justificatifs de dépenses pour la période fiscale.</span>
             </div>
         </div>
-
-        {# Expert info #}
-        {% if sheet.accountant %}
-        <div class="acc-status-box st-blue" style="margin-top:12px;">
-            <div class="acc-status-title" style="color:#1d4ed8;">Expert-comptable</div>
-            <div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;">
-                {{ sheet.accountant.fullName }}
-            </div>
-            {% if sheet.accountant.firm %}
-            <div class="acc-status-desc">{{ sheet.accountant.firm }}</div>
-            {% endif %}
+        {% else %}
+        <div style="font-size:13px;color:var(--muted);font-style:italic;">
+            Les recommandations seront disponibles après la génération de l'analyse IA.
         </div>
         {% endif %}
+    </div>
 
-        {# Actions #}
-        <div class="card" style="margin-top:12px;">
-            <div style="display:flex;flex-direction:column;gap:8px;">
-                {% if sheet.status == 'draft' %}
-                <form method="post" action="{{ path('app_balance_sheet_submit', {id: sheet.id}) }}">
-                    <input type="hidden" name="_token" value="{{ csrf_token('submit_sheet_' ~ sheet.id) }}">
-                    <button type="submit" class="btn btn-primary" style="width:100%;"
-                            data-confirm="Soumettre ce bilan à votre expert-comptable ?">
-                        Soumettre pour révision
-                    </button>
-                </form>
-                <form method="post" action="{{ path('app_balance_sheet_delete', {id: sheet.id}) }}"
-                      data-confirm="Supprimer ce bilan ?" data-confirm-variant="danger">
-                    <input type="hidden" name="_token" value="{{ csrf_token('delete_sheet_' ~ sheet.id) }}">
-                    <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer</button>
-                </form>
-                {% else %}
-                <a href="{{ path('app_balance_sheets') }}" class="btn btn-secondary" style="width:100%;text-align:center;">
-                    Retour aux bilans
-                </a>
+    {# Section: Annotations expert #}
+    <div class="bl-pdf-section" id="annot">
+        <div class="bl-pdf-section-title">8. Annotations expert-comptable</div>
+        {% if sheet.accountantAnnotations %}
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            {% for annot in sheet.accountantAnnotations %}
+            <div class="bl-annot-bubble">
+                {% if annot.type is defined %}
+                <span class="bl-annot-type bl-annot-{{ annot.type }}">{{ annot.type|upper }}</span>
+                {% endif %}
+                <div style="font-size:13px;margin-top:6px;">{{ annot.text ?? annot }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% elseif sheet.accountantComment %}
+        <div class="bl-annot-bubble">
+            <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">
+                Commentaire de {{ sheet.accountant ? sheet.accountant.fullName : "l'expert" }}
+            </div>
+            <div style="font-size:13px;">{{ sheet.accountantComment }}</div>
+        </div>
+        {% else %}
+        <div style="font-size:13px;color:var(--muted);font-style:italic;">
+            Aucune annotation pour le moment. Soumettez ce bilan à votre expert-comptable pour obtenir sa révision.
+        </div>
+        {% endif %}
+    </div>
+
+    {# Section: Signature #}
+    <div class="bl-pdf-section" id="sign">
+        <div class="bl-pdf-section-title">9. Validation &amp; Signature</div>
+        {% if sheet.status == 'validated' %}
+        <div class="bl-submitted">
+            <div class="bl-submitted-icon">✓</div>
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#15803d;">Bilan validé par l'expert-comptable</div>
+                {% if sheet.validatedAt %}
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;">le {{ sheet.validatedAt|date('d/m/Y à H:i') }}</div>
+                {% endif %}
+                {% if sheet.accountant %}
+                <div style="font-size:12px;color:var(--muted);margin-top:1px;">{{ sheet.accountant.fullName }}{% if sheet.accountant.firm %} · {{ sheet.accountant.firm }}{% endif %}</div>
                 {% endif %}
             </div>
         </div>
+        {% elseif sheet.status == 'pending_review' %}
+        <div style="font-size:13px;color:var(--muted);font-style:italic;">
+            ⏳ Bilan soumis. En attente de validation par votre expert-comptable.
+        </div>
+        {% else %}
+        <div style="font-size:13px;color:var(--muted);font-style:italic;">
+            La signature numérique sera apposée par l'expert-comptable après validation.
+        </div>
+        {% endif %}
     </div>
 
+</div>{# end .bl-pdf-doc #}
+</div>{# end .bl-pdf-wrap #}
+
+{# ──────────────────────────────────── RIGHT: Panel ─────────────── #}
+<div>
+
+    {# Status panel #}
+    <div class="bl-panel">
+        <div class="bl-panel-title">Progression</div>
+        <div class="bl-timeline">
+            <div class="bl-tl-step {% if sheet.status in ['draft','pending_review','annotated','validated'] %}bl-tl-done{% endif %}">
+                <div class="bl-tl-dot"></div>
+                <div>
+                    <div class="bl-tl-label">Brouillon créé</div>
+                    <div class="bl-tl-sub">{{ sheet.createdAt|date('d/m/Y') }}</div>
+                </div>
+            </div>
+            <div class="bl-tl-step
+                {% if sheet.status == 'pending_review' %}bl-tl-current{% endif %}
+                {% if sheet.status in ['annotated','validated'] %}bl-tl-done{% endif %}">
+                <div class="bl-tl-dot"></div>
+                <div>
+                    <div class="bl-tl-label">Soumis pour révision</div>
+                    <div class="bl-tl-sub">En attente de l'expert</div>
+                </div>
+            </div>
+            <div class="bl-tl-step
+                {% if sheet.status == 'annotated' %}bl-tl-current{% endif %}
+                {% if sheet.status == 'validated' %}bl-tl-done{% endif %}">
+                <div class="bl-tl-dot"></div>
+                <div>
+                    <div class="bl-tl-label">Annoté par l'expert</div>
+                    <div class="bl-tl-sub">Commentaires ajoutés</div>
+                </div>
+            </div>
+            <div class="bl-tl-step {% if sheet.status == 'validated' %}bl-tl-validated{% endif %}">
+                <div class="bl-tl-dot"></div>
+                <div>
+                    <div class="bl-tl-label">Bilan validé</div>
+                    <div class="bl-tl-sub">
+                        {% if sheet.validatedAt %}le {{ sheet.validatedAt|date('d/m/Y') }}
+                        {% else %}Validation requise{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Expert info #}
+    {% if sheet.accountant %}
+    <div class="bl-panel" style="margin-top:12px;">
+        <div class="bl-panel-title">Expert-comptable</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),oklch(58% 0.16 290));
+                        display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0;">
+                {{ sheet.accountant.firstName|first|upper }}{{ sheet.accountant.lastName|first|upper }}
+            </div>
+            <div>
+                <div style="font-size:13px;font-weight:700;">{{ sheet.accountant.fullName }}</div>
+                {% if sheet.accountant.firm %}
+                <div style="font-size:11.5px;color:var(--muted);">{{ sheet.accountant.firm }}</div>
+                {% endif %}
+            </div>
+        </div>
+        <a href="{{ path('app_balance_sheet_my_expert') }}"
+           style="display:block;margin-top:12px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:600;">
+            Aller au fil de discussion →
+        </a>
+    </div>
+    {% endif %}
+
+    {# Actions panel #}
+    <div class="bl-panel" style="margin-top:12px;">
+        <div class="bl-panel-title">Actions</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            {% if sheet.status == 'draft' %}
+            <form method="post" action="{{ path('app_balance_sheet_submit', {id: sheet.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('submit_sheet_' ~ sheet.id) }}">
+                <button type="submit" class="btn btn-primary" style="width:100%;"
+                        data-confirm="Soumettre ce bilan à votre expert-comptable ?">
+                    📤 Soumettre pour révision
+                </button>
+            </form>
+            <form method="post" action="{{ path('app_balance_sheet_delete', {id: sheet.id}) }}"
+                  data-confirm="Supprimer ce bilan ?" data-confirm-variant="danger">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_sheet_' ~ sheet.id) }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">🗑 Supprimer</button>
+            </form>
+            {% else %}
+            <a href="{{ path('app_balance_sheets') }}" class="btn btn-secondary" style="width:100%;text-align:center;">
+                ← Retour aux bilans
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {# AI analysis info #}
+    {% if not sheet.aiAnalysis %}
+    <div class="bl-ai-panel" style="margin-top:12px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:16px;">✨</span>
+            <div style="font-size:12.5px;font-weight:700;color:oklch(40% 0.16 290);">Analyse IA disponible</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">
+            L'analyse narrative Claude sera générée automatiquement avec votre prochaine mise à jour Pro.
+        </div>
+    </div>
+    {% endif %}
+
 </div>
+
+</div>{# end .bl-show-grid #}
+
 {% endblock %}
