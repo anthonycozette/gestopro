@@ -2,100 +2,454 @@
 {% block title %}{{ declaration.periodLabel }} — URSSAF — GestoPro{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="{{ asset('styles/accounting.css') }}">
+<link rel="stylesheet" href="{{ asset('styles/urssaf.css') }}">
 {% endblock %}
 
 {% block topbar %}
 <div class="topbar">
-    <h1>Déclaration {{ declaration.periodLabel }}</h1>
+    <div>
+        <h1>Déclaration URSSAF</h1>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px;">Cotisations sociales calculées à l'euro près sur ton CA encaissé.</div>
+    </div>
     <div class="topbar-actions">
-        <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="btn btn-secondary">Modifier</a>
-        <a href="{{ path('app_urssaf') }}" class="btn btn-secondary">Retour</a>
+        <a href="{{ path('app_urssaf_export_csv', {id: declaration.id}) }}" class="btn btn-secondary">↓ Export CSV</a>
+        <a href="{{ path('app_urssaf') }}" class="btn btn-secondary">← Retour</a>
     </div>
 </div>
 {% endblock %}
 
 {% block body %}
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start;">
 
-    {# ── Formal document ──────────────────────────────────────── #}
-    <div class="acc-doc">
-        <div class="acc-doc-header">
-            <div>
-                <div class="acc-doc-eyebrow">Déclaration URSSAF</div>
-                <div class="acc-doc-period">{{ declaration.periodLabel }}</div>
-                <div class="acc-doc-dates">
+{# ── Period bar ──────────────────────────────────────────────────────── #}
+<div class="u-period-bar">
+    <div class="u-period-switcher">
+        <a href="{{ path('app_urssaf') }}" class="u-period-btn" title="Voir toutes les déclarations">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div class="u-period-label">
+            <span style="font-weight:700;">{{ declaration.periodLabel }}</span>
+            {% if declaration.periodStart and declaration.periodEnd %}
+                <span class="u-period-sub">
                     {{ declaration.periodStart|date('d/m/Y') }} → {{ declaration.periodEnd|date('d/m/Y') }}
-                </div>
-            </div>
-            <div style="text-align:right;">
-                <div class="acc-doc-eyebrow" style="margin-bottom:6px;">Périodicité</div>
-                <span class="chip chip-gray">
-                    {{ declaration.periodicity == 'monthly' ? 'Mensuelle' : 'Trimestrielle' }}
                 </span>
-            </div>
-        </div>
-
-        <div class="acc-amounts">
-            <div class="acc-row">
-                <span class="acc-row-label">Chiffre d'affaires déclaré</span>
-                <span class="acc-row-value">{{ declaration.revenue|number_format(2, ',', ' ') }} €</span>
-            </div>
-            <div class="acc-row">
-                <span class="acc-row-label">Taux de cotisation</span>
-                <span class="acc-row-value c-muted">{{ (declaration.cotisationRate * 100)|number_format(1, ',', ' ') }} %</span>
-            </div>
-            <div class="acc-row-total">
-                <span class="acc-row-label">Cotisation à payer</span>
-                <span class="acc-row-value c-blue">{{ declaration.cotisationAmount|number_format(2, ',', ' ') }} €</span>
-            </div>
+            {% endif %}
         </div>
     </div>
 
-    {# ── Sidebar ──────────────────────────────────────────────── #}
-    <div>
-        {% if declaration.declared %}
-        <div class="acc-status-box st-green">
-            <div class="acc-status-title" style="color:#15803d;">
-                <span class="chip chip-green" style="margin-bottom:6px;">
-                    <span class="chip-dot"></span>Déclarée
-                </span>
+    {% if declaration.declared %}
+        <span class="u-deadline-badge u-deadline-done">
+            <span class="u-deadline-dot"></span>
+            Déclarée{% if declaration.declaredAt %} le {{ declaration.declaredAt|date('d/m/Y') }}{% endif %}
+        </span>
+    {% elseif daysLeft is not null and daysLeft <= 0 %}
+        <span class="u-deadline-badge u-deadline-overdue">
+            <span class="u-deadline-dot"></span>
+            Échéance dépassée — à régulariser
+        </span>
+    {% elseif dueDate %}
+        {% set badgeClass = daysLeft <= 7 ? 'u-deadline-overdue' : '' %}
+        <span class="u-deadline-badge {{ badgeClass }}">
+            <span class="u-deadline-dot"></span>
+            Échéance dans {{ daysLeft }} jour{{ daysLeft > 1 ? 's' : '' }} · {{ dueDate|date('d/m/Y') }}
+        </span>
+    {% endif %}
+
+    <div style="flex:1;"></div>
+
+    <a href="https://www.urssaf.fr" target="_blank" rel="noopener noreferrer"
+       style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);font-weight:500;text-decoration:none;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        Voir sur urssaf.fr
+    </a>
+</div>
+
+{# ── Hero card — total à payer ────────────────────────────────────────── #}
+{% set cotisationRate100 = (declaration.cotisationRate * 100)|number_format(1, ',', '') %}
+{% set totalToPay = declaration.cotisationAmount %}
+<section class="u-hero">
+    <div class="u-hero-bg" aria-hidden="true"></div>
+    <div class="u-hero-grid">
+
+        <div>
+            <div class="u-hero-eyebrow">
+                <span class="u-hero-eyebrow-dot"></span>
+                À déclarer &amp; payer
             </div>
-            {% if declaration.declaredAt %}
-            <div class="acc-status-desc">
-                Déclaration effectuée le {{ declaration.declaredAt|date('d/m/Y') }}.
+            <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;">
+                <div class="u-hero-amount">{{ totalToPay|number_format(0, ',', ' ') }} €</div>
+                <div class="u-hero-meta">
+                    <div>{{ cotisationRate100 }} % du CA</div>
+                    {% if dueDate and not declaration.declared %}
+                        <div style="margin-top:2px;">À déclarer avant le <strong style="color:var(--fg);">{{ dueDate|date('d/m/Y') }}</strong></div>
+                    {% endif %}
+                </div>
             </div>
+
+            <div class="u-hero-sub-grid">
+                <div class="u-hero-tile u-hero-tile-blue">
+                    <div class="u-hero-tile-label" style="color:var(--accent);">Cotisations sociales</div>
+                    <div class="u-hero-tile-amt" style="color:var(--accent);">{{ declaration.cotisationAmount|number_format(0, ',', ' ') }} €</div>
+                    <div class="u-hero-tile-sub">{{ cotisationRate100 }} % · obligatoire</div>
+                </div>
+                <div class="u-hero-tile u-hero-tile-warm">
+                    <div class="u-hero-tile-label" style="color:oklch(40% 0.13 50);">
+                        Versement libératoire
+                        <span class="u-tile-badge" style="background:oklch(40% 0.13 50);">indicatif</span>
+                    </div>
+                    <div class="u-hero-tile-amt" style="color:oklch(40% 0.13 50);">{{ libAmount|number_format(0, ',', ' ') }} €</div>
+                    <div class="u-hero-tile-sub">2,2 % · impôt sur le revenu</div>
+                </div>
+            </div>
+
+            <div class="u-hero-actions">
+                <a href="https://www.urssaf.fr/accueil/services-en-ligne/tuto-declarer-en-ligne.html"
+                   target="_blank" rel="noopener noreferrer" class="u-btn u-btn-primary">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    Aller sur urssaf.fr
+                </a>
+                <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="u-btn">
+                    ✏ Modifier
+                </a>
+                {% if not declaration.declared %}
+                    <form method="post" action="{{ path('app_urssaf_edit', {id: declaration.id}) }}" style="display:inline;">
+                        <input type="hidden" name="declared" value="1">
+                        <input type="hidden" name="_redirect_show" value="1">
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Gauge SVG #}
+        {% set rev = declaration.revenue|number_format(2, '.', '') %}
+        {% set pct = rev > 0 ? ((declaration.cotisationAmount / rev * 100)|round(1)) : 0 %}
+        {% set r = 95 %}
+        {% set circ = 596.9 %}
+        {% set track = circ * 0.75 %}
+        {% set filled = circ * 0.75 * (pct / 100) %}
+        <div class="u-gauge-wrap">
+            <svg width="300" height="220" viewBox="0 0 300 220" style="overflow:visible;" aria-hidden="true">
+                <defs>
+                    <linearGradient id="ug-grad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#2563eb"/>
+                        <stop offset="100%" stop-color="oklch(64% 0.14 50)"/>
+                    </linearGradient>
+                </defs>
+                {# Track #}
+                <circle cx="150" cy="150" r="{{ r }}" fill="none"
+                    stroke="#e6e8ee" stroke-width="20" stroke-linecap="round"
+                    stroke-dasharray="{{ track }} {{ circ }}"
+                    transform="rotate(135 150 150)"/>
+                {# Filled #}
+                <circle cx="150" cy="150" r="{{ r }}" fill="none"
+                    stroke="url(#ug-grad)" stroke-width="20" stroke-linecap="round"
+                    stroke-dasharray="{{ filled }} {{ circ }}"
+                    transform="rotate(135 150 150)"/>
+            </svg>
+            <div class="u-gauge-center">
+                <div class="u-gauge-eyebrow">Part du CA</div>
+                <div class="u-gauge-pct">{{ pct }} %</div>
+                <div class="u-gauge-sub">Sur {{ declaration.revenue|number_format(0, ',', ' ') }} € de CA</div>
+                <div class="u-gauge-legend">
+                    <span class="u-gauge-legend-item">
+                        <span class="u-gauge-legend-dot" style="background:#2563eb;"></span> URSSAF
+                    </span>
+                    <span class="u-gauge-legend-item">
+                        <span class="u-gauge-legend-dot" style="background:oklch(64% 0.14 50);"></span> IR · VFL
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ── Two-column body ─────────────────────────────────────────────────── #}
+<div class="u-cols">
+
+    {# ── LEFT ──────────────────────────────────────────────────────────── #}
+    <div class="u-col-main">
+
+        {# CA déclaré + monthly breakdown #}
+        <section class="u-panel">
+            <div class="u-panel-head">
+                <div>
+                    <div class="u-panel-title">Chiffre d'affaires déclaré</div>
+                    <div class="u-panel-sub">Activité · {{ declaration.periodicity == 'monthly' ? 'Mensuelle' : 'Trimestrielle' }} · {{ declaration.periodStart ? declaration.periodStart|date('Y') : '' }}</div>
+                </div>
+                <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="u-panel-action u-panel-action-muted">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Modifier le CA
+                </a>
+            </div>
+
+            <div class="u-ca-row">
+                <div class="u-ca-amount">{{ declaration.revenue|number_format(0, ',', ' ') }} €</div>
+                {% if ytdRevenue > declaration.revenue %}
+                    <span class="u-ca-badge">↑ Cumulé {{ ytdRevenue|number_format(0, ',', ' ') }} € en {{ declaration.periodStart ? declaration.periodStart|date('Y') : '' }}</span>
+                {% endif %}
+            </div>
+
+            {% if monthlyBreakdown %}
+                {% set maxAmt = 0 %}
+                {% for m in monthlyBreakdown %}{% if m.amount > maxAmt %}{% set maxAmt = m.amount %}{% endif %}{% endfor %}
+                <div class="u-month-grid" style="grid-template-columns:repeat({{ monthlyBreakdown|length }},1fr);">
+                    {% for m in monthlyBreakdown %}
+                    <div class="u-month-cell">
+                        <div class="u-month-label">{{ m.label }}</div>
+                        <div class="u-month-amt">{{ m.amount|number_format(0, ',', ' ') }} €</div>
+                        <div class="u-month-bar-track">
+                            <div class="u-month-bar-fill" style="width:{{ maxAmt > 0 ? (m.amount / maxAmt * 100)|round : 0 }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             {% endif %}
-        </div>
-        {% else %}
-        <div class="acc-status-box st-orange">
-            <div style="margin-bottom:6px;">
-                <span class="chip chip-orange">
-                    <span class="chip-dot"></span>À déclarer
+
+            {# Compliance check #}
+            {% set ytdPct = thresholdServices > 0 ? (ytdRevenue / thresholdServices * 100)|round(1) : 0 %}
+            <div class="u-compliance {{ ytdPct >= 90 ? 'u-compliance-warn' : 'u-compliance-ok' }}">
+                <span class="u-compliance-dot {{ ytdPct >= 90 ? 'u-compliance-dot-warn' : 'u-compliance-dot-ok' }}">
+                    {% if ytdPct >= 90 %}⚠{% else %}✓{% endif %}
                 </span>
+                <div style="font-size:12.5px;line-height:1.5;">
+                    {% if ytdPct >= 90 %}
+                        <strong style="color:#c2410c;">Attention — seuil TVA à {{ ytdPct }} %</strong>
+                        <span style="color:var(--muted);"> · {{ ytdRevenue|number_format(0, ',', ' ') }} € cumulés · plafond {{ thresholdServices|number_format(0, ',', ' ') }} € (services).</span>
+                    {% else %}
+                        <strong style="color:var(--fg);">Tu es dans les seuils micro-entreprise.</strong>
+                        <span style="color:var(--muted);"> {{ ytdRevenue|number_format(0, ',', ' ') }} € cumulés · plafond {{ thresholdServices|number_format(0, ',', ' ') }} € (services).</span>
+                    {% endif %}
+                </div>
             </div>
-            <div class="acc-status-desc">
-                Déclarez ce CA sur <strong>urssaf.fr</strong> avant la date limite de la période.
+        </section>
+
+        {# Détail des cotisations #}
+        <section class="u-panel">
+            <div class="u-panel-head">
+                <div>
+                    <div class="u-panel-title">Détail des cotisations</div>
+                    <div class="u-panel-sub">Calculées au taux global de {{ cotisationRate100 }} %</div>
+                </div>
             </div>
-        </div>
+
+            <div class="u-table-wrap">
+                <div class="u-table-head u-table-cols-4">
+                    <div>Cotisation</div>
+                    <div class="u-table-right">Taux</div>
+                    <div class="u-table-right">Base</div>
+                    <div class="u-table-right">Montant</div>
+                </div>
+                {% for line in breakdown %}
+                <div class="u-table-row u-table-cols-4">
+                    <div style="font-weight:500;">{{ line.label }}</div>
+                    <div class="u-table-right u-table-mono" style="color:var(--muted);">{{ line.rate|number_format(1, ',', '') }} %</div>
+                    <div class="u-table-right u-table-mono" style="color:var(--muted);">{{ declaration.revenue|number_format(0, ',', ' ') }} €</div>
+                    <div class="u-table-right u-table-mono" style="font-weight:700;">{{ line.amt|number_format(0, ',', ' ') }} €</div>
+                </div>
+                {% endfor %}
+                <div class="u-table-foot u-table-cols-4">
+                    <div style="font-weight:700;color:var(--accent);">Total cotisations</div>
+                    <div class="u-table-right u-table-mono" style="color:var(--accent);font-weight:700;">{{ cotisationRate100 }} %</div>
+                    <div></div>
+                    <div class="u-table-right u-table-mono" style="font-weight:700;color:var(--accent);font-size:15px;">{{ declaration.cotisationAmount|number_format(0, ',', ' ') }} €</div>
+                </div>
+            </div>
+
+            <div class="u-vfl-row">
+                <div class="u-vfl-icon">⚡</div>
+                <div style="flex:1;">
+                    <div style="font-size:13px;font-weight:700;">Versement libératoire d'IR · 2,2 %</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:1px;">
+                        Tu paies ton impôt sur le revenu en même temps que tes cotisations. Choix annuel — valable toute l'année.
+                    </div>
+                </div>
+                <div class="u-toggle u-toggle-on">
+                    <div class="u-toggle-thumb"></div>
+                </div>
+            </div>
+        </section>
+
+        {# Historique des déclarations #}
+        {% if history %}
+        <section class="u-panel">
+            <div class="u-panel-head">
+                <div>
+                    <div class="u-panel-title">Historique des déclarations</div>
+                    <div class="u-panel-sub">Tes {{ history|length }} dernière{{ history|length > 1 ? 's' : '' }} échéance{{ history|length > 1 ? 's' : '' }}</div>
+                </div>
+                <a href="{{ path('app_urssaf') }}" class="u-panel-action">Tout l'historique →</a>
+            </div>
+
+            <div class="u-table-wrap">
+                <div class="u-table-head u-table-cols-6">
+                    <div>Période</div>
+                    <div>Dates</div>
+                    <div class="u-table-right">CA déclaré</div>
+                    <div class="u-table-right">URSSAF</div>
+                    <div class="u-table-right">Taux</div>
+                    <div class="u-table-right">Statut</div>
+                </div>
+                {% for h in history %}
+                <div class="u-table-row u-table-cols-6">
+                    <div>
+                        <a href="{{ path('app_urssaf_show', {id: h.id}) }}"
+                           style="font-weight:700;font-family:var(--font-mono);font-size:12px;color:var(--fg);text-decoration:none;">{{ h.periodLabel }}</a>
+                    </div>
+                    <div style="color:var(--muted);font-size:12px;">
+                        {% if h.periodStart and h.periodEnd %}{{ h.periodStart|date('d/m') }} – {{ h.periodEnd|date('d/m/Y') }}{% endif %}
+                    </div>
+                    <div class="u-table-right u-table-mono" style="font-weight:600;">{{ h.revenue|number_format(0, ',', ' ') }} €</div>
+                    <div class="u-table-right u-table-mono" style="color:var(--muted);">{{ h.cotisationAmount|number_format(0, ',', ' ') }} €</div>
+                    <div class="u-table-right" style="color:var(--muted);font-size:12px;">{{ (h.cotisationRate * 100)|number_format(1, ',', '') }} %</div>
+                    <div class="u-table-right">
+                        {% if h.declared %}
+                            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:oklch(58% 0.11 145 / .15);color:oklch(40% 0.12 145);font-size:10.5px;font-weight:700;">
+                                ✓ Payée
+                            </span>
+                        {% else %}
+                            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:#fff7ed;color:#c2410c;font-size:10.5px;font-weight:700;">
+                                ◷ En attente
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
         {% endif %}
 
-        <div class="card" style="margin-top:0;">
+    </div>{# /col-main #}
+
+    {# ── RIGHT ─────────────────────────────────────────────────────────── #}
+    <aside class="u-col-side">
+
+        {# Comment ça marche #}
+        <section class="u-panel">
+            <div class="u-panel-head">
+                <div>
+                    <div class="u-panel-title">Comment ça marche</div>
+                    <div class="u-panel-sub">2 étapes pour déclarer</div>
+                </div>
+            </div>
+            <div class="u-steps">
+                <div class="u-step" style="padding-bottom:18px;">
+                    <div class="u-step-line" style="background:var(--sage);"></div>
+                    <div class="u-step-num u-step-num-done">✓</div>
+                    <div class="u-step-body">
+                        <div class="u-step-title" style="color:var(--fg);">On calcule ce qu'il faut déclarer</div>
+                        <div class="u-step-desc">À partir de tes factures payées sur la période, au taux exact de ton activité.</div>
+                    </div>
+                </div>
+                <div class="u-step">
+                    <div class="u-step-num u-step-num-active">2</div>
+                    <div class="u-step-body">
+                        <div class="u-step-title" style="color:var(--accent);">Tu reportes sur urssaf.fr</div>
+                        <div class="u-step-desc">Connecte-toi à ton compte URSSAF et recopie les montants ci-dessous dans les cases correspondantes.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {# Cases à remplir sur urssaf.fr #}
+        <section class="u-panel">
+            <div class="u-panel-head">
+                <div>
+                    <div class="u-panel-title">Cases à remplir sur urssaf.fr</div>
+                    <div class="u-panel-sub">Libellés exacts du formulaire</div>
+                </div>
+            </div>
+            <div class="u-cases-wrap">
+                {% set cases = [
+                    { code: 'L1', label: 'CA · prestations de services BNC', val: declaration.revenue, alt: false },
+                    { code: 'L2', label: 'CA · prestations de services BIC', val: 0, alt: false },
+                    { code: 'L3', label: 'CA · ventes de marchandises BIC',  val: 0, alt: false },
+                    { code: 'VFL', label: 'Versement libératoire IR (option)', val: libAmount, alt: true },
+                ] %}
+                {% for case in cases %}
+                <div class="u-case-row">
+                    <span class="u-case-code {{ case.alt ? 'u-case-code-warm' : 'u-case-code-blue' }}">{{ case.code }}</span>
+                    <span class="u-case-label">{{ case.label }}</span>
+                    <span class="u-case-val" style="{{ case.val == 0 ? 'color:var(--subtle);' : '' }}">{{ case.val|number_format(0, ',', ' ') }} €</span>
+                    {% if case.val > 0 %}
+                        <button class="u-case-copy" title="Copier" onclick="copyVal('{{ case.val|number_format(0) }}')">📋</button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <button class="u-copy-all" onclick="copyAll()">
+                📋 Copier toutes les valeurs
+            </button>
+        </section>
+
+        {# Demande à l'IA #}
+        <div class="u-ai-card">
+            <div class="u-ai-head">
+                <div class="u-ai-icon">✦</div>
+                <div>
+                    <div style="font-size:13px;font-weight:700;">Demande à l'IA</div>
+                    <div style="font-size:11px;color:var(--muted);">Tes questions URSSAF, en clair</div>
+                </div>
+            </div>
+            <div class="u-ai-questions">
+                <a href="{{ path('app_ai') }}?q=Pourquoi+mes+cotisations+URSSAF+ont-elles+augmenté+ce+trimestre" class="u-ai-q">
+                    <span class="u-ai-q-arrow">›</span>
+                    <span>Pourquoi mon montant augmente vs la période précédente ?</span>
+                </a>
+                <a href="{{ path('app_ai') }}?q=Qu%27est-ce+que+la+CSG-CRDS" class="u-ai-q">
+                    <span class="u-ai-q-arrow">›</span>
+                    <span>Qu'est-ce que la CSG-CRDS ?</span>
+                </a>
+                <a href="{{ path('app_ai') }}?q=Quand+passer+en+SASU+au+lieu+de+micro-entreprise" class="u-ai-q">
+                    <span class="u-ai-q-arrow">›</span>
+                    <span>Quand passer en SASU ?</span>
+                </a>
+                <a href="{{ path('app_ai') }}?q=Simuler+une+déclaration+mensuelle+URSSAF" class="u-ai-q">
+                    <span class="u-ai-q-arrow">›</span>
+                    <span>Simuler une déclaration mensuelle</span>
+                </a>
+            </div>
+        </div>
+
+        {# Actions rapides #}
+        <section class="u-panel" style="padding:14px 16px;">
+            <div class="u-panel-title" style="margin-bottom:10px;">Actions</div>
             <div style="display:flex;flex-direction:column;gap:8px;">
-                <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="btn btn-secondary" style="width:100%;text-align:center;">
-                    Modifier la déclaration
-                </a>
-                <a href="{{ path('app_urssaf_export_csv', {id: declaration.id}) }}" class="btn btn-secondary" style="width:100%;text-align:center;">
-                    ↓ Exporter cette déclaration (CSV)
-                </a>
+                <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="u-btn" style="justify-content:center;">✏ Modifier la déclaration</a>
+                <a href="{{ path('app_urssaf_export_csv', {id: declaration.id}) }}" class="u-btn" style="justify-content:center;">↓ Exporter en CSV</a>
                 <form method="post" action="{{ path('app_urssaf_delete', {id: declaration.id}) }}"
                       data-confirm="Supprimer cette déclaration ?" data-confirm-variant="danger">
                     <input type="hidden" name="_token" value="{{ csrf_token('delete_urssaf_' ~ declaration.id) }}">
                     <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Supprimer</button>
                 </form>
             </div>
-        </div>
-    </div>
+        </section>
 
+    </aside>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function copyVal(val) {
+    navigator.clipboard?.writeText(val).then(() => {
+        const el = event.target;
+        const orig = el.textContent;
+        el.textContent = '✓';
+        setTimeout(() => { el.textContent = orig; }, 1200);
+    });
+}
+function copyAll() {
+    const lines = [
+        'L1 (CA BNC services) : {{ declaration.revenue|number_format(0) }} €',
+        'L2 (CA BIC services) : 0 €',
+        'L3 (CA BIC commerce) : 0 €',
+        'VFL (Versement libératoire) : {{ libAmount|number_format(0) }} €',
+    ];
+    navigator.clipboard?.writeText(lines.join('\n')).then(() => {
+        const btn = document.querySelector('.u-copy-all');
+        const orig = btn.textContent;
+        btn.textContent = '✓ Copié !';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+}
+</script>
 {% endblock %}

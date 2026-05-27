@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Invoice;
 use App\Entity\UrssafDeclaration;
 use App\Repository\InvoiceRepository;
 use App\Repository\UrssafDeclarationRepository;
@@ -125,13 +126,97 @@ class UrssafController extends AbstractController
     }
 
     #[Route('/{id}', name: '_show')]
-    public function show(UrssafDeclaration $declaration): Response
-    {
+    public function show(
+        UrssafDeclaration $declaration,
+        UrssafDeclarationRepository $repo,
+        InvoiceRepository $invoiceRepo,
+    ): Response {
         if ($declaration->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
 
-        return $this->render('urssaf/show.html.twig', ['declaration' => $declaration]);
+        $user = $this->getUser();
+
+        // 5 previous declarations for history
+        $allDecls = $repo->findBy(['user' => $user], ['periodStart' => 'DESC'], 7);
+        $history  = array_slice(
+            array_values(array_filter($allDecls, fn($d) => $d->getId() !== $declaration->getId())),
+            0, 5
+        );
+
+        // Monthly revenue breakdown for the period
+        $monthlyBreakdown = $this->buildMonthlyBreakdown($declaration, $invoiceRepo);
+
+        // Due date ≈ last day of the month following period end
+        $periodEnd = $declaration->getPeriodEnd();
+        $dueDate   = $periodEnd?->modify('last day of next month');
+        $daysLeft  = null;
+        if ($dueDate) {
+            $diff     = (new \DateTimeImmutable())->diff($dueDate);
+            $daysLeft = $diff->invert ? 0 : (int) $diff->days;
+        }
+
+        // Proportional cotisation breakdown
+        $rev    = (float) $declaration->getRevenue();
+        $total  = (float) $declaration->getCotisationAmount();
+        $rates  = [
+            ['label' => 'Maladie · maternité',      'rate' => 6.2],
+            ['label' => 'Retraite de base',          'rate' => 8.2],
+            ['label' => 'Retraite complémentaire',   'rate' => 1.4],
+            ['label' => 'CSG · CRDS',                'rate' => 6.7],
+            ['label' => 'Indemnités journalières',   'rate' => 0.3],
+            ['label' => 'Formation professionnelle', 'rate' => 0.2],
+        ];
+        $sumRates  = array_sum(array_column($rates, 'rate'));
+        $breakdown = array_map(
+            fn($r) => [...$r, 'base' => $rev, 'amt' => (int) round($total * $r['rate'] / $sumRates)],
+            $rates
+        );
+
+        // Versement libératoire (2.2%) — indicative, not persisted
+        $libAmount = (int) round($rev * 0.022);
+
+        // YTD cumulated revenue
+        $year       = (int) (($declaration->getPeriodStart() ?? new \DateTimeImmutable())->format('Y'));
+        $ytdRevenue = $invoiceRepo->getYearRevenue($user, $year);
+
+        return $this->render('urssaf/show.html.twig', [
+            'declaration'       => $declaration,
+            'history'           => $history,
+            'monthlyBreakdown'  => $monthlyBreakdown,
+            'dueDate'           => $dueDate,
+            'daysLeft'          => $daysLeft,
+            'breakdown'         => $breakdown,
+            'libAmount'         => $libAmount,
+            'ytdRevenue'        => $ytdRevenue,
+            'thresholdServices' => UrssafDeclaration::THRESHOLD_TVA_SERVICES,
+        ]);
+    }
+
+    private function buildMonthlyBreakdown(UrssafDeclaration $d, InvoiceRepository $repo): array
+    {
+        $start = $d->getPeriodStart();
+        $end   = $d->getPeriodEnd();
+        if (!$start || !$end) {
+            return [];
+        }
+
+        $user   = $d->getUser();
+        $names  = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+        $result = [];
+        $cursor = new \DateTimeImmutable($start->format('Y-m-01'));
+        $guard  = 0;
+
+        while ($cursor <= $end && $guard++ < 12) {
+            $mEnd = new \DateTimeImmutable($cursor->format('Y-m-t') . ' 23:59:59');
+            $result[] = [
+                'label'  => $names[(int) $cursor->format('n') - 1],
+                'amount' => round($repo->getRevenueForPeriod($user, $cursor, $mEnd), 2),
+            ];
+            $cursor = new \DateTimeImmutable($cursor->modify('first day of next month')->format('Y-m-01'));
+        }
+
+        return $result;
     }
 
     #[Route('/{id}/delete', name: '_delete', methods: ['POST'])]
