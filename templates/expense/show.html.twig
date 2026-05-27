@@ -38,6 +38,12 @@
                 <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Mode de paiement</div>
                 <div>{{ expense.paymentMethod ?: '—' }}</div>
             </div>
+            {% if expense.invoiceNumber %}
+            <div>
+                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">N° de facture</div>
+                <div style="font-size:15px;font-weight:600;font-family:'JetBrains Mono',monospace;">{{ expense.invoiceNumber }}</div>
+            </div>
+            {% endif %}
         </div>
 
         <div style="border-top:2px solid #e5e7eb; padding-top:16px;">

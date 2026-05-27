@@ -158,27 +158,37 @@
                     </div>
                 </div>
 
+                <div class="exp-form-grid">
+                    <div>
+                        <div class="exp-field-header">
+                            <label for="field-invoice-number">N° de facture</label>
+                        </div>
+                        <input type="text" name="invoice_number" id="field-invoice-number" class="form-control"
+                               value="{{ expense.invoiceNumber }}" placeholder="Ex : FAC-2024-001">
+                    </div>
+                    <div>
+                        <div class="exp-field-header">
+                            <label for="field-payment-method">Mode de paiement</label>
+                        </div>
+                        <select name="payment_method" id="field-payment-method" class="form-control">
+                            <option value="">— Non précisé —</option>
+                            <option value="carte"       {% if expense.paymentMethod == 'carte' %}selected{% endif %}>Carte bancaire</option>
+                            <option value="especes"     {% if expense.paymentMethod == 'especes' %}selected{% endif %}>Espèces</option>
+                            <option value="virement"    {% if expense.paymentMethod == 'virement' %}selected{% endif %}>Virement</option>
+                            <option value="cheque"      {% if expense.paymentMethod == 'cheque' %}selected{% endif %}>Chèque</option>
+                            <option value="prelevement" {% if expense.paymentMethod == 'prelevement' %}selected{% endif %}>Prélèvement</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div>
                     <div class="exp-field-header">
                         <label for="field-notes">Notes</label>
                     </div>
                     <textarea name="notes" id="field-notes" class="form-control" rows="2"
-                              placeholder="Détails, numéro de facture fournisseur…">{{ expense.notes }}</textarea>
+                              placeholder="Détails complémentaires…">{{ expense.notes }}</textarea>
                 </div>
 
-                <div>
-                    <div class="exp-field-header">
-                        <label>Mode de paiement</label>
-                    </div>
-                    <select name="payment_method" class="form-control">
-                        <option value="">— Non précisé —</option>
-                        <option value="carte"       {% if expense.paymentMethod == 'carte' %}selected{% endif %}>Carte bancaire</option>
-                        <option value="especes"     {% if expense.paymentMethod == 'especes' %}selected{% endif %}>Espèces</option>
-                        <option value="virement"    {% if expense.paymentMethod == 'virement' %}selected{% endif %}>Virement</option>
-                        <option value="cheque"      {% if expense.paymentMethod == 'cheque' %}selected{% endif %}>Chèque</option>
-                        <option value="prelevement" {% if expense.paymentMethod == 'prelevement' %}selected{% endif %}>Prélèvement</option>
-                    </select>
-                </div>
             </div>
 
             {# Montants #}
@@ -399,6 +409,14 @@ function fillFormFromOcr(data) {
         for (const opt of sel.options) {
             if (opt.dataset.slug === slug) { sel.value = opt.value; break; }
         }
+    }
+
+    if (data.payment_method) {
+        document.getElementById('field-payment-method').value = data.payment_method;
+    }
+
+    if (data.invoice_number) {
+        document.getElementById('field-invoice-number').value = data.invoice_number;
     }
 
     recalc();

@@ -207,6 +207,7 @@ class ExpenseController extends AbstractController
                 ->setTva(number_format($tva, 2, '.', ''))
                 ->setTvaRate(number_format((float) $tvaRate, 2, '.', ''))
                 ->setPaymentMethod($request->request->get('payment_method') ?: null)
+                ->setInvoiceNumber($request->request->get('invoice_number') ?: null)
                 ->setDeductible((bool) $request->request->get('deductible', true))
                 ->setNotes($request->request->get('notes') ?: null)
                 ->setCategory($category)

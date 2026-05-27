@@ -135,8 +135,18 @@ class ReceiptScannerService
                     $extracted['tva_rate'] ??= $this->parseTaxRate($normVal, $rawText);
                     break;
 
+                case 'receipt_id':
+                case 'invoice_id':
+                case 'invoice_number':
+                    $extracted['invoice_number'] ??= $normVal?->getText() ?: $rawText;
+                    break;
+
+                case 'payment_type':
+                    $extracted['payment_method'] ??= $this->mapPaymentMethod($normVal?->getText() ?: $rawText);
+                    break;
+
                 case 'purchase_type':
-                    $extracted['category'] ??= $this->mapCategory($rawText);
+                    $extracted['category'] ??= $this->mapCategory($normVal?->getText() ?: $rawText);
                     break;
             }
         }
@@ -156,16 +166,18 @@ class ReceiptScannerService
             : 0.0;
 
         return [
-            'vendor'     => isset($extracted['vendor'])     ? trim((string) $extracted['vendor'])     : null,
-            'date'       => $extracted['date']       ?? null,
-            'amount_ttc' => $extracted['amount_ttc'] ?? null,
-            'amount_ht'  => $extracted['amount_ht']  ?? null,
-            'tva'        => $extracted['tva']        ?? null,
-            'tva_rate'   => $extracted['tva_rate']   ?? null,
-            'category'   => $extracted['category']   ?? null,
-            'notes'      => null,
-            'confidence' => $confidence,
-            'raw'        => '',
+            'vendor'         => isset($extracted['vendor']) ? trim((string) $extracted['vendor']) : null,
+            'date'           => $extracted['date']           ?? null,
+            'amount_ttc'     => $extracted['amount_ttc']     ?? null,
+            'amount_ht'      => $extracted['amount_ht']      ?? null,
+            'tva'            => $extracted['tva']            ?? null,
+            'tva_rate'       => $extracted['tva_rate']       ?? null,
+            'category'       => $extracted['category']       ?? null,
+            'invoice_number' => $extracted['invoice_number'] ?? null,
+            'payment_method' => $extracted['payment_method'] ?? null,
+            'notes'          => null,
+            'confidence'     => $confidence,
+            'raw'            => '',
         ];
     }
 
@@ -226,6 +238,18 @@ class ReceiptScannerService
             }
         }
         return round($rate, 1);
+    }
+
+    private function mapPaymentMethod(string $paymentType): string
+    {
+        return match (strtoupper(trim($paymentType))) {
+            'CREDIT_CARD', 'DEBIT_CARD', 'CARD' => 'carte',
+            'CASH'                               => 'especes',
+            'CHECK', 'CHEQUE'                    => 'cheque',
+            'BANK_TRANSFER', 'WIRE_TRANSFER'     => 'virement',
+            'DIRECT_DEBIT'                       => 'prelevement',
+            default                              => '',
+        };
     }
 
     private function mapCategory(string $purchaseType): string

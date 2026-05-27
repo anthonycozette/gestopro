@@ -72,6 +72,9 @@ class Expense
 
     private ?File $receiptFile = null;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $invoiceNumber = null;
+
     // Données OCR extraites par Claude Vision
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $ocrData = null;
@@ -136,6 +139,9 @@ class Expense
 
     public function getOcrData(): ?array { return $this->ocrData; }
     public function setOcrData(?array $data): static { $this->ocrData = $data; return $this; }
+
+    public function getInvoiceNumber(): ?string { return $this->invoiceNumber; }
+    public function setInvoiceNumber(?string $invoiceNumber): static { $this->invoiceNumber = $invoiceNumber; return $this; }
 
     public function getOcrConfidence(): ?string { return $this->ocrConfidence; }
     public function setOcrConfidence(?string $confidence): static { $this->ocrConfidence = $confidence; return $this; }
