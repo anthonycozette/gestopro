@@ -95,6 +95,12 @@ class UrssafController extends AbstractController
             }
         }
 
+        // Detect preferred periodicity from most recent declarations
+        $periodicities = array_map(fn($d) => $d->getPeriodicity(), array_slice($declarations, 0, 6));
+        $counts = array_count_values($periodicities);
+        $preferredPeriodicity = ($counts['monthly'] ?? 0) > ($counts['quarterly'] ?? 0) ? 'monthly' : 'quarterly';
+
+        // Quarterly calendar (T1–T4)
         $qDefs = [
             'T1' => [1, 3, 'Jan·Fév·Mar'], 'T2' => [4, 6, 'Avr·Mai·Jun'],
             'T3' => [7, 9, 'Jul·Aoû·Sep'], 'T4' => [10, 12, 'Oct·Nov·Déc'],
@@ -131,18 +137,56 @@ class UrssafController extends AbstractController
             ];
         }
 
+        // Monthly calendar (Jan–Déc)
+        $mNames = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                   'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+        $calendarMonthly = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $mEndDate = new \DateTimeImmutable(
+                $curYear . '-' . str_pad($m, 2, '0', STR_PAD_LEFT) . '-01'
+            );
+            $mEndDate = new \DateTimeImmutable($mEndDate->format('Y-m-t'));
+            $mDueDate = $mEndDate->modify('last day of next month');
+            $diff     = $now->diff($mDueDate);
+            $mOverdue = (bool) $diff->invert;
+            $mDays    = $mOverdue ? 0 : (int) $diff->days;
+
+            $matchDecl = null;
+            foreach ($declarations as $d) {
+                $ds = $d->getPeriodStart();
+                if ($ds && (int) $ds->format('Y') === $curYear
+                    && (int) $ds->format('n') === $m
+                    && $d->getPeriodicity() === 'monthly') {
+                    $matchDecl = $d;
+                    break;
+                }
+            }
+
+            $calendarMonthly[] = [
+                'label'       => $mNames[$m - 1],
+                'short'       => mb_substr($mNames[$m - 1], 0, 3),
+                'num'         => $m,
+                'dueDate'     => $mDueDate,
+                'daysLeft'    => $mDays,
+                'overdue'     => $mOverdue,
+                'declaration' => $matchDecl,
+            ];
+        }
+
         return $this->render('urssaf/index.html.twig', [
-            'declarations'    => $enriched,
-            'nextPending'     => $nextPending,
-            'nextLib'         => $nextLib,
-            'nextDaysLeft'    => $nextDaysLeft,
-            'nextDueDate'     => $nextDueDate,
-            'curYear'         => $curYear,
-            'yearRevenue'     => $yearRevenue,
-            'yearCotisation'  => $yearCotisation,
-            'yearLib'         => $yearLib,
-            'calendar'        => $calendar,
-            'thresholdServices' => UrssafDeclaration::THRESHOLD_TVA_SERVICES,
+            'declarations'          => $enriched,
+            'nextPending'           => $nextPending,
+            'nextLib'               => $nextLib,
+            'nextDaysLeft'          => $nextDaysLeft,
+            'nextDueDate'           => $nextDueDate,
+            'curYear'               => $curYear,
+            'yearRevenue'           => $yearRevenue,
+            'yearCotisation'        => $yearCotisation,
+            'yearLib'               => $yearLib,
+            'calendar'              => $calendar,
+            'calendarMonthly'       => $calendarMonthly,
+            'preferredPeriodicity'  => $preferredPeriodicity,
+            'thresholdServices'     => UrssafDeclaration::THRESHOLD_TVA_SERVICES,
         ]);
     }
 
