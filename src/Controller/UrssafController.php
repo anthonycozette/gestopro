@@ -214,6 +214,11 @@ class UrssafController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        if ($declaration->isDeclared()) {
+            $this->addFlash('error', 'Cette déclaration est verrouillée — elle a déjà été payée.');
+            return $this->redirectToRoute('app_urssaf_show', ['id' => $declaration->getId()]);
+        }
+
         $params = $this->formParams($declaration, 'Modifier la déclaration', true);
 
         if ($request->isMethod('POST')) {
@@ -365,6 +370,27 @@ class UrssafController extends AbstractController
         }
 
         return $result;
+    }
+
+    #[Route('/{id}/mark-paid', name: '_mark_paid', methods: ['POST'])]
+    public function markPaid(UrssafDeclaration $declaration, Request $request, EntityManagerInterface $em): Response
+    {
+        if ($declaration->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('mark_paid_' . $declaration->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token CSRF invalide.');
+            return $this->redirectToRoute('app_urssaf_show', ['id' => $declaration->getId()]);
+        }
+
+        if (!$declaration->isDeclared()) {
+            $declaration->setDeclared(true)->setDeclaredAt(new \DateTimeImmutable());
+            $em->flush();
+            $this->addFlash('success', 'Déclaration ' . $declaration->getPeriodLabel() . ' marquée comme payée.');
+        }
+
+        return $this->redirectToRoute('app_urssaf_show', ['id' => $declaration->getId()]);
     }
 
     #[Route('/{id}/delete', name: '_delete', methods: ['POST'])]

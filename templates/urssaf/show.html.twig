@@ -71,9 +71,9 @@
     <div class="u-hero-grid">
 
         <div>
-            <div class="u-hero-eyebrow">
-                <span class="u-hero-eyebrow-dot"></span>
-                À déclarer &amp; payer
+            <div class="u-hero-eyebrow" style="{{ declaration.declared ? 'color:var(--sage);' : '' }}">
+                <span class="u-hero-eyebrow-dot" style="{{ declaration.declared ? 'background:var(--sage);' : '' }}"></span>
+                {% if declaration.declared %}Payée{% if declaration.declaredAt %} le {{ declaration.declaredAt|date('d/m/Y') }}{% endif %}{% else %}À déclarer &amp; payer{% endif %}
             </div>
             <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;">
                 <div class="u-hero-amount">{{ totalToPay|number_format(0, ',', ' ') }} €</div>
@@ -102,20 +102,22 @@
             </div>
 
             <div class="u-hero-actions">
-                <a href="https://www.urssaf.fr/accueil/services-en-ligne/tuto-declarer-en-ligne.html"
-                   target="_blank" rel="noopener noreferrer" class="u-btn u-btn-primary">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    Aller sur urssaf.fr
-                </a>
-                <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="u-btn">
-                    ✏ Modifier
-                </a>
                 {% if not declaration.declared %}
-                    <form method="post" action="{{ path('app_urssaf_edit', {id: declaration.id}) }}" style="display:inline;">
-                        <input type="hidden" name="declared" value="1">
-                        <input type="hidden" name="_redirect_show" value="1">
+                    <form method="post" action="{{ path('app_urssaf_mark_paid', {id: declaration.id}) }}" style="display:inline;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('mark_paid_' ~ declaration.id) }}">
+                        <button type="submit" class="u-btn u-btn-primary">
+                            ✓ Valider comme payée
+                        </button>
                     </form>
+                    <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="u-btn">
+                        ✏ Modifier
+                    </a>
                 {% endif %}
+                <a href="https://www.urssaf.fr/accueil/services-en-ligne/tuto-declarer-en-ligne.html"
+                   target="_blank" rel="noopener noreferrer" class="u-btn">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    urssaf.fr ↗
+                </a>
             </div>
         </div>
 
@@ -175,10 +177,12 @@
                     <div class="u-panel-title">Chiffre d'affaires déclaré</div>
                     <div class="u-panel-sub">Activité · {{ declaration.periodicity == 'monthly' ? 'Mensuelle' : 'Trimestrielle' }} · {{ declaration.periodStart ? declaration.periodStart|date('Y') : '' }}</div>
                 </div>
+                {% if not declaration.declared %}
                 <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="u-panel-action u-panel-action-muted">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Modifier le CA
                 </a>
+                {% endif %}
             </div>
 
             <div class="u-ca-row">
@@ -409,11 +413,28 @@
             </div>
         </div>
 
-        {# Actions rapides #}
+        {# Actions #}
         <section class="u-panel" style="padding:14px 16px;">
+            {% if declaration.declared %}
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:9px;background:#f0fdf4;border:1px solid #86efac;margin-bottom:12px;">
+                    <span style="font-size:16px;">🔒</span>
+                    <div>
+                        <div style="font-size:12.5px;font-weight:700;color:#15803d;">Déclaration verrouillée</div>
+                        <div style="font-size:11px;color:#16a34a;">Payée — modification impossible</div>
+                    </div>
+                </div>
+            {% endif %}
             <div class="u-panel-title" style="margin-bottom:10px;">Actions</div>
             <div style="display:flex;flex-direction:column;gap:8px;">
-                <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="u-btn" style="justify-content:center;">✏ Modifier la déclaration</a>
+                {% if not declaration.declared %}
+                    <form method="post" action="{{ path('app_urssaf_mark_paid', {id: declaration.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('mark_paid_' ~ declaration.id) }}">
+                        <button type="submit" class="u-btn u-btn-primary" style="width:100%;justify-content:center;">
+                            ✓ Valider comme payée
+                        </button>
+                    </form>
+                    <a href="{{ path('app_urssaf_edit', {id: declaration.id}) }}" class="u-btn" style="justify-content:center;">✏ Modifier</a>
+                {% endif %}
                 <a href="{{ path('app_urssaf_export_csv', {id: declaration.id}) }}" class="u-btn" style="justify-content:center;">↓ Exporter en CSV</a>
                 <form method="post" action="{{ path('app_urssaf_delete', {id: declaration.id}) }}"
                       data-confirm="Supprimer cette déclaration ?" data-confirm-variant="danger">
