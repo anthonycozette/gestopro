@@ -3,11 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\BalanceSheet;
-use App\Entity\ExpertMessage;
 use App\Entity\User;
-use App\Repository\AccountantInvitationRepository;
 use App\Repository\BalanceSheetRepository;
-use App\Repository\ExpertMessageRepository;
 use App\Repository\ExpenseRepository;
 use App\Repository\InvoiceRepository;
 use App\Repository\UrssafDeclarationRepository;
@@ -124,65 +121,6 @@ class BalanceSheetController extends AbstractController
             'preview' => $preview,
             'error'   => $error,
         ]);
-    }
-
-    #[Route('/mon-expert', name: '_my_expert')]
-    public function myExpert(
-        AccountantInvitationRepository $invitRepo,
-        ExpertMessageRepository        $msgRepo,
-        BalanceSheetRepository         $sheetRepo,
-    ): Response {
-        if ($redirect = $this->requireExpertPlan()) return $redirect;
-
-        /** @var User $user */
-        $user       = $this->getUser();
-        $invitation = $invitRepo->findActiveByUser($user);
-        $messages   = $invitation ? $msgRepo->findByInvitation($invitation) : [];
-        $submitted  = array_values(array_filter(
-            $sheetRepo->findByUser($user),
-            fn($s) => $s->getStatus() !== BalanceSheet::STATUS_DRAFT
-        ));
-
-        return $this->render('balance_sheet/my_expert.html.twig', [
-            'invitation' => $invitation,
-            'messages'   => $messages,
-            'submitted'  => $submitted,
-        ]);
-    }
-
-    #[Route('/mon-expert/message', name: '_expert_message', methods: ['POST'])]
-    public function sendExpertMessage(
-        Request                        $request,
-        AccountantInvitationRepository $invitRepo,
-        EntityManagerInterface         $em,
-    ): Response {
-        if ($redirect = $this->requireExpertPlan()) return $redirect;
-
-        /** @var User $user */
-        $user       = $this->getUser();
-        $invitation = $invitRepo->findActiveByUser($user);
-
-        if (!$invitation) {
-            $this->addFlash('error', 'Aucun expert-comptable associé.');
-            return $this->redirectToRoute('app_balance_sheet_my_expert');
-        }
-
-        if (!$this->isCsrfTokenValid('expert_msg', $request->request->get('_token'))) {
-            $this->addFlash('error', 'Token CSRF invalide.');
-            return $this->redirectToRoute('app_balance_sheet_my_expert');
-        }
-
-        $content = trim((string) $request->request->get('content'));
-        if ($content !== '') {
-            $msg = (new ExpertMessage())
-                ->setInvitation($invitation)
-                ->setSenderType(ExpertMessage::SENDER_CLIENT)
-                ->setContent($content);
-            $em->persist($msg);
-            $em->flush();
-        }
-
-        return $this->redirectToRoute('app_balance_sheet_my_expert');
     }
 
     #[Route('/{id}', name: '_show')]
