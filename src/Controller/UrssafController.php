@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Invoice;
 use App\Entity\UrssafDeclaration;
 use App\Repository\InvoiceRepository;
 use App\Repository\UrssafDeclarationRepository;
@@ -42,15 +41,107 @@ class UrssafController extends AbstractController
     #[Route('', name: '')]
     public function index(UrssafDeclarationRepository $repo): Response
     {
-        $declarations = $repo->findBy(['user' => $this->getUser()], ['periodStart' => 'DESC']);
+        $user = $this->getUser();
+        $declarations = $repo->findBy(['user' => $user], ['periodStart' => 'DESC']);
 
-        $totalRevenue    = array_sum(array_map(fn($d) => (float) $d->getRevenue(), $declarations));
-        $totalCotisation = array_sum(array_map(fn($d) => (float) $d->getCotisationAmount(), $declarations));
+        $now     = new \DateTimeImmutable();
+        $curYear = (int) $now->format('Y');
+
+        $yearRevenue    = 0.0;
+        $yearCotisation = 0.0;
+        $yearLib        = 0.0;
+
+        $enriched = [];
+        foreach ($declarations as $d) {
+            $rev   = (float) $d->getRevenue();
+            $cotis = (float) $d->getCotisationAmount();
+            $lib   = (int) round($rev * 0.022);
+            $periodEnd = $d->getPeriodEnd();
+            $dueDate   = $periodEnd?->modify('last day of next month');
+            $daysLeft  = null;
+            $overdue   = false;
+            if ($dueDate) {
+                $diff    = $now->diff($dueDate);
+                $overdue  = (bool) $diff->invert;
+                $daysLeft = $overdue ? 0 : (int) $diff->days;
+            }
+
+            if ((int) ($d->getPeriodStart()?->format('Y') ?? 0) === $curYear) {
+                $yearRevenue    += $rev;
+                $yearCotisation += $cotis;
+                $yearLib        += $lib;
+            }
+
+            $enriched[] = [
+                'd'        => $d,
+                'lib'      => $lib,
+                'dueDate'  => $dueDate,
+                'daysLeft' => $daysLeft,
+                'overdue'  => $overdue,
+            ];
+        }
+
+        $nextPending  = null;
+        $nextLib      = 0;
+        $nextDaysLeft = null;
+        $nextDueDate  = null;
+        foreach ($enriched as $e) {
+            if (!$e['d']->isDeclared()) {
+                $nextPending  = $e['d'];
+                $nextLib      = $e['lib'];
+                $nextDaysLeft = $e['daysLeft'];
+                $nextDueDate  = $e['dueDate'];
+                break;
+            }
+        }
+
+        $qDefs = [
+            'T1' => [1, 3, 'Jan·Fév·Mar'], 'T2' => [4, 6, 'Avr·Mai·Jun'],
+            'T3' => [7, 9, 'Jul·Aoû·Sep'], 'T4' => [10, 12, 'Oct·Nov·Déc'],
+        ];
+        $calendar = [];
+        foreach ($qDefs as $qLabel => [$mStart, $mEnd, $mLabel]) {
+            $qEndDate = new \DateTimeImmutable(
+                $curYear . '-' . str_pad($mEnd, 2, '0', STR_PAD_LEFT) . '-01'
+            );
+            $qEndDate = new \DateTimeImmutable($qEndDate->format('Y-m-t'));
+            $qDueDate = $qEndDate->modify('last day of next month');
+            $diff     = $now->diff($qDueDate);
+            $qOverdue = (bool) $diff->invert;
+            $qDays    = $qOverdue ? 0 : (int) $diff->days;
+
+            $matchDecl = null;
+            foreach ($declarations as $d) {
+                $ds = $d->getPeriodStart();
+                if ($ds && (int) $ds->format('Y') === $curYear
+                    && (int) $ds->format('n') === $mStart
+                    && $d->getPeriodicity() === 'quarterly') {
+                    $matchDecl = $d;
+                    break;
+                }
+            }
+
+            $calendar[] = [
+                'label'       => $qLabel,
+                'monthsLabel' => $mLabel,
+                'dueDate'     => $qDueDate,
+                'daysLeft'    => $qDays,
+                'overdue'     => $qOverdue,
+                'declaration' => $matchDecl,
+            ];
+        }
 
         return $this->render('urssaf/index.html.twig', [
-            'declarations'    => $declarations,
-            'totalRevenue'    => $totalRevenue,
-            'totalCotisation' => $totalCotisation,
+            'declarations'    => $enriched,
+            'nextPending'     => $nextPending,
+            'nextLib'         => $nextLib,
+            'nextDaysLeft'    => $nextDaysLeft,
+            'nextDueDate'     => $nextDueDate,
+            'curYear'         => $curYear,
+            'yearRevenue'     => $yearRevenue,
+            'yearCotisation'  => $yearCotisation,
+            'yearLib'         => $yearLib,
+            'calendar'        => $calendar,
             'thresholdServices' => UrssafDeclaration::THRESHOLD_TVA_SERVICES,
         ]);
     }
@@ -58,20 +149,18 @@ class UrssafController extends AbstractController
     #[Route('/new', name: '_new')]
     public function new(Request $request, EntityManagerInterface $em): Response
     {
+        $params = $this->formParams(new UrssafDeclaration(), 'Nouvelle déclaration', false);
+
         if ($request->isMethod('POST')) {
             $result = $this->handleForm($request, new UrssafDeclaration(), $em);
             if ($result instanceof UrssafDeclaration) {
                 $this->addFlash('success', 'Déclaration ' . $result->getPeriodLabel() . ' enregistrée.');
                 return $this->redirectToRoute('app_urssaf');
             }
-            return $this->render('urssaf/form.html.twig', [
-                'declaration' => new UrssafDeclaration(), 'error' => $result, 'title' => 'Nouvelle déclaration',
-            ]);
+            return $this->render('urssaf/form.html.twig', array_merge($params, ['error' => $result]));
         }
 
-        return $this->render('urssaf/form.html.twig', [
-            'declaration' => new UrssafDeclaration(), 'error' => null, 'title' => 'Nouvelle déclaration',
-        ]);
+        return $this->render('urssaf/form.html.twig', $params);
     }
 
     #[Route('/{id}/edit', name: '_edit')]
@@ -81,20 +170,35 @@ class UrssafController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        $params = $this->formParams($declaration, 'Modifier la déclaration', true);
+
         if ($request->isMethod('POST')) {
             $result = $this->handleForm($request, $declaration, $em);
             if ($result instanceof UrssafDeclaration) {
                 $this->addFlash('success', 'Déclaration modifiée.');
                 return $this->redirectToRoute('app_urssaf_show', ['id' => $declaration->getId()]);
             }
-            return $this->render('urssaf/form.html.twig', [
-                'declaration' => $declaration, 'error' => $result, 'title' => 'Modifier la déclaration',
-            ]);
+            return $this->render('urssaf/form.html.twig', array_merge($params, ['error' => $result]));
         }
 
-        return $this->render('urssaf/form.html.twig', [
-            'declaration' => $declaration, 'error' => null, 'title' => 'Modifier la déclaration',
-        ]);
+        return $this->render('urssaf/form.html.twig', $params);
+    }
+
+    private function formParams(UrssafDeclaration $declaration, string $title, bool $isEdit): array
+    {
+        return [
+            'declaration'  => $declaration,
+            'error'        => null,
+            'title'        => $title,
+            'isEdit'       => $isEdit,
+            'caEndpoint'   => $this->generateUrl('app_urssaf_ca_suggestion'),
+            'rates'        => [
+                ['value' => '0.2120', 'label' => 'Prestations de services BNC',     'short' => 'BNC',   'pct' => '21,2 %'],
+                ['value' => '0.2180', 'label' => 'Professions libérales CIPAV',      'short' => 'CIPAV', 'pct' => '21,8 %'],
+                ['value' => '0.1280', 'label' => 'Vente de marchandises (BIC)',      'short' => 'Vente', 'pct' => '12,8 %'],
+                ['value' => '0.2120', 'label' => 'Prestations de services BIC',      'short' => 'BIC',   'pct' => '21,2 %'],
+            ],
+        ];
     }
 
     #[Route('/{id}/export-csv', name: '_export_csv')]

@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ title }} — GestoPro{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/urssaf.css') }}">
+{% endblock %}
+
 {% block topbar %}
 <div class="topbar">
     <h1>{{ title }}</h1>
@@ -11,152 +15,484 @@
 {% endblock %}
 
 {% block body %}
-<form method="post">
-    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+<form method="post" id="wiz-form">
+{% if error %}<div class="alert alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
 
-    <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start;">
+{# Hidden inputs that hold the real POST values #}
+<input type="hidden" name="periodicity"     id="h-periodicity"  value="{{ declaration.periodicity ?: 'quarterly' }}">
+<input type="hidden" name="period_label"    id="h-period-label" value="{{ declaration.periodLabel }}">
+<input type="hidden" name="period_start"    id="h-period-start" value="{{ declaration.periodStart ? declaration.periodStart|date('Y-m-d') : '' }}">
+<input type="hidden" name="period_end"      id="h-period-end"   value="{{ declaration.periodEnd ? declaration.periodEnd|date('Y-m-d') : '' }}">
+<input type="hidden" name="cotisation_rate" id="h-cot-rate"     value="{{ declaration.cotisationRate ?: '0.2120' }}">
+<input type="hidden" name="revenue"         id="h-revenue"      value="{{ declaration.revenue != '0.00' ? declaration.revenue : '0' }}">
 
-        <div>
-            <div class="card">
-                <div class="card-title">Période de déclaration</div>
+{% if isEdit %}
+{# ── Edit mode: flat form ─────────────────────────────────────────────── #}
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+<div style="display:flex;flex-direction:column;gap:16px;">
 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Périodicité</label>
-                        <select name="periodicity" id="periodicity" class="form-control" onchange="updatePeriod()">
-                            <option value="quarterly" {% if declaration.periodicity != 'monthly' %}selected{% endif %}>Trimestrielle</option>
-                            <option value="monthly"   {% if declaration.periodicity == 'monthly' %}selected{% endif %}>Mensuelle</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Année</label>
-                        <select id="period-year" class="form-control" onchange="updatePeriod()">
-                            {% set currentYear = "now"|date('Y') %}
-                            {% for y in range(currentYear - 2, currentYear) %}
-                                <option value="{{ y }}" {% if y == currentYear %}selected{% endif %}>{{ y }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Période <span style="color:#ef4444">*</span></label>
-                    <select id="period-slot" class="form-control" onchange="fillPeriod()"></select>
-                </div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Début de période</label>
-                        <input type="date" name="period_start" id="period-start" class="form-control"
-                               value="{{ declaration.periodStart ? declaration.periodStart|date('Y-m-d') : '' }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Fin de période</label>
-                        <input type="date" name="period_end" id="period-end" class="form-control"
-                               value="{{ declaration.periodEnd ? declaration.periodEnd|date('Y-m-d') : '' }}" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Libellé de période <span style="color:#ef4444">*</span></label>
-                    <input type="text" name="period_label" id="period-label" class="form-control"
-                           value="{{ declaration.periodLabel }}" placeholder="Ex : 2025-T1 ou 2025-01" required>
-                </div>
-            </div>
+    <div class="u-step-section">
+        <div class="u-step-section-head">
+            <div class="u-step-section-num u-step-section-num-active">1</div>
+            <div class="u-step-section-title">Période de déclaration</div>
         </div>
-
-        <div>
-            <div class="card">
-                <div class="card-title">Chiffre d'affaires & cotisations</div>
-
+        <div class="u-step-section-body">
+            <div class="form-grid">
                 <div class="form-group">
-                    <label>Activité / taux de cotisation</label>
-                    <select name="cotisation_rate" id="cot-rate" class="form-control" onchange="recalc()">
-                        <option value="0.2120" {% if declaration.cotisationRate == '0.2120' or declaration.id is null %}selected{% endif %}>
-                            BNC / Services — 21,2 %
-                        </option>
-                        <option value="0.2180" {% if declaration.cotisationRate == '0.2180' %}selected{% endif %}>
-                            Libéral CIPAV — 21,8 %
-                        </option>
-                        <option value="0.1280" {% if declaration.cotisationRate == '0.1280' %}selected{% endif %}>
-                            BIC Commerce — 12,8 %
-                        </option>
-                        <option value="0.2120" {% if declaration.cotisationRate == '0.2120' %}selected{% endif %}>
-                            BIC Services — 21,2 %
-                        </option>
+                    <label>Périodicité</label>
+                    <select id="periodicity" class="form-control" onchange="syncHidden()">
+                        <option value="quarterly" {% if declaration.periodicity != 'monthly' %}selected{% endif %}>Trimestrielle</option>
+                        <option value="monthly"   {% if declaration.periodicity == 'monthly' %}selected{% endif %}>Mensuelle</option>
                     </select>
                 </div>
-
                 <div class="form-group">
-                    <label>CA déclaré (€) <span style="color:#ef4444">*</span></label>
-                    <div style="position:relative;">
-                        <input type="number" name="revenue" id="revenue" class="form-control"
-                               value="{{ declaration.revenue != '0.00' ? declaration.revenue : '' }}"
-                               min="0" step="0.01" placeholder="0,00" oninput="recalc()"
-                               style="padding-right:32px;" required>
-                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#6b7280;">€</span>
-                    </div>
-                    <div id="ca-hint" style="margin-top:6px; font-size:12px; color:#2563eb; display:none;">
-                        <span id="ca-hint-text"></span>
-                        <button type="button" id="ca-apply" onclick="applyCaSuggestion()"
-                                style="margin-left:8px; background:#2563eb; color:#fff; border:none; border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer;">
-                            Appliquer
-                        </button>
-                    </div>
+                    <label>Libellé</label>
+                    <input type="text" id="period-label" class="form-control" oninput="syncHidden()"
+                           value="{{ declaration.periodLabel }}" placeholder="2025-T2" required>
                 </div>
-
-                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:12px; margin-bottom:16px;">
-                    <div style="font-size:12px; color:#1e40af; margin-bottom:6px; font-weight:600;">Cotisation calculée</div>
-                    <div style="font-size:24px; font-weight:700; color:#1e40af;" id="display-cotisation">
-                        {{ declaration.cotisationAmount|number_format(2, ',', ' ') }} €
-                    </div>
-                    <div style="font-size:11px; color:#6b7280; margin-top:4px;">
-                        = CA × taux de cotisation
-                    </div>
+                <div class="form-group">
+                    <label>Début</label>
+                    <input type="date" id="period-start" class="form-control" oninput="syncHidden()"
+                           value="{{ declaration.periodStart ? declaration.periodStart|date('Y-m-d') : '' }}" required>
                 </div>
-
-                <div style="border-top:1px solid #e5e7eb; padding-top:12px; margin-bottom:16px;">
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:10px;">
-                        <input type="checkbox" name="declared" value="1" id="declared-check"
-                               {% if declaration.declared %}checked{% endif %}
-                               onchange="toggleDeclaredDate()"
-                               style="width:16px;height:16px;">
-                        Déjà déclarée sur urssaf.fr
-                    </label>
-
-                    <div id="declared-date-wrap" style="display:{% if declaration.declared %}block{% else %}none{% endif %}">
-                        <label style="font-size:13px; color:#374151;">Date de déclaration</label>
-                        <input type="date" name="declared_at" class="form-control"
-                               value="{{ declaration.declaredAt ? declaration.declaredAt|date('Y-m-d') : 'now'|date('Y-m-d') }}">
-                    </div>
+                <div class="form-group">
+                    <label>Fin</label>
+                    <input type="date" id="period-end" class="form-control" oninput="syncHidden()"
+                           value="{{ declaration.periodEnd ? declaration.periodEnd|date('Y-m-d') : '' }}" required>
                 </div>
-
-                <button type="submit" class="btn btn-primary" style="width:100%;">Enregistrer</button>
             </div>
         </div>
-
     </div>
+
+    <div class="u-step-section">
+        <div class="u-step-section-head">
+            <div class="u-step-section-num u-step-section-num-active">2</div>
+            <div class="u-step-section-title">Chiffre d'affaires & activité</div>
+        </div>
+        <div class="u-step-section-body">
+            <div class="u-activity-grid">
+            {% for r in rates %}
+                <label class="u-activity-opt {% if declaration.cotisationRate == r.value %}selected{% endif %}"
+                       onclick="selectRate(this, '{{ r.value }}')">
+                    <input type="radio" name="_rate_ui" value="{{ r.value }}"
+                           {% if declaration.cotisationRate == r.value %}checked{% endif %}>
+                    <div>
+                        <div class="u-activity-opt-label">{{ r.short }} — {{ r.pct }}</div>
+                        <div class="u-activity-opt-sub">{{ r.label }}</div>
+                    </div>
+                </label>
+            {% endfor %}
+            </div>
+            <div class="form-group">
+                <label>CA déclaré (€)</label>
+                <div style="position:relative;">
+                    <input type="number" id="revenue-input" class="form-control"
+                           value="{{ declaration.revenue != '0.00' ? declaration.revenue : '' }}"
+                           min="0" step="0.01" placeholder="0,00" oninput="onRevenueInput()"
+                           style="padding-right:32px;">
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);">€</span>
+                </div>
+                <div id="ca-hint" style="margin-top:6px;font-size:12px;color:var(--accent);display:none;">
+                    <span id="ca-hint-text"></span>
+                    <button type="button" onclick="applyCa()"
+                            style="margin-left:8px;background:var(--accent);color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">
+                        Appliquer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="u-step-section">
+        <div class="u-step-section-head">
+            <div class="u-step-section-num u-step-section-num-active">3</div>
+            <div class="u-step-section-title">Statut de déclaration</div>
+        </div>
+        <div class="u-step-section-body">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;">
+                <input type="checkbox" name="declared" value="1" id="declared-check"
+                       {% if declaration.declared %}checked{% endif %}
+                       onchange="toggleDeclaredDate()"
+                       style="width:16px;height:16px;accent-color:var(--accent);">
+                <span style="font-size:13px;font-weight:600;">Déjà déclarée sur urssaf.fr</span>
+            </label>
+            <div id="declared-date-wrap" style="display:{% if declaration.declared %}block{% else %}none{% endif %}">
+                <label style="font-size:13px;color:var(--muted);">Date de déclaration</label>
+                <input type="date" name="declared_at" class="form-control" style="max-width:200px;"
+                       value="{{ declaration.declaredAt ? declaration.declaredAt|date('Y-m-d') : 'now'|date('Y-m-d') }}">
+            </div>
+        </div>
+    </div>
+
+</div>
+<div>{% include 'urssaf/_form_sidebar.html.twig' ignore missing with {isEdit: true} %}</div>
+</div>
+
+<div style="margin-top:16px;text-align:right;">
+    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+</div>
+
+{% else %}
+{# ── New: 4-step wizard ───────────────────────────────────────────────── #}
+
+{# Stepper header #}
+<div class="u-wiz-header">
+    <div class="u-wiz-step">
+        <div class="u-wiz-num" id="wnum-1">1</div>
+        <div class="u-wiz-info">
+            <div class="u-wiz-title" id="wtitle-1">Période</div>
+            <div class="u-wiz-sub" id="wsub-1">Choisir la période</div>
+        </div>
+    </div>
+    <div class="u-wiz-connector" id="wconn-1"></div>
+    <div class="u-wiz-step">
+        <div class="u-wiz-num u-wiz-num-wait" id="wnum-2">2</div>
+        <div class="u-wiz-info">
+            <div class="u-wiz-title u-wiz-title-wait" id="wtitle-2">Chiffre d'affaires</div>
+            <div class="u-wiz-sub" id="wsub-2">CA et activité</div>
+        </div>
+    </div>
+    <div class="u-wiz-connector" id="wconn-2"></div>
+    <div class="u-wiz-step">
+        <div class="u-wiz-num u-wiz-num-wait" id="wnum-3">3</div>
+        <div class="u-wiz-info">
+            <div class="u-wiz-title u-wiz-title-wait" id="wtitle-3">Calcul auto</div>
+            <div class="u-wiz-sub" id="wsub-3">Cotisations calculées</div>
+        </div>
+    </div>
+    <div class="u-wiz-connector" id="wconn-3"></div>
+    <div class="u-wiz-step">
+        <div class="u-wiz-num u-wiz-num-wait" id="wnum-4">4</div>
+        <div class="u-wiz-info">
+            <div class="u-wiz-title u-wiz-title-wait" id="wtitle-4">Récapitulatif</div>
+            <div class="u-wiz-sub" id="wsub-4">Vérifier et enregistrer</div>
+        </div>
+    </div>
+</div>
+
+<div class="u-wiz-body">
+<div class="u-wiz-main">
+
+{# Step 1: Période #}
+<div id="step-1" class="u-step-section">
+    <div class="u-step-section-head">
+        <div class="u-step-section-num u-step-section-num-active" id="snum-1">1</div>
+        <div class="u-step-section-title" id="stitle-1">Période de déclaration</div>
+        <div id="step1-summary" class="u-step-section-summary" style="display:none;"></div>
+        <button type="button" id="step1-edit-btn" onclick="goToStep(1)"
+                style="display:none;font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-weight:600;font-family:inherit;">
+            Modifier
+        </button>
+    </div>
+    <div class="u-step-section-body" id="step1-body">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Périodicité</label>
+                <select id="periodicity" class="form-control" onchange="updatePeriod()">
+                    <option value="quarterly">Trimestrielle</option>
+                    <option value="monthly">Mensuelle</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Année</label>
+                <select id="period-year" class="form-control" onchange="updatePeriod()">
+                    {% set currentYear = "now"|date('Y') %}
+                    {% for y in range(currentYear - 2, currentYear) %}
+                        <option value="{{ y }}" {% if y == currentYear %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Sélectionner la période</label>
+            <select id="period-slot" class="form-control" onchange="fillPeriod()"></select>
+        </div>
+        <div class="form-grid" style="margin-top:4px;">
+            <div class="form-group">
+                <label>Début</label>
+                <input type="date" id="period-start" class="form-control" oninput="syncHidden()">
+            </div>
+            <div class="form-group">
+                <label>Fin</label>
+                <input type="date" id="period-end" class="form-control" oninput="syncHidden()">
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Step 2: CA #}
+<div id="step-2" class="u-step-section" style="display:none;">
+    <div class="u-step-section-head">
+        <div class="u-step-section-num u-step-section-num-active" id="snum-2">2</div>
+        <div class="u-step-section-title">Chiffre d'affaires</div>
+    </div>
+    <div class="u-step-section-body">
+
+        <div style="font-size:12.5px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px;">
+            Type d'activité
+        </div>
+        <div class="u-activity-grid" style="margin-bottom:20px;">
+        {% for r in rates %}
+            <label class="u-activity-opt {% if loop.first %}selected{% endif %}"
+                   onclick="selectRate(this, '{{ r.value }}')">
+                <input type="radio" name="_rate_ui" value="{{ r.value }}"
+                       {% if loop.first %}checked{% endif %}>
+                <div>
+                    <div class="u-activity-opt-label">{{ r.short }} — {{ r.pct }}</div>
+                    <div class="u-activity-opt-sub">{{ r.label }}</div>
+                </div>
+            </label>
+        {% endfor %}
+        </div>
+
+        <div style="font-size:12.5px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px;">
+            CA par mois
+        </div>
+        <div id="month-rows"></div>
+
+        <div style="margin-top:16px;padding:12px 14px;background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.14);border-radius:10px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;color:var(--muted);">Total CA</span>
+            <span style="font-size:20px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;" id="ca-total-display">0,00 €</span>
+        </div>
+    </div>
+</div>
+
+{# Step 3: Calcul auto #}
+<div id="step-3" class="u-step-section" style="display:none;">
+    <div class="u-step-section-head">
+        <div class="u-step-section-num u-step-section-num-active" id="snum-3">3</div>
+        <div class="u-step-section-title">Calcul automatique des cotisations</div>
+    </div>
+    <div class="u-step-section-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+            <div style="padding:16px;background:#f8f9fb;border-radius:10px;border:1px solid var(--bd);">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px;">CA déclaré</div>
+                <div style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;" id="calc-ca">—</div>
+            </div>
+            <div style="padding:16px;background:rgba(37,99,235,.05);border-radius:10px;border:1px solid rgba(37,99,235,.14);">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:6px;">Taux appliqué</div>
+                <div style="font-size:24px;font-weight:700;color:var(--accent);" id="calc-rate">—</div>
+            </div>
+        </div>
+        <div style="border:1px solid var(--bd);border-radius:10px;overflow:hidden;">
+            <div style="padding:10px 14px;background:#f8f9fb;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:grid;grid-template-columns:1fr 120px;">
+                <span>Poste de cotisation</span><span style="text-align:right;">Montant</span>
+            </div>
+            <div id="calc-breakdown"></div>
+            <div style="padding:12px 14px;border-top:2px solid var(--bd);background:rgba(37,99,235,.05);display:grid;grid-template-columns:1fr 120px;font-weight:700;">
+                <span style="font-size:13px;">Total cotisations URSSAF</span>
+                <span style="text-align:right;color:var(--accent);font-variant-numeric:tabular-nums;font-size:16px;" id="calc-total">—</span>
+            </div>
+        </div>
+        <div style="margin-top:12px;padding:12px 14px;background:oklch(64% 0.14 50 / .07);border:1px solid oklch(64% 0.14 50 / .2);border-radius:10px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <div style="font-size:12px;font-weight:700;color:oklch(40% 0.13 50);">Versement libératoire (IR 2,2 %)</div>
+                <div style="font-size:11px;color:var(--muted);">Indicatif — si option souscrite</div>
+            </div>
+            <span style="font-size:16px;font-weight:700;color:oklch(40% 0.13 50);font-variant-numeric:tabular-nums;" id="calc-lib">—</span>
+        </div>
+    </div>
+</div>
+
+{# Step 4: Récapitulatif #}
+<div id="step-4" class="u-step-section" style="display:none;">
+    <div class="u-step-section-head">
+        <div class="u-step-section-num u-step-section-num-active" id="snum-4">4</div>
+        <div class="u-step-section-title">Récapitulatif &amp; enregistrement</div>
+    </div>
+    <div class="u-step-section-body">
+        <div id="recap-content" style="margin-bottom:20px;"></div>
+        <div style="border-top:1px solid var(--bd);padding-top:16px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;">
+                <input type="checkbox" name="declared" value="1" id="declared-check"
+                       onchange="toggleDeclaredDate()"
+                       style="width:16px;height:16px;accent-color:var(--accent);">
+                <span style="font-size:13px;font-weight:600;">J'ai déjà déclaré sur urssaf.fr</span>
+            </label>
+            <div id="declared-date-wrap" style="display:none;">
+                <label style="font-size:13px;color:var(--muted);">Date de déclaration</label>
+                <input type="date" name="declared_at" class="form-control" style="max-width:200px;"
+                       value="{{ 'now'|date('Y-m-d') }}">
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>{# /u-wiz-main #}
+
+{# Right sidebar #}
+<div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="u-summary-card">
+        <div class="u-summary-title">Aperçu en direct</div>
+        <div class="u-summary-row">
+            <span class="u-summary-lbl">CA déclaré</span>
+            <span class="u-summary-val" id="prev-ca">0,00 €</span>
+        </div>
+        <div class="u-summary-row">
+            <span class="u-summary-lbl">Taux cotisations</span>
+            <span class="u-summary-val" id="prev-rate">21,2 %</span>
+        </div>
+        <div class="u-summary-row">
+            <span class="u-summary-lbl">Cotisations URSSAF</span>
+            <span class="u-summary-val" style="color:var(--accent);" id="prev-cotis">0,00 €</span>
+        </div>
+        <div class="u-summary-row">
+            <span class="u-summary-lbl">Versement libératoire</span>
+            <span class="u-summary-val" style="color:oklch(40% 0.13 50);" id="prev-lib">0,00 €</span>
+        </div>
+        <div class="u-summary-total">
+            <span class="u-summary-total-lbl">Total à payer</span>
+            <span class="u-summary-total-val" id="prev-total">0 €</span>
+        </div>
+    </div>
+
+    <div class="u-ai-card">
+        <div class="u-ai-head">
+            <div class="u-ai-icon">✦</div>
+            <div>
+                <div style="font-size:12px;font-weight:700;">Conseil IA</div>
+                <div style="font-size:11px;color:var(--muted);">Assistant comptable</div>
+            </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;" id="ai-tip">
+            Sélectionnez votre période pour commencer.
+        </div>
+    </div>
+
+    <div class="u-summary-card">
+        <div class="u-summary-title">Checklist</div>
+        <div class="u-checklist" id="checklist">
+            <div class="u-checklist-item" id="chk-1">
+                <div class="u-checklist-icon u-checklist-wait">○</div>
+                <span>Période sélectionnée</span>
+            </div>
+            <div class="u-checklist-item" id="chk-2">
+                <div class="u-checklist-icon u-checklist-wait">○</div>
+                <span>CA renseigné</span>
+            </div>
+            <div class="u-checklist-item" id="chk-3">
+                <div class="u-checklist-icon u-checklist-wait">○</div>
+                <span>Activité choisie</span>
+            </div>
+            <div class="u-checklist-item" id="chk-4">
+                <div class="u-checklist-icon u-checklist-wait">○</div>
+                <span>Prêt à enregistrer</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>{# /u-wiz-body #}
+
+{# Bottom nav #}
+<div class="u-wiz-nav">
+    <button type="button" id="btn-prev" onclick="prevStep()"
+            style="display:none;" class="u-btn">← Précédent</button>
+    <button type="button" id="btn-draft" onclick="saveDraft()"
+            class="u-wiz-nav-draft">Brouillon</button>
+    <span class="u-wiz-nav-step" id="nav-step-label">Étape 1 sur 4</span>
+    <div class="u-wiz-nav-spacer"></div>
+    <button type="button" id="btn-next" onclick="nextStep()" class="u-wiz-nav-continue">
+        Continuer <span>→</span>
+    </button>
+    <button type="submit" id="btn-submit" style="display:none;" class="u-wiz-nav-continue">
+        Enregistrer ✓
+    </button>
+</div>
+
+{% endif %}{# /isEdit #}
 </form>
 {% endblock %}
 
 {% block javascripts %}
 <script>
+const CA_ENDPOINT = '{{ caEndpoint }}';
+const BREAKDOWN_RATES = [
+    {label: 'Maladie · maternité',      r: 6.2},
+    {label: 'Retraite de base',          r: 8.2},
+    {label: 'Retraite complémentaire',   r: 1.4},
+    {label: 'CSG · CRDS',               r: 6.7},
+    {label: 'Indemnités journalières',   r: 0.3},
+    {label: 'Formation professionnelle', r: 0.2},
+];
+const SUM_RATES = BREAKDOWN_RATES.reduce((s, x) => s + x.r, 0);
+
 const QUARTERS = {
-    'T1': { label: '1er trimestre (Jan–Mar)', start: '-01-01', end: '-03-31' },
-    'T2': { label: '2e trimestre (Avr–Jun)',  start: '-04-01', end: '-06-30' },
-    'T3': { label: '3e trimestre (Jul–Sep)',  start: '-07-01', end: '-09-30' },
-    'T4': { label: '4e trimestre (Oct–Déc)', start: '-10-01', end: '-12-31' },
+    'T1': {label: '1er trimestre (Jan–Mar)', start: '-01-01', end: '-03-31', months: [['01','Janvier'],['02','Février'],['03','Mars']]},
+    'T2': {label: '2e trimestre  (Avr–Jun)', start: '-04-01', end: '-06-30', months: [['04','Avril'],['05','Mai'],['06','Juin']]},
+    'T3': {label: '3e trimestre  (Jul–Sep)', start: '-07-01', end: '-09-30', months: [['07','Juillet'],['08','Août'],['09','Septembre']]},
+    'T4': {label: '4e trimestre  (Oct–Déc)', start: '-10-01', end: '-12-31', months: [['10','Octobre'],['11','Novembre'],['12','Décembre']]},
 };
-const MONTHS = [
+const ALL_MONTHS = [
     ['01','Janvier'],['02','Février'],['03','Mars'],['04','Avril'],
     ['05','Mai'],['06','Juin'],['07','Juillet'],['08','Août'],
     ['09','Septembre'],['10','Octobre'],['11','Novembre'],['12','Décembre'],
 ];
 
+let currentStep = 1;
+let monthInputs  = [];
+let _caCache     = {};
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function fmt(n, dec = 2) {
+    return n.toLocaleString('fr-FR', {minimumFractionDigits: dec, maximumFractionDigits: dec});
+}
+
+function syncHidden() {
+    const ps = document.getElementById('period-start');
+    const pe = document.getElementById('period-end');
+    const pl = document.getElementById('period-label') || document.getElementById('period-slot');
+    if (ps) document.getElementById('h-period-start').value = ps.value;
+    if (pe) document.getElementById('h-period-end').value   = pe.value;
+    const periodicity = document.getElementById('periodicity');
+    if (periodicity) document.getElementById('h-periodicity').value = periodicity.value;
+    // period-label is set in fillPeriod for wizard mode
+    recalcPreview();
+    updateChecklist();
+}
+
+function selectRate(el, val) {
+    document.querySelectorAll('.u-activity-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('h-cot-rate').value = val;
+    recalcPreview();
+    updateChecklist();
+}
+
+function toggleDeclaredDate() {
+    const checked = document.getElementById('declared-check')?.checked;
+    const wrap = document.getElementById('declared-date-wrap');
+    if (wrap) wrap.style.display = checked ? 'block' : 'none';
+}
+
+// ── Edit mode helpers ─────────────────────────────────────────────────────
+
+let _caSuggestion = null;
+
+function onRevenueInput() {
+    const v = parseFloat(document.getElementById('revenue-input')?.value) || 0;
+    document.getElementById('h-revenue').value = v;
+    recalcPreview();
+    updateChecklist();
+}
+
+function applyCa() {
+    if (_caSuggestion === null) return;
+    const inp = document.getElementById('revenue-input');
+    if (inp) inp.value = _caSuggestion;
+    document.getElementById('h-revenue').value = _caSuggestion;
+    document.getElementById('ca-hint').style.display = 'none';
+    recalcPreview();
+}
+
+// ── Wizard-specific ───────────────────────────────────────────────────────
+
 function updatePeriod() {
-    const type = document.getElementById('periodicity').value;
-    const year = document.getElementById('period-year').value;
+    const type = document.getElementById('periodicity')?.value;
+    const year = document.getElementById('period-year')?.value;
     const sel  = document.getElementById('period-slot');
+    if (!sel) return;
     sel.innerHTML = '';
 
     if (type === 'quarterly') {
@@ -167,7 +503,7 @@ function updatePeriod() {
             sel.appendChild(opt);
         });
     } else {
-        MONTHS.forEach(([num, name]) => {
+        ALL_MONTHS.forEach(([num, name]) => {
             const opt = document.createElement('option');
             opt.value = num;
             opt.textContent = year + '-' + num + ' — ' + name;
@@ -177,73 +513,288 @@ function updatePeriod() {
     fillPeriod();
 }
 
-let _caSuggestion = null;
-
 function fillPeriod() {
-    const type = document.getElementById('periodicity').value;
-    const year = document.getElementById('period-year').value;
-    const slot = document.getElementById('period-slot').value;
-
+    const type = document.getElementById('periodicity')?.value;
+    const year = document.getElementById('period-year')?.value;
+    const slot = document.getElementById('period-slot')?.value;
     if (!slot) return;
 
-    let start, end, label;
+    let start, end, label, months;
     if (type === 'quarterly') {
-        start = year + QUARTERS[slot].start;
-        end   = year + QUARTERS[slot].end;
-        label = year + '-' + slot;
+        start  = year + QUARTERS[slot].start;
+        end    = year + QUARTERS[slot].end;
+        label  = year + '-' + slot;
+        months = QUARTERS[slot].months;
     } else {
-        const lastDay = new Date(year, parseInt(slot), 0).getDate();
-        start = year + '-' + slot + '-01';
-        end   = year + '-' + slot + '-' + String(lastDay).padStart(2, '0');
-        label = year + '-' + slot;
+        const lastDay = new Date(parseInt(year), parseInt(slot), 0).getDate();
+        start  = year + '-' + slot + '-01';
+        end    = year + '-' + slot + '-' + String(lastDay).padStart(2, '0');
+        label  = year + '-' + slot;
+        months = ALL_MONTHS.filter(([num]) => num === slot);
     }
 
-    document.getElementById('period-start').value = start;
-    document.getElementById('period-end').value   = end;
-    document.getElementById('period-label').value  = label;
+    const ps = document.getElementById('period-start');
+    const pe = document.getElementById('period-end');
+    if (ps) ps.value = start;
+    if (pe) pe.value = end;
+    document.getElementById('h-period-start').value = start;
+    document.getElementById('h-period-end').value   = end;
+    document.getElementById('h-period-label').value = label;
+    document.getElementById('h-periodicity').value  = type;
 
-    fetchCaSuggestion(start, end);
+    buildMonthRows(months, year);
+    syncHidden();
 }
 
-function fetchCaSuggestion(start, end) {
-    _caSuggestion = null;
-    document.getElementById('ca-hint').style.display = 'none';
+function buildMonthRows(months, year) {
+    const wrap = document.getElementById('month-rows');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    monthInputs = [];
 
-    fetch(`{{ path('app_urssaf_ca_suggestion') }}?start=${start}&end=${end}`)
-        .then(r => r.json())
-        .then(data => {
-            _caSuggestion = data.revenue;
-            const hint = document.getElementById('ca-hint');
-            const text = document.getElementById('ca-hint-text');
-            if (_caSuggestion > 0) {
-                text.textContent = `Factures payées sur la période : ${_caSuggestion.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € HT`;
-                hint.style.display = 'block';
-            }
-        })
-        .catch(() => {});
+    months.forEach(([num, name]) => {
+        const start = year + '-' + num + '-01';
+        const lastDay = new Date(parseInt(year), parseInt(num), 0).getDate();
+        const end = year + '-' + num + '-' + String(lastDay).padStart(2, '0');
+
+        const row = document.createElement('div');
+        row.className = 'u-month-row';
+        row.innerHTML = `
+            <div class="u-month-row-label">${name}</div>
+            <div class="u-month-row-input">
+                <input type="number" min="0" step="0.01" placeholder="0,00"
+                       data-month="${num}" oninput="onMonthInput()">
+                <span class="u-month-row-euro">€</span>
+            </div>
+            <button type="button" class="u-month-row-prefill" onclick="prefillMonth('${num}','${start}','${end}')">
+                Pré-remplir
+            </button>`;
+        wrap.appendChild(row);
+        monthInputs.push(row.querySelector('input'));
+    });
+    onMonthInput();
 }
 
-function applyCaSuggestion() {
-    if (_caSuggestion === null) return;
-    document.getElementById('revenue').value = _caSuggestion;
-    document.getElementById('ca-hint').style.display = 'none';
-    recalc();
+function onMonthInput() {
+    const total = monthInputs.reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0);
+    const disp = document.getElementById('ca-total-display');
+    if (disp) disp.textContent = fmt(total) + ' €';
+    document.getElementById('h-revenue').value = total.toFixed(2);
+    recalcPreview();
+    updateChecklist();
 }
 
-function recalc() {
-    const revenue = parseFloat(document.getElementById('revenue').value) || 0;
-    const rate    = parseFloat(document.getElementById('cot-rate').value) || 0;
-    const cotis   = revenue * rate;
-    document.getElementById('display-cotisation').textContent =
-        cotis.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+async function prefillMonth(num, start, end) {
+    if (_caCache[num] !== undefined) {
+        const inp = monthInputs.find(i => i.dataset.month === num);
+        if (inp) { inp.value = _caCache[num]; onMonthInput(); }
+        return;
+    }
+    try {
+        const r = await fetch(`${CA_ENDPOINT}?start=${start}&end=${end}`);
+        const data = await r.json();
+        _caCache[num] = data.revenue ?? 0;
+        const inp = monthInputs.find(i => i.dataset.month === num);
+        if (inp) { inp.value = _caCache[num]; onMonthInput(); }
+    } catch(e) {}
 }
 
-function toggleDeclaredDate() {
-    const checked = document.getElementById('declared-check').checked;
-    document.getElementById('declared-date-wrap').style.display = checked ? 'block' : 'none';
+// ── Wizard navigation ─────────────────────────────────────────────────────
+
+function goToStep(n) {
+    for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('step-' + i);
+        if (el) el.style.display = i === n ? '' : 'none';
+    }
+    currentStep = n;
+    updateWizHeader();
+    updateNavButtons();
+    if (n === 3) populateCalc();
+    if (n === 4) populateRecap();
 }
 
+function nextStep() {
+    if (currentStep < 4) goToStep(currentStep + 1);
+}
+
+function prevStep() {
+    if (currentStep > 1) goToStep(currentStep - 1);
+}
+
+function saveDraft() {
+    document.getElementById('wiz-form').submit();
+}
+
+function updateNavButtons() {
+    const prev   = document.getElementById('btn-prev');
+    const next   = document.getElementById('btn-next');
+    const submit = document.getElementById('btn-submit');
+    const lbl    = document.getElementById('nav-step-label');
+
+    if (prev)   prev.style.display   = currentStep > 1 ? '' : 'none';
+    if (next)   next.style.display   = currentStep < 4 ? '' : 'none';
+    if (submit) submit.style.display = currentStep === 4 ? '' : 'none';
+    if (lbl)    lbl.textContent = 'Étape ' + currentStep + ' sur 4';
+}
+
+function updateWizHeader() {
+    for (let i = 1; i <= 4; i++) {
+        const num   = document.getElementById('wnum-' + i);
+        const title = document.getElementById('wtitle-' + i);
+        const conn  = document.getElementById('wconn-' + i);
+        if (!num) continue;
+
+        num.className   = 'u-wiz-num ' + (i < currentStep ? 'u-wiz-num-done' : i === currentStep ? 'u-wiz-num-active' : 'u-wiz-num-wait');
+        title.className = 'u-wiz-title' + (i > currentStep ? ' u-wiz-title-wait' : '');
+        if (num.innerHTML === String(i) && i < currentStep) num.innerHTML = '✓';
+        if (conn) conn.className = 'u-wiz-connector' + (i < currentStep ? ' u-wiz-connector-done' : '');
+    }
+
+    // Collapse step 1 when past it
+    const s1body = document.getElementById('step1-body');
+    const s1sum  = document.getElementById('step1-summary');
+    const s1btn  = document.getElementById('step1-edit-btn');
+    const s1head = document.getElementById('step-1')?.querySelector('.u-step-section-head');
+    if (currentStep > 1 && s1body) {
+        s1body.style.display = 'none';
+        if (s1sum) { s1sum.style.display = ''; s1sum.textContent = document.getElementById('h-period-label').value; }
+        if (s1btn) s1btn.style.display = '';
+        if (s1head) s1head.classList.add('u-step-section-head-done');
+    } else if (s1body) {
+        s1body.style.display = '';
+        if (s1sum) s1sum.style.display = 'none';
+        if (s1btn) s1btn.style.display = 'none';
+        if (s1head) s1head.classList.remove('u-step-section-head-done');
+    }
+}
+
+// ── Calc step ─────────────────────────────────────────────────────────────
+
+function populateCalc() {
+    const ca   = parseFloat(document.getElementById('h-revenue').value) || 0;
+    const rate = parseFloat(document.getElementById('h-cot-rate').value) || 0;
+    const cotis = ca * rate;
+    const lib   = ca * 0.022;
+
+    const elCa   = document.getElementById('calc-ca');
+    const elRate = document.getElementById('calc-rate');
+    const elTot  = document.getElementById('calc-total');
+    const elLib  = document.getElementById('calc-lib');
+    const elBd   = document.getElementById('calc-breakdown');
+
+    if (elCa)   elCa.textContent   = fmt(ca) + ' €';
+    if (elRate) elRate.textContent = fmt(rate * 100, 1) + ' %';
+    if (elTot)  elTot.textContent  = fmt(cotis) + ' €';
+    if (elLib)  elLib.textContent  = fmt(lib) + ' €';
+
+    if (elBd) {
+        elBd.innerHTML = BREAKDOWN_RATES.map(br => {
+            const amt = cotis * br.r / SUM_RATES;
+            return `<div style="display:grid;grid-template-columns:1fr 120px;padding:10px 14px;border-top:1px solid var(--bd);font-size:13px;align-items:center;">
+                <span>${br.label}</span>
+                <span style="text-align:right;font-variant-numeric:tabular-nums;">${fmt(amt)} €</span>
+            </div>`;
+        }).join('');
+    }
+}
+
+// ── Recap step ────────────────────────────────────────────────────────────
+
+function populateRecap() {
+    const ca     = parseFloat(document.getElementById('h-revenue').value) || 0;
+    const rate   = parseFloat(document.getElementById('h-cot-rate').value) || 0;
+    const cotis  = ca * rate;
+    const lib    = ca * 0.022;
+    const label  = document.getElementById('h-period-label').value;
+    const start  = document.getElementById('h-period-start').value;
+    const end    = document.getElementById('h-period-end').value;
+
+    const rows = [
+        ['Période', label],
+        ['Du', start], ['Au', end],
+        ['CA déclaré', fmt(ca) + ' €'],
+        ['Taux cotisations', fmt(rate * 100, 1) + ' %'],
+        ['Cotisations URSSAF', fmt(cotis) + ' €'],
+        ['Versement libératoire', fmt(lib) + ' €'],
+    ];
+
+    const wrap = document.getElementById('recap-content');
+    if (wrap) {
+        wrap.innerHTML = rows.map(([l, v]) =>
+            `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;">
+                <span style="color:var(--muted);">${l}</span>
+                <span style="font-weight:600;font-variant-numeric:tabular-nums;">${v}</span>
+            </div>`
+        ).join('') +
+        `<div style="margin-top:12px;padding:14px;background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.14);border-radius:10px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;color:var(--accent);">Total à payer</span>
+            <span style="font-size:24px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;">${fmt(cotis + lib)} €</span>
+        </div>`;
+    }
+}
+
+// ── Live preview sidebar ──────────────────────────────────────────────────
+
+function recalcPreview() {
+    const ca   = parseFloat(document.getElementById('h-revenue').value) || 0;
+    const rate = parseFloat(document.getElementById('h-cot-rate').value) || 0;
+    const cotis = ca * rate;
+    const lib   = ca * 0.022;
+
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('prev-ca',    fmt(ca) + ' €');
+    set('prev-rate',  fmt(rate * 100, 1) + ' %');
+    set('prev-cotis', fmt(cotis) + ' €');
+    set('prev-lib',   fmt(lib) + ' €');
+    set('prev-total', fmt(cotis + lib, 0) + ' €');
+
+    // Update AI tip
+    const tip = document.getElementById('ai-tip');
+    if (tip && ca > 0) {
+        if (ca > 36800) {
+            tip.textContent = '⚠️ Votre CA dépasse le seuil de franchise TVA. Renseignez-vous sur vos obligations.';
+        } else {
+            tip.textContent = `Avec ${fmt(ca)} € de CA, vos cotisations représentent ${fmt(rate * 100, 1)} % soit ${fmt(cotis)} €.`;
+        }
+    }
+}
+
+function updateChecklist() {
+    const has_period = !!document.getElementById('h-period-label').value;
+    const has_ca     = parseFloat(document.getElementById('h-revenue').value) > 0;
+    const has_rate   = !!document.getElementById('h-cot-rate').value;
+    const done       = has_period && has_ca && has_rate;
+
+    const mark = (id, ok) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const icon = el.querySelector('.u-checklist-icon');
+        if (ok) {
+            icon.className = 'u-checklist-icon u-checklist-ok';
+            icon.textContent = '✓';
+            el.classList.add('u-checklist-item-ok');
+        } else {
+            icon.className = 'u-checklist-icon u-checklist-wait';
+            icon.textContent = '○';
+            el.classList.remove('u-checklist-item-ok');
+        }
+    };
+    mark('chk-1', has_period);
+    mark('chk-2', has_ca);
+    mark('chk-3', has_rate);
+    mark('chk-4', done);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+
+{% if not isEdit %}
 updatePeriod();
-recalc();
+updateNavButtons();
+recalcPreview();
+updateChecklist();
+{% else %}
+recalcPreview();
+updateChecklist();
+{% endif %}
 </script>
 {% endblock %}
