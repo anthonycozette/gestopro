@@ -129,7 +129,7 @@
                 <th>Numéro</th>
                 <th>Client</th>
                 <th>Émise le</th>
-                <th>Échéance</th>
+                <th>Échéance / Paiement</th>
                 <th>Statut</th>
                 <th style="text-align:right;">Montant TTC</th>
                 <th class="inv-action-col"></th>
@@ -160,9 +160,15 @@
                 </td>
                 <td><span class="inv-date-cell">{{ invoice.issuedAt|date('d/m/Y') }}</span></td>
                 <td>
-                    <span class="inv-date-cell{% if isLate %} overdue{% endif %}">
-                        {{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}
-                    </span>
+                    {% if invoice.status == 'paid' and invoice.paidAt %}
+                        <span class="inv-date-cell" style="color:#16a34a;font-weight:600;">
+                            ✓ {{ invoice.paidAt|date('d/m/Y') }}
+                        </span>
+                    {% else %}
+                        <span class="inv-date-cell{% if isLate %} overdue{% endif %}">
+                            {{ invoice.dueAt ? invoice.dueAt|date('d/m/Y') : '—' }}
+                        </span>
+                    {% endif %}
                 </td>
                 <td>
                     {% if invoice.status == 'paid' %}<span class="st-badge st-paid">Payée</span>
