@@ -183,7 +183,7 @@
             {% elseif sec.s == 'locked' %}🔒{% else %}{{ sec.n }}{% endif %}
         </span>
         <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ sec.t }}</span>
-        {% if sec.flag %}
+        {% if sec.flag is defined and sec.flag %}
         <span style="min-width:16px;height:16px;padding:0 4px;border-radius:4px;background:var(--ec-warm);color:#fff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">{{ sec.flag }}</span>
         {% endif %}
     </div>
