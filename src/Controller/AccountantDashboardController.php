@@ -382,6 +382,122 @@ class AccountantDashboardController extends AbstractController
         return $this->redirectToRoute('expert_bilan_show', ['id' => $sheet->getId()]);
     }
 
+    #[Route('/queue', name: 'queue')]
+    public function queue(): Response
+    {
+        $accountant = $this->accountant();
+        $accepted   = $this->invRepo->findAcceptedByAccountant($accountant);
+        $now        = new \DateTimeImmutable();
+        $year       = (int) $now->format('Y');
+
+        $queueItems    = [];
+        $urgentCount   = 0;
+        $readyCount    = 0;
+        $waitingCount  = 0;
+        $totalSections = 0;
+
+        foreach ($accepted as $inv) {
+            $user   = $inv->getUser();
+            $bilans = $this->em->getRepository(BalanceSheet::class)->findBy(
+                ['user' => $user, 'status' => [BalanceSheet::STATUS_PENDING_REVIEW, BalanceSheet::STATUS_ANNOTATED]],
+                ['createdAt' => 'ASC']
+            );
+
+            foreach ($bilans as $sheet) {
+                $ageHours = (int) round(($now->getTimestamp() - $sheet->getCreatedAt()->getTimestamp()) / 3600);
+                $ageDays  = (int) floor($ageHours / 24);
+                $daysLeft = max(0, 7 - $ageDays);
+                $deadline = \DateTime::createFromImmutable($sheet->getCreatedAt())->modify('+7 days');
+
+                $annotations = json_decode($sheet->getAccountantAnnotations() ?? '[]', true);
+                $flagsCount  = is_array($annotations) ? count($annotations) : 0;
+
+                $msgs     = $this->msgRepo->findByInvitation($inv);
+                $msgCount = count(array_filter($msgs, fn($m) => $m->isFromClient()));
+                $caYear   = $this->invoiceRepo->getYearRevenue($user, $year);
+
+                $isAnnotated  = $sheet->getStatus() === BalanceSheet::STATUS_ANNOTATED;
+                $progress     = $isAnnotated ? ($flagsCount === 0 ? 89 : 55) : 11;
+                $sectionsDone = $isAnnotated ? ($flagsCount === 0 ? 8 : 5) : 1;
+                $slaHours     = max(0, (int) round(4 * (1 - $progress / 100)));
+
+                $isUrgent  = $daysLeft <= 1;
+                $isReady   = $isAnnotated && $flagsCount === 0;
+                $isWaiting = $flagsCount > 0;
+                $aiScore   = $sheet->getAiAnalysis() ? min(99, 70 + $sectionsDone * 3) : 0;
+
+                if ($isUrgent) $urgentCount++;
+                if ($isReady)  $readyCount++;
+                if ($isWaiting || $msgCount > 0) $waitingCount++;
+                $totalSections += $sectionsDone;
+
+                $queueItems[] = [
+                    'sheet'        => $sheet,
+                    'invitation'   => $inv,
+                    'user'         => $user,
+                    'ageHours'     => $ageHours,
+                    'progress'     => $progress,
+                    'sectionsDone' => $sectionsDone,
+                    'flagsCount'   => $flagsCount,
+                    'msgCount'     => $msgCount,
+                    'caYear'       => $caYear,
+                    'daysLeft'     => $daysLeft,
+                    'deadline'     => $deadline,
+                    'slaHours'     => $slaHours,
+                    'isUrgent'     => $isUrgent,
+                    'isReady'      => $isReady,
+                    'isWaiting'    => $isWaiting,
+                    'aiScore'      => $aiScore,
+                ];
+            }
+        }
+
+        usort($queueItems, static function (array $a, array $b): int {
+            if ($a['isUrgent'] !== $b['isUrgent']) return $a['isUrgent'] ? -1 : 1;
+            return $b['ageHours'] - $a['ageHours'];
+        });
+
+        $count       = count($queueItems);
+        $avgSections = $count > 0 ? (int) round($totalSections / $count) : 0;
+        $avgPct      = $count > 0
+            ? (int) round(array_sum(array_column($queueItems, 'progress')) / $count)
+            : 0;
+        $estHoursDay = min(8, $count * 4);
+
+        $weekDays  = [];
+        $weekStart = new \DateTime('monday this week');
+        $dayLabels = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+        for ($i = 0; $i < 7; $i++) {
+            $day    = (clone $weekStart)->modify("+$i days");
+            $dayStr = $day->format('Y-m-d');
+            $cnt    = 0;
+            foreach ($queueItems as $item) {
+                if ($item['sheet']->getCreatedAt()->format('Y-m-d') === $dayStr) {
+                    $cnt++;
+                }
+            }
+            $weekDays[] = [
+                'label'     => $dayLabels[$i] . ' ' . $day->format('d'),
+                'hours'     => $cnt * 4,
+                'bilans'    => $cnt,
+                'today'     => $day->format('Y-m-d') === (new \DateTime())->format('Y-m-d'),
+                'isWeekend' => $i >= 5,
+            ];
+        }
+
+        return $this->render('accountant/queue.html.twig', array_merge($this->topbarVars(), [
+            'queueItems'   => $queueItems,
+            'urgentCount'  => $urgentCount,
+            'readyCount'   => $readyCount,
+            'waitingCount' => $waitingCount,
+            'avgSections'  => $avgSections,
+            'avgPct'       => $avgPct,
+            'estHoursDay'  => $estHoursDay,
+            'weekDays'     => $weekDays,
+            'active_nav'   => 'queue',
+        ]));
+    }
+
     #[Route('/profile', name: 'profile')]
     public function profile(Request $request): Response
     {

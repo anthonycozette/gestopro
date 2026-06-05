@@ -1,0 +1,522 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Bilans à valider{% endblock %}
+{% block breadcrumb %}Bilans à valider{% endblock %}
+
+{% block body %}
+
+{# ── Header ───────────────────────────────────────────────────────── #}
+<div class="ec-page-hd">
+    <div>
+        <div class="ec-page-sub">Cabinet · file de travail</div>
+        <div class="ec-page-title">
+            Bilans à valider
+            <span style="color:var(--ec-muted);font-weight:500;">· {{ queueItems|length }} en attente</span>
+        </div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex;gap:8px;">
+        <button type="button" class="ec-btn ec-btn-ghost">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Exporter la file
+        </button>
+        <button type="button" class="ec-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Relancer les clients en retard
+        </button>
+        <button type="button" class="ec-btn ec-btn-primary" id="btn-validate" disabled style="opacity:.5;cursor:not-allowed;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Valider la sélection
+        </button>
+    </div>
+</div>
+
+{# ── KPI row ─────────────────────────────────────────────────────── #}
+<div class="ec-kpi-grid">
+
+    <div class="ec-kpi {{ urgentCount > 0 ? 'alert' }}">
+        <div class="ec-kpi-label">
+            URGENTS · J-1
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{ urgentCount > 0 ? 'var(--ec-warm)' : 'var(--ec-muted)' }}" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="ec-kpi-val" style="{{ urgentCount > 0 ? 'color:var(--ec-warm);' }}">{{ urgentCount }}</div>
+        <div class="ec-kpi-sub">
+            {% set urgentNames = queueItems|filter(i => i.isUrgent)|map(i => i.user.firstName)|join(' · ') %}
+            {{ urgentNames ?: 'Aucun urgent' }}
+        </div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">
+            PRÊTS À SIGNER
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ec-accent)" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="ec-kpi-val" style="color:var(--ec-accent);">{{ readyCount }}</div>
+        <div class="ec-kpi-sub">9/9 sections OK</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">
+            EN ATTENTE CLIENT
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ec-blue)" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="ec-kpi-val" style="color:var(--ec-blue);">{{ waitingCount }}</div>
+        <div class="ec-kpi-sub">{{ waitingCount > 0 ? waitingCount ~ ' message' ~ (waitingCount != 1 ? 's' : '') ~ ' en attente' : 'Aucun message en attente' }}</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">
+            SECTIONS MOY.
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ec-fg)" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="ec-kpi-val">{{ avgSections }} <span style="font-size:16px;color:var(--ec-muted);font-weight:500;">/ 9</span></div>
+        <div class="ec-kpi-sub">{{ avgPct }} % d'avancement global</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">
+            TEMPS PRÉVU AUJ.
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="ec-kpi-val" style="color:#7c3aed;">{{ estHoursDay }} <span style="font-size:16px;color:var(--ec-muted);font-weight:500;">h</span></div>
+        <div class="ec-kpi-sub">Sur 8 h ouvrées</div>
+    </div>
+
+</div>
+
+{# ── Workload + AI ────────────────────────────────────────────────── #}
+<div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:18px;">
+
+    {# Workload chart #}
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <div>
+                <div class="ec-panel-title">Charge de travail · cette semaine</div>
+                <div class="ec-panel-sub">Estimation IA · 4 h par bilan en moyenne</div>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">
+            {% for day in weekDays %}
+            {% set barH = day.hours > 8 ? 88 : ((day.hours / 8) * 88)|round %}
+            {% set barColor = day.hours > 8 ? '#dc2626' : (day.hours > 6 ? 'var(--ec-warm)' : 'var(--ec-accent)') %}
+            <div style="display:flex;flex-direction:column;align-items:stretch;gap:5px;padding:8px 6px;border-radius:9px;background:{{ day.today ? 'rgba(37,99,235,.06)' : 'transparent' }};border:1px solid {{ day.today ? 'rgba(37,99,235,.25)' : 'transparent' }};">
+                <div style="font-size:9.5px;font-weight:700;color:{{ day.today ? 'var(--ec-blue)' : 'var(--ec-muted)' }};letter-spacing:.04em;text-align:center;">{{ day.label }}</div>
+                <div style="height:92px;position:relative;display:flex;align-items:flex-end;justify-content:center;">
+                    {% if not day.isWeekend %}
+                        {% if day.bilans > 0 %}
+                        <div style="width:60%;border-radius:4px 4px 0 0;height:{{ barH }}px;background:{{ barColor }};opacity:{{ day.today ? 1 : 0.65 }};"></div>
+                        {% endif %}
+                        <div style="position:absolute;top:0;left:0;right:0;height:12.5%;border-bottom:1px dashed rgba(220,38,38,.3);pointer-events:none;"></div>
+                    {% endif %}
+                </div>
+                <div style="font-size:11px;font-weight:700;color:{{ day.isWeekend ? 'var(--ec-subtle)' : 'var(--ec-fg)' }};text-align:center;font-variant-numeric:tabular-nums;">{{ day.isWeekend ? '—' : day.hours ~ ' h' }}</div>
+                <div style="font-size:9.5px;color:var(--ec-muted);text-align:center;">{{ day.isWeekend ? 'weekend' : day.bilans ~ ' bilan' ~ (day.bilans != 1 ? 's' : '') }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="display:flex;gap:16px;margin-top:12px;font-size:10.5px;color:var(--ec-muted);justify-content:center;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--ec-accent);display:inline-block;"></span> &lt; 6 h ouvrées</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--ec-warm);display:inline-block;"></span> 6 – 8 h</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#dc2626;display:inline-block;"></span> Surcharge</span>
+            <span style="color:var(--ec-bd);">|</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:14px;border-bottom:1px dashed rgba(220,38,38,.5);display:inline-block;"></span> Capacité max</span>
+        </div>
+    </div>
+
+    {# Claude AI panel #}
+    <div style="padding:16px;border-radius:12px;background:linear-gradient(135deg,rgba(37,99,235,.06),rgba(124,58,237,.08));border:1px solid var(--ec-bd);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.522 4.82 3.889 6.204L6 21l4.447-2.083C10.949 18.967 11.471 19 12 19c4.97 0 9-3.185 9-7.115C21 7.956 16.97 4.77 12 4.77"/><circle cx="9" cy="11" r="1"/><circle cx="12" cy="11" r="1"/><circle cx="15" cy="11" r="1"/></svg>
+            </div>
+            <div>
+                <div style="font-size:13px;font-weight:700;">Pré-validation Claude</div>
+                <div style="font-size:10.5px;color:var(--ec-muted);">Score de confiance par bilan</div>
+            </div>
+            <div style="flex:1;"></div>
+            <span style="font-size:9.5px;padding:2px 7px;border-radius:4px;background:rgba(13,138,94,.15);color:var(--ec-accent);font-weight:700;letter-spacing:.04em;">-4h GAGNÉES</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--ec-muted);line-height:1.5;margin-bottom:10px;">
+            L'IA a déjà vérifié <strong style="color:var(--ec-fg);">{{ (queueItems|length * 9)|max(1) }} sections</strong> sur {{ queueItems|length }} bilans actifs · {{ urgentCount > 0 ? urgentCount ~ ' anomalie' ~ (urgentCount != 1 ? 's' : '') ~ ' remontée' ~ (urgentCount != 1 ? 's' : '') ~ ' en priorité' : 'aucune anomalie détectée' }}.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+            {% for prompt in [
+                {l: 'Vérifier la TVA des ' ~ queueItems|length ~ ' bilans en file', sub: '~ 8 min', c: 'var(--ec-accent)'},
+                {l: 'Détecter les seuils AE dépassés', sub: '~ 4 min', c: 'var(--ec-warm)'},
+                {l: 'Pré-rédiger ' ~ queueItems|length ~ ' mails de relance', sub: '~ 6 min', c: 'var(--ec-blue)'},
+            ] %}
+            <button type="button" style="text-align:left;border:1px solid var(--ec-bd);background:#fff;padding:7px 10px;border-radius:7px;font-size:11.5px;color:var(--ec-fg);font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;">
+                <span style="color:{{ prompt.c }};font-family:var(--font-mono);">›</span>
+                <span style="flex:1;">{{ prompt.l }}</span>
+                <span style="font-size:10px;color:var(--ec-muted);font-family:var(--font-mono);">{{ prompt.sub }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{# ── Toolbar ──────────────────────────────────────────────────────── #}
+<div class="ec-toolbar" style="margin-bottom:10px;">
+
+    {# Status tabs #}
+    <div style="display:flex;gap:3px;">
+        <button class="ec-tab-btn active" onclick="filterQueue(this,'all')">
+            Tous <span style="font-size:10.5px;font-weight:600;color:inherit;">{{ queueItems|length }}</span>
+        </button>
+        <button class="ec-tab-btn" onclick="filterQueue(this,'urgent')" style="{{ urgentCount > 0 ? 'color:var(--ec-warm);' : '' }}">
+            <span style="width:5px;height:5px;border-radius:99px;background:var(--ec-warm);display:inline-block;"></span>
+            Urgents <span style="font-size:10.5px;font-weight:600;color:var(--ec-warm);">{{ urgentCount }}</span>
+        </button>
+        <button class="ec-tab-btn" onclick="filterQueue(this,'normal')">
+            <span style="width:5px;height:5px;border-radius:99px;background:var(--ec-blue);display:inline-block;"></span>
+            En cours <span style="font-size:10.5px;font-weight:600;color:var(--ec-muted);">{{ queueItems|filter(i => not i.isReady and not i.isUrgent)|length }}</span>
+        </button>
+        <button class="ec-tab-btn" onclick="filterQueue(this,'ready')">
+            <span style="width:5px;height:5px;border-radius:99px;background:var(--ec-accent);display:inline-block;"></span>
+            Prêts à signer <span style="font-size:10.5px;font-weight:600;color:var(--ec-muted);">{{ readyCount }}</span>
+        </button>
+        <button class="ec-tab-btn" onclick="filterQueue(this,'waiting')">
+            <span style="width:5px;height:5px;border-radius:99px;background:#7c3aed;display:inline-block;"></span>
+            En attente client <span style="font-size:10.5px;font-weight:600;color:var(--ec-muted);">{{ waitingCount }}</span>
+        </button>
+    </div>
+
+    <div style="width:1px;height:22px;background:var(--ec-bd);margin:0 4px;"></div>
+
+    <button type="button" class="ec-btn ec-btn-sm" style="font-size:11.5px;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Trier par : <strong>urgence ↓</strong>
+    </button>
+
+    <div style="flex:1;"></div>
+
+    <div class="ec-toolbar-search" style="min-width:220px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="Client, n° bilan, activité…" oninput="searchQueue(this.value)"
+            style="border:none;background:transparent;font-size:11.5px;color:var(--ec-fg);font-family:inherit;outline:none;flex:1;min-width:0;">
+    </div>
+
+    <div style="display:flex;gap:2px;padding:3px;background:var(--ec-card2);border-radius:7px;">
+        <button type="button" style="padding:4px 9px;border:none;background:var(--ec-card);color:var(--ec-fg);font-size:11px;font-weight:600;cursor:pointer;border-radius:5px;font-family:inherit;box-shadow:0 1px 2px rgba(20,40,80,.08);display:inline-flex;align-items:center;gap:4px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Liste
+        </button>
+        <button type="button" style="padding:4px 9px;border:none;background:transparent;color:var(--ec-muted);font-size:11px;font-weight:600;cursor:pointer;border-radius:5px;font-family:inherit;display:inline-flex;align-items:center;gap:4px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Kanban
+        </button>
+    </div>
+</div>
+
+{# ── Bulk action bar (hidden until rows are selected) ─────────────── #}
+<div id="bulk-bar" style="display:none;padding:10px 14px;margin-bottom:10px;background:rgba(37,99,235,.06);border:1px dashed rgba(37,99,235,.3);border-radius:10px;display:none;align-items:center;gap:10px;">
+    <span style="width:15px;height:15px;border-radius:4px;border:1.5px solid var(--ec-accent);background:var(--ec-accent);display:inline-flex;align-items:center;justify-content:center;">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </span>
+    <span id="bulk-count" style="font-size:12px;font-weight:600;color:var(--ec-blue);">0 bilans sélectionnés</span>
+    <div style="flex:1;"></div>
+    {% for action in [
+        {l: 'Marquer tous validés', icon: 'check'},
+        {l: 'Relancer les clients', icon: 'send'},
+        {l: 'Exporter en PDF', icon: 'doc'},
+        {l: 'Réassigner', icon: 'users'},
+    ] %}
+    <button type="button" style="padding:5px 11px;border:1px solid rgba(37,99,235,.25);background:var(--ec-card);color:var(--ec-blue);font-size:11.5px;font-weight:600;border-radius:7px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;">{{ action.l }}</button>
+    {% endfor %}
+    <button type="button" onclick="clearSelection()" style="width:26px;height:26px;border:none;background:transparent;color:var(--ec-muted);cursor:pointer;font-size:16px;line-height:1;font-family:inherit;">×</button>
+</div>
+
+{# ── Queue table ──────────────────────────────────────────────────── #}
+{% if queueItems is empty %}
+<div class="ec-panel">
+    <div class="ec-empty">
+        <div style="font-size:32px;margin-bottom:12px;">✓</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">File de validation vide</div>
+        <div style="font-size:12px;">Aucun bilan en attente de validation pour le moment.</div>
+    </div>
+</div>
+{% else %}
+<section style="background:var(--ec-card);border:1px solid var(--ec-bd);border-radius:12px;overflow:hidden;">
+    <table class="ec-tbl" id="queue-table">
+        <thead>
+            <tr>
+                <th style="width:32px;padding:9px 12px;">
+                    <span style="width:15px;height:15px;border-radius:4px;border:1.5px solid var(--ec-subtle);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" onclick="toggleAll(this)"></span>
+                </th>
+                <th>Bilan</th>
+                <th>Activité · CA</th>
+                <th style="width:200px;">Avancement</th>
+                <th style="width:110px;">Flags IA</th>
+                <th style="width:110px;">Soumis</th>
+                <th style="width:130px;">Échéance</th>
+                <th style="width:70px;">SLA</th>
+                <th style="width:80px;text-align:right;">IA</th>
+                <th style="width:160px;text-align:right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in queueItems %}
+        {% set u = item.user %}
+        {% set sheet = item.sheet %}
+        {% set ref = 'BIL-' ~ u.firstName|first|upper ~ u.lastName|first|upper ~ '-' ~ sheet.createdAt|date('y') %}
+        {% set progColor = item.progress < 30 ? 'var(--ec-warm)' : (item.progress < 80 ? 'var(--ec-blue)' : 'var(--ec-accent)') %}
+        {% set slaColor = item.isUrgent ? '#92400e' : (item.isReady ? 'var(--ec-accent)' : 'var(--ec-muted)') %}
+        {% set aiColor = item.aiScore >= 90 ? 'var(--ec-accent)' : (item.aiScore >= 80 ? 'var(--ec-warm)' : '#dc2626') %}
+        {% set aiDeg = (item.aiScore * 3.6)|round %}
+        <tr data-urgent="{{ item.isUrgent ? '1' : '0' }}"
+            data-ready="{{ item.isReady ? '1' : '0' }}"
+            data-waiting="{{ item.isWaiting ? '1' : '0' }}"
+            data-name="{{ (u.firstName ~ ' ' ~ u.lastName ~ ' ' ~ (u.activityLabel ?: ''))|lower }}"
+            style="border-top:1px solid var(--ec-bd);background:{{ item.isUrgent ? 'rgba(217,119,6,.04)' : 'transparent' }};">
+
+            {# Checkbox + urgency border #}
+            <td style="padding:12px 12px;border-left:3px solid {{ item.isUrgent ? 'var(--ec-warm)' : (item.isReady ? 'var(--ec-accent)' : 'transparent') }};">
+                <span class="queue-check" style="width:15px;height:15px;border-radius:4px;border:1.5px solid var(--ec-subtle);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" onclick="toggleRow(this)"></span>
+            </td>
+
+            {# Bilan: avatar + name + ref + badges #}
+            <td style="padding:12px 12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="ec-avatar ec-avatar-sm ec-av-green">{{ u.firstName|first|upper }}{{ u.lastName|first|upper }}</div>
+                    <div style="min-width:0;">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                            <span style="font-size:12.5px;font-weight:700;">{{ u.firstName }} {{ u.lastName }}</span>
+                            {% if item.msgCount > 0 %}
+                            <span style="padding:1px 6px;border-radius:4px;background:rgba(37,99,235,.12);color:var(--ec-blue);font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;gap:3px;">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                {{ item.msgCount }}
+                            </span>
+                            {% endif %}
+                            {% if item.isReady %}
+                            <span style="padding:1px 6px;border-radius:4px;background:rgba(13,138,94,.14);color:var(--ec-accent);font-size:9px;font-weight:800;letter-spacing:.04em;">PRÊT</span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size:10.5px;color:var(--ec-subtle);font-family:var(--font-mono);margin-top:1px;">{{ ref }}</div>
+                    </div>
+                </div>
+            </td>
+
+            {# Activity + CA #}
+            <td style="padding:12px 12px;">
+                <div style="font-size:12px;color:var(--ec-fg);">{{ u.activityLabel ?: '—' }}</div>
+                <div style="font-size:11px;color:var(--ec-muted);margin-top:1px;font-weight:600;font-variant-numeric:tabular-nums;">{{ item.caYear|number_format(0, ',', ' ') }} € CA</div>
+            </td>
+
+            {# Progress bar + section dots #}
+            <td style="padding:12px 12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="flex:1;height:5px;border-radius:99px;background:var(--ec-bd);overflow:hidden;">
+                        <div style="width:{{ item.progress }}%;height:100%;background:{{ progColor }};border-radius:99px;"></div>
+                    </div>
+                    <span style="font-size:10.5px;color:var(--ec-muted);font-weight:700;font-family:var(--font-mono);white-space:nowrap;">{{ item.sectionsDone }}/9</span>
+                </div>
+                <div style="display:flex;gap:2px;margin-top:5px;">
+                    {% for i in 1..9 %}
+                    <span style="flex:1;height:4px;border-radius:1px;background:{{ i <= item.sectionsDone ? 'var(--ec-accent)' : 'var(--ec-bd)' }};"></span>
+                    {% endfor %}
+                </div>
+            </td>
+
+            {# Flags IA #}
+            <td style="padding:12px 12px;">
+                {% if item.flagsCount == 0 %}
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:99px;background:rgba(13,138,94,.1);color:var(--ec-accent);font-size:10.5px;font-weight:700;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    RAS
+                </span>
+                {% else %}
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:99px;background:rgba(217,119,6,.12);color:#92400e;font-size:10.5px;font-weight:700;">
+                    <span style="width:5px;height:5px;border-radius:99px;background:#92400e;display:inline-block;"></span>
+                    {{ item.flagsCount }} {{ item.flagsCount > 1 ? 'alertes' : 'alerte' }}
+                </span>
+                {% endif %}
+            </td>
+
+            {# Submitted time #}
+            <td style="padding:12px 12px;font-size:11.5px;color:var(--ec-muted);font-variant-numeric:tabular-nums;">
+                {% if item.ageHours < 1 %}À l'instant
+                {% elseif item.ageHours < 24 %}Aujd · {{ sheet.createdAt|date('H:i') }}
+                {% elseif item.ageHours < 48 %}Hier · {{ sheet.createdAt|date('H:i') }}
+                {% else %}il y a {{ (item.ageHours // 24) }} j{% endif %}
+            </td>
+
+            {# Deadline + J-N #}
+            <td style="padding:12px 12px;">
+                <div style="font-size:11.5px;font-weight:700;color:{{ item.daysLeft <= 2 ? '#92400e' : 'var(--ec-fg)' }};font-variant-numeric:tabular-nums;">
+                    {{ item.deadline|date('d/m') }}
+                    {% if item.daysLeft <= 2 %} · {{ item.deadline|date('d/m') }}{% endif %}
+                </div>
+                <div style="font-size:9.5px;font-weight:700;color:{{ item.daysLeft <= 2 ? '#92400e' : 'var(--ec-subtle)' }};letter-spacing:.04em;text-transform:uppercase;margin-top:2px;font-variant-numeric:tabular-nums;">
+                    J-{{ item.daysLeft }}
+                </div>
+            </td>
+
+            {# SLA #}
+            <td style="padding:12px 12px;">
+                <span style="font-size:12px;font-weight:700;color:{{ slaColor }};font-variant-numeric:tabular-nums;">
+                    {% if item.isReady %}—{% elseif item.daysLeft == 0 %}Retard{% elseif item.slaHours == 0 %}< 1 h{% else %}{{ item.slaHours }} h{% endif %}
+                </span>
+            </td>
+
+            {# AI confidence circle #}
+            <td style="padding:12px 12px;text-align:right;">
+                {% if item.aiScore > 0 %}
+                <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:conic-gradient({{ aiColor }} {{ aiDeg }}deg,var(--ec-bd) 0);position:relative;">
+                    <span style="position:absolute;inset:4px;border-radius:50%;background:var(--ec-card);"></span>
+                    <span style="position:relative;font-size:8px;font-weight:800;color:{{ aiColor }};font-variant-numeric:tabular-nums;">{{ item.aiScore }}</span>
+                </div>
+                {% else %}
+                <span style="font-size:11px;color:var(--ec-subtle);">—</span>
+                {% endif %}
+            </td>
+
+            {# Action buttons #}
+            <td style="padding:12px 12px;text-align:right;">
+                <div style="display:inline-flex;gap:4px;align-items:center;">
+                    {% if item.isReady %}
+                    <a href="{{ path('expert_bilan_show', {id: sheet.id}) }}" class="ec-btn ec-btn-primary ec-btn-sm">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Signer
+                    </a>
+                    {% else %}
+                    <a href="{{ path('expert_bilan_show', {id: sheet.id}) }}" class="ec-btn ec-btn-primary ec-btn-sm">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        Ouvrir
+                    </a>
+                    {% endif %}
+                    <button type="button" class="ec-icon-btn" title="Message">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    <button type="button" class="ec-icon-btn" title="Plus d'actions">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    </button>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {# Table footer #}
+    <div style="display:flex;align-items:center;padding:10px 16px;border-top:1px solid var(--ec-bd);background:#fbfcfd;font-size:11.5px;color:var(--ec-muted);">
+        <span>
+            <strong style="font-variant-numeric:tabular-nums;">{{ queueItems|length }}</strong>
+            sur {{ queueItems|length }} bilans · charge totale estimée
+            <strong style="font-variant-numeric:tabular-nums;">~ {{ queueItems|length * 4 }} h</strong>
+        </span>
+        <div style="flex:1;"></div>
+        <div style="display:flex;gap:4px;">
+            <button type="button" style="min-width:26px;height:26px;padding:0 8px;border:1px solid var(--ec-bd);background:var(--ec-card);color:var(--ec-fg);border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">‹</button>
+            <button type="button" style="min-width:26px;height:26px;padding:0 8px;border:1px solid var(--ec-bd);background:var(--ec-fg);color:#fff;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">1</button>
+            <button type="button" style="min-width:26px;height:26px;padding:0 8px;border:1px solid var(--ec-bd);background:var(--ec-card);color:var(--ec-fg);border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">›</button>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+let activeQueueFilter = 'all';
+let selectedRows = new Set();
+
+function filterQueue(btn, filter) {
+    activeQueueFilter = filter;
+    document.querySelectorAll('.ec-toolbar .ec-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyQueueFilters();
+}
+
+function searchQueue(query) {
+    applyQueueFilters(query.toLowerCase().trim());
+}
+
+function applyQueueFilters(query) {
+    if (query === undefined) query = '';
+    document.querySelectorAll('#queue-table tbody tr').forEach(row => {
+        let show = true;
+        const f = activeQueueFilter;
+        if (f === 'urgent')  show = row.dataset.urgent === '1';
+        if (f === 'ready')   show = row.dataset.ready  === '1';
+        if (f === 'waiting') show = row.dataset.waiting === '1';
+        if (f === 'normal')  show = row.dataset.urgent === '0' && row.dataset.ready === '0';
+        if (show && query) show = (row.dataset.name || '').includes(query);
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+function toggleRow(el) {
+    const tr = el.closest('tr');
+    const id = tr.rowIndex;
+    if (selectedRows.has(id)) {
+        selectedRows.delete(id);
+        el.style.background = 'transparent';
+        el.style.borderColor = 'var(--ec-subtle)';
+        el.innerHTML = '';
+        tr.style.background = tr.dataset.urgent === '1' ? 'rgba(217,119,6,.04)' : 'transparent';
+    } else {
+        selectedRows.add(id);
+        el.style.background = 'var(--ec-accent)';
+        el.style.borderColor = 'var(--ec-accent)';
+        el.innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>';
+        tr.style.background = 'rgba(37,99,235,.05)';
+    }
+    updateBulkBar();
+}
+
+function toggleAll(el) {
+    const checks = document.querySelectorAll('.queue-check');
+    const allSelected = selectedRows.size === checks.length;
+    checks.forEach(check => {
+        const tr = check.closest('tr');
+        const id = tr.rowIndex;
+        if (allSelected) {
+            selectedRows.delete(id);
+            check.style.background = 'transparent';
+            check.style.borderColor = 'var(--ec-subtle)';
+            check.innerHTML = '';
+            tr.style.background = tr.dataset.urgent === '1' ? 'rgba(217,119,6,.04)' : 'transparent';
+        } else {
+            selectedRows.add(id);
+            check.style.background = 'var(--ec-accent)';
+            check.style.borderColor = 'var(--ec-accent)';
+            check.innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>';
+            tr.style.background = 'rgba(37,99,235,.05)';
+        }
+    });
+    updateBulkBar();
+}
+
+function clearSelection() {
+    selectedRows.clear();
+    document.querySelectorAll('.queue-check').forEach(el => {
+        el.style.background = 'transparent';
+        el.style.borderColor = 'var(--ec-subtle)';
+        el.innerHTML = '';
+        const tr = el.closest('tr');
+        tr.style.background = tr.dataset.urgent === '1' ? 'rgba(217,119,6,.04)' : 'transparent';
+    });
+    updateBulkBar();
+}
+
+function updateBulkBar() {
+    const bar = document.getElementById('bulk-bar');
+    const btn = document.getElementById('btn-validate');
+    const count = selectedRows.size;
+    if (count > 0) {
+        bar.style.display = 'flex';
+        document.getElementById('bulk-count').textContent = count + ' bilan' + (count !== 1 ? 's' : '') + ' sélectionné' + (count !== 1 ? 's' : '');
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    } else {
+        bar.style.display = 'none';
+        btn.disabled = true;
+        btn.style.opacity = '.5';
+        btn.style.cursor = 'not-allowed';
+    }
+}
+</script>
+{% endblock %}
