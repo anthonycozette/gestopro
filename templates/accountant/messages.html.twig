@@ -47,10 +47,10 @@
         </div>
     </div>
     <div style="flex:1;"></div>
-    <button type="button" class="ec-btn ec-btn-primary">
+    <a href="{{ path('expert_clients') }}" class="ec-btn ec-btn-primary">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nouveau message
-    </button>
+    </a>
 </div>
 
 {% if conversations is empty %}
@@ -80,9 +80,9 @@
         {% for conv in conversations %}
         {% set user = conv.user %}
         {% set last = conv.lastMsg %}
-        <div class="ec-conv-item {{ loop.first ? 'active' }}"
-             data-search="{{ (user.firstName ~ ' ' ~ user.lastName)|lower }}"
-             onclick="openConv(this, {{ conv.invitation.id }})">
+        <a class="ec-conv-item {{ activeConv and conv.invitation.id == activeConv.invitation.id ? 'active' }}"
+             href="{{ path('expert_messages') }}?conv={{ conv.invitation.id }}"
+             data-search="{{ (user.firstName ~ ' ' ~ user.lastName)|lower }}">
             <div class="ec-avatar ec-avatar-sm {{ conv.unread > 0 ? 'ec-av-blue' : 'ec-av-green' }}" style="flex-shrink:0;">
                 {{ user.firstName|default('?')|first|upper }}{{ user.lastName|default('')|first|upper }}
             </div>
@@ -106,14 +106,14 @@
                 </div>
                 {% endif %}
             </div>
-        </div>
+        </a>
         {% endfor %}
         </div>
     </div>
 
     {# ── Colonne centre : thread messages ────────────────────────── #}
     <div class="ec-thread-wrap">
-        {% set active = conversations[0] %}
+        {% set active = activeConv ?? conversations[0] %}
         <div class="ec-thread-hd">
             <div class="ec-avatar ec-av-green" style="flex-shrink:0;">
                 {{ active.user.firstName|default('?')|first|upper }}{{ active.user.lastName|default('')|first|upper }}
@@ -123,13 +123,13 @@
                 <div style="font-size:10.5px;color:var(--ec-muted);">{{ active.user.email }}</div>
             </div>
             <div style="display:flex;gap:6px;">
-                <button class="ec-icon-btn" title="Voir bilan">
+                <a href="{{ path('expert_client_detail', {id: active.invitation.id}) }}" class="ec-icon-btn" title="Fiche client">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                </button>
-                <button class="ec-icon-btn" title="Appel">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.72 12 19.79 19.79 0 0 1 1.64 3.38 2 2 0 0 1 3.6 1.21h3.01a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.83a16 16 0 0 0 6.12 6.12l.95-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.92 16.92z"/></svg>
-                </button>
-                <button class="ec-icon-btn" title="Options">
+                </a>
+                <a href="{{ path('expert_queue') }}" class="ec-icon-btn" title="Bilans à valider">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </a>
+                <button class="ec-icon-btn" title="Options" onclick="toggleMsgOptions(this)">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
                 </button>
             </div>
@@ -212,18 +212,18 @@
 
         <div class="ec-context-sec">
             <div class="ec-context-title">Actions rapides</div>
-            <button type="button" class="ec-quick-btn">
+            <a href="{{ path('expert_client_detail', {id: active.invitation.id}) }}" class="ec-quick-btn">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Voir bilans
-            </button>
-            <button type="button" class="ec-quick-btn">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </a>
+            <a href="{{ path('expert_client_detail', {id: active.invitation.id}) }}" class="ec-quick-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Fiche client
-            </button>
-            <button type="button" class="ec-quick-btn">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg>
+            </a>
+            <a href="{{ path('expert_queue') }}" class="ec-quick-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 Valider bilan
-            </button>
+            </a>
         </div>
 
         <div class="ec-context-sec">
@@ -260,20 +260,37 @@ function filterConvs(q) {
         item.style.display = !q || (item.dataset.search||'').includes(q) ? '' : 'none';
     });
 }
-function openConv(el, id) {
-    document.querySelectorAll('.ec-conv-item').forEach(i => i.classList.remove('active'));
-    el.classList.add('active');
-}
 const templates = {
-    'Bilan reçu, en cours': 'Bonjour, j\'ai bien reçu votre bilan. Je l\'analyse actuellement, je reviens vers vous sous 48h.',
-    'Document manquant': 'Pour finaliser votre bilan, il me manque : [document à préciser]. Pourriez-vous me l\'envoyer ?',
-    'Bilan validé': 'Bonne nouvelle ! Votre bilan a été validé et tamponné. Vous pouvez le télécharger depuis votre espace.',
-    'RDV disponibles': 'Je suis disponible pour un échange le [dates/créneaux]. Faites-moi signe si vous souhaitez planifier un appel.',
+    'Bilan reçu, en cours': "Bonjour, j'ai bien reçu votre bilan. Je l'analyse actuellement, je reviens vers vous sous 48h.",
+    'Document manquant': "Pour finaliser votre bilan, il me manque : [document à préciser]. Pourriez-vous me l'envoyer ?",
+    'Bilan validé': "Bonne nouvelle ! Votre bilan a été validé et tamponné. Vous pouvez le télécharger depuis votre espace.",
+    'RDV disponibles': "Je suis disponible pour un échange le [dates/créneaux]. Faites-moi signe si vous souhaitez planifier un appel.",
 };
 function insertTpl(btn) {
     const label = btn.innerText.trim();
     const ta = document.getElementById('compose-text');
-    if (ta && templates[label]) ta.value = templates[label];
+    if (ta && templates[label]) { ta.value = templates[label]; ta.focus(); }
+}
+function toggleMsgOptions(btn) {
+    let menu = document.getElementById('msg-options-menu');
+    if (!menu) {
+        menu = document.createElement('div');
+        menu.id = 'msg-options-menu';
+        menu.style.cssText = 'position:absolute;right:16px;top:52px;background:var(--ec-card);border:1px solid var(--ec-bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;min-width:180px;padding:4px;';
+        menu.innerHTML = `
+            <button onclick="document.getElementById('msg-options-menu').remove()" style="width:100%;padding:8px 12px;background:none;border:none;text-align:left;font-size:12px;cursor:pointer;border-radius:6px;color:var(--ec-fg);">Marquer comme lu</button>
+            <button onclick="document.getElementById('msg-options-menu').remove()" style="width:100%;padding:8px 12px;background:none;border:none;text-align:left;font-size:12px;cursor:pointer;border-radius:6px;color:var(--ec-fg);">Archiver</button>
+            <hr style="margin:4px 0;border:none;border-top:1px solid var(--ec-bd);">
+            <button onclick="document.getElementById('msg-options-menu').remove()" style="width:100%;padding:8px 12px;background:none;border:none;text-align:left;font-size:12px;cursor:pointer;border-radius:6px;color:#dc2626;">Supprimer</button>
+        `;
+        document.querySelector('.ec-thread-hd').style.position = 'relative';
+        document.querySelector('.ec-thread-hd').appendChild(menu);
+        setTimeout(() => document.addEventListener('click', function h(e) {
+            if (!menu.contains(e.target) && e.target !== btn) { menu.remove(); document.removeEventListener('click', h); }
+        }), 10);
+    } else {
+        menu.remove();
+    }
 }
 document.getElementById('thread-msgs')?.scrollTo(0, 99999);
 </script>

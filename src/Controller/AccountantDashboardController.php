@@ -730,7 +730,7 @@ class AccountantDashboardController extends AbstractController
 
     // ── Messages ─────────────────────────────────────────────────────────
     #[Route('/messages', name: 'messages')]
-    public function messages(): Response
+    public function messages(Request $request): Response
     {
         $accountant = $this->accountant();
         $accepted   = $this->invRepo->findAcceptedByAccountant($accountant);
@@ -760,9 +760,18 @@ class AccountantDashboardController extends AbstractController
             return $b['lastMsg']->getCreatedAt() <=> $a['lastMsg']->getCreatedAt();
         });
 
+        $convId     = (int) $request->query->get('conv', 0);
         $activeConv = null;
         foreach ($conversations as $conv) {
-            if ($conv['lastMsg']) { $activeConv = $conv; break; }
+            if ($convId && $conv['invitation']->getId() === $convId) {
+                $activeConv = $conv;
+                break;
+            }
+        }
+        if (!$activeConv) {
+            foreach ($conversations as $conv) {
+                if ($conv['lastMsg']) { $activeConv = $conv; break; }
+            }
         }
         if (!$activeConv && !empty($conversations)) {
             $activeConv = $conversations[0];
