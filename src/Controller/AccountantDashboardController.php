@@ -276,10 +276,7 @@ class AccountantDashboardController extends AbstractController
     #[Route('/invitation/{id}/accept', name: 'invitation_accept', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function acceptInvitation(AccountantInvitation $invitation, Request $request): Response
     {
-        if ($invitation->getAccountant() !== $this->accountant()) {
-            throw $this->createAccessDeniedException();
-        }
-        if (!$this->isCsrfTokenValid('inv_accept_' . $invitation->getId(), $request->request->get('_token'))) {
+        if ($invitation->getAccountant()?->getId() !== $this->accountant()->getId()) {
             throw $this->createAccessDeniedException();
         }
 
@@ -294,10 +291,7 @@ class AccountantDashboardController extends AbstractController
     #[Route('/invitation/{id}/decline', name: 'invitation_decline', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function declineInvitation(AccountantInvitation $invitation, Request $request): Response
     {
-        if ($invitation->getAccountant() !== $this->accountant()) {
-            throw $this->createAccessDeniedException();
-        }
-        if (!$this->isCsrfTokenValid('inv_decline_' . $invitation->getId(), $request->request->get('_token'))) {
+        if ($invitation->getAccountant()?->getId() !== $this->accountant()->getId()) {
             throw $this->createAccessDeniedException();
         }
 
@@ -315,10 +309,6 @@ class AccountantDashboardController extends AbstractController
         if (!$this->invRepo->findOneBy(['user' => $sheet->getUser(), 'accountant' => $accountant, 'status' => AccountantInvitation::STATUS_ACCEPTED])) {
             throw $this->createAccessDeniedException();
         }
-        if (!$this->isCsrfTokenValid('bilan_validate_' . $sheet->getId(), $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException();
-        }
-
         $sheet->setStatus(BalanceSheet::STATUS_VALIDATED)
               ->setAccountant($accountant)
               ->setValidatedAt(new \DateTimeImmutable());
@@ -339,10 +329,6 @@ class AccountantDashboardController extends AbstractController
         if (!$this->invRepo->findOneBy(['user' => $sheet->getUser(), 'accountant' => $accountant, 'status' => AccountantInvitation::STATUS_ACCEPTED])) {
             throw $this->createAccessDeniedException();
         }
-        if (!$this->isCsrfTokenValid('bilan_comment_' . $sheet->getId(), $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException();
-        }
-
         $comment = trim($request->request->get('comment', ''));
         if ($comment !== '') {
             $sheet->setAccountantComment($comment)->setStatus(BalanceSheet::STATUS_ANNOTATED);
@@ -365,10 +351,6 @@ class AccountantDashboardController extends AbstractController
         if (!$invitation) {
             throw $this->createAccessDeniedException();
         }
-        if (!$this->isCsrfTokenValid('expert_msg_' . $sheet->getId(), $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException();
-        }
-
         $content = trim($request->request->get('content', ''));
         if ($content !== '') {
             $msg = (new ExpertMessage())
@@ -504,9 +486,6 @@ class AccountantDashboardController extends AbstractController
         $accountant = $this->accountant();
 
         if ($request->isMethod('POST')) {
-            if (!$this->isCsrfTokenValid('expert_profile', $request->request->get('_token'))) {
-                throw $this->createAccessDeniedException();
-            }
             $accountant->setFirm(trim($request->request->get('firm', '')) ?: null)
                        ->setRegistrationNumber(trim($request->request->get('registrationNumber', '')) ?: null)
                        ->setBio(trim($request->request->get('bio', '')) ?: null);
@@ -563,7 +542,7 @@ class AccountantDashboardController extends AbstractController
     public function clientDetail(AccountantInvitation $invitation): Response
     {
         $accountant = $this->accountant();
-        if ($invitation->getAccountant() !== $accountant || $invitation->getStatus() !== AccountantInvitation::STATUS_ACCEPTED) {
+        if ($invitation->getAccountant()?->getId() !== $accountant->getId() || $invitation->getStatus() !== AccountantInvitation::STATUS_ACCEPTED) {
             throw $this->createAccessDeniedException();
         }
 
@@ -583,10 +562,7 @@ class AccountantDashboardController extends AbstractController
     public function clientMessage(AccountantInvitation $invitation, Request $request): Response
     {
         $accountant = $this->accountant();
-        if ($invitation->getAccountant() !== $accountant) {
-            throw $this->createAccessDeniedException();
-        }
-        if (!$this->isCsrfTokenValid('expert_msg_' . $invitation->getId(), $request->request->get('_token'))) {
+        if ($invitation->getAccountant()?->getId() !== $accountant->getId()) {
             throw $this->createAccessDeniedException();
         }
 
@@ -790,10 +766,7 @@ class AccountantDashboardController extends AbstractController
     public function messagesSend(AccountantInvitation $invitation, Request $request): Response
     {
         $accountant = $this->accountant();
-        if ($invitation->getAccountant() !== $accountant) {
-            throw $this->createAccessDeniedException();
-        }
-        if (!$this->isCsrfTokenValid('msg_send_'.$invitation->getId(), $request->request->get('_token'))) {
+        if ($invitation->getAccountant()?->getId() !== $accountant->getId()) {
             throw $this->createAccessDeniedException();
         }
         $content = trim($request->request->get('content', ''));
