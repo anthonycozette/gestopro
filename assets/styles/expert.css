@@ -70,6 +70,7 @@
 .ec-av-expert { background: linear-gradient(135deg, var(--ec-accent), var(--ec-warm)); }
 .ec-av-green  { background: var(--ec-accent); }
 .ec-av-blue   { background: var(--ec-blue); }
+.ec-av-red    { background: #dc2626; }
 
 /* Nav */
 .ec-nav { padding: 20px 10px 0; display: flex; flex-direction: column; gap: 1px; }

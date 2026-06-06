@@ -1,0 +1,280 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Messages{% endblock %}
+{% block breadcrumb %}Messages{% endblock %}
+
+{% block stylesheets %}
+<style>
+.ec-msg-layout  { display:grid; grid-template-columns:300px 1fr 260px; height:calc(100vh - 110px); background:var(--ec-card); border:1px solid var(--ec-bd); border-radius:14px; overflow:hidden; }
+.ec-conv-list   { border-right:1px solid var(--ec-bd); display:flex; flex-direction:column; overflow:hidden; }
+.ec-conv-hd     { padding:14px 14px 10px; border-bottom:1px solid var(--ec-bd); flex-shrink:0; }
+.ec-conv-search { display:flex;align-items:center;gap:7px;background:var(--ec-card2);border:1px solid var(--ec-bd);border-radius:8px;padding:6px 10px; }
+.ec-conv-scroll { flex:1; overflow-y:auto; }
+.ec-conv-item   { padding:12px 14px; border-bottom:1px solid var(--ec-bd); cursor:pointer; transition:background .12s; display:flex; gap:10px; align-items:flex-start; }
+.ec-conv-item:hover, .ec-conv-item.active { background:var(--ec-subtle); }
+.ec-conv-item.active { border-left:3px solid var(--ec-accent); }
+.ec-thread-wrap { display:flex; flex-direction:column; overflow:hidden; }
+.ec-thread-hd   { padding:12px 18px; border-bottom:1px solid var(--ec-bd); flex-shrink:0; display:flex; align-items:center; gap:10px; }
+.ec-thread-msgs { flex:1; overflow-y:auto; padding:16px 18px; display:flex; flex-direction:column; gap:10px; }
+.ec-bubble      { max-width:70%; padding:10px 13px; border-radius:12px; font-size:12.5px; line-height:1.55; }
+.ec-bubble.me   { background:var(--ec-accent); color:#fff; align-self:flex-end; border-bottom-right-radius:3px; }
+.ec-bubble.them { background:var(--ec-card2); border:1px solid var(--ec-bd); align-self:flex-start; border-bottom-left-radius:3px; }
+.ec-bubble-meta { font-size:10px; margin-top:3px; opacity:.6; }
+.ec-bubble.me   .ec-bubble-meta { text-align:right; }
+.ec-thread-compose { padding:12px 16px; border-top:1px solid var(--ec-bd); flex-shrink:0; }
+.ec-compose-box { background:var(--ec-card2); border:1px solid var(--ec-bd); border-radius:10px; display:flex; flex-direction:column; gap:8px; padding:10px 13px; }
+.ec-compose-box textarea { background:transparent;border:none;outline:none;font-family:inherit;font-size:12.5px;color:var(--ec-fg);resize:none;line-height:1.5; }
+.ec-context-wrap { border-left:1px solid var(--ec-bd); display:flex; flex-direction:column; overflow-y:auto; }
+.ec-context-hd  { padding:14px 14px 10px; border-bottom:1px solid var(--ec-bd); flex-shrink:0; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ec-muted); }
+.ec-context-sec { padding:12px 14px; border-bottom:1px solid var(--ec-bd); }
+.ec-context-title { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ec-muted); margin-bottom:8px; }
+.ec-quick-btn   { width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--ec-bd);background:var(--ec-card);font-size:11.5px;font-weight:600;color:var(--ec-fg);text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px;margin-bottom:4px; }
+.ec-quick-btn:hover { background:var(--ec-subtle); }
+</style>
+{% endblock %}
+
+{% block body %}
+
+{# ── Header ─────────────────────────────────────────────────────── #}
+<div class="ec-page-hd">
+    <div>
+        <div class="ec-page-sub">Échanges avec vos clients</div>
+        <div class="ec-page-title">
+            Messages
+            {% if totalUnread > 0 %}
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--ec-blue);color:#fff;border-radius:999px;font-size:11px;font-weight:800;vertical-align:middle;margin-left:6px;">{{ totalUnread }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <div style="flex:1;"></div>
+    <button type="button" class="ec-btn ec-btn-primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nouveau message
+    </button>
+</div>
+
+{% if conversations is empty %}
+<div class="ec-panel">
+    <div class="ec-empty">
+        <div style="font-size:32px;margin-bottom:12px;">💬</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Aucun message</div>
+        <div style="font-size:12px;color:var(--ec-muted);">Quand vos clients vous envoient des messages, ils apparaissent ici.</div>
+    </div>
+</div>
+{% else %}
+
+{% set convId = activeConv %}
+
+<div class="ec-msg-layout">
+
+    {# ── Colonne gauche : liste conversations ─────────────────────── #}
+    <div class="ec-conv-list">
+        <div class="ec-conv-hd">
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:8px;">Conversations</div>
+            <div class="ec-conv-search">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" placeholder="Rechercher…" style="border:none;background:transparent;font-size:11.5px;color:var(--ec-fg);font-family:inherit;outline:none;flex:1;min-width:0;" oninput="filterConvs(this.value)">
+            </div>
+        </div>
+        <div class="ec-conv-scroll" id="conv-list">
+        {% for conv in conversations %}
+        {% set user = conv.user %}
+        {% set last = conv.lastMsg %}
+        <div class="ec-conv-item {{ loop.first ? 'active' }}"
+             data-search="{{ (user.firstName ~ ' ' ~ user.lastName)|lower }}"
+             onclick="openConv(this, {{ conv.invitation.id }})">
+            <div class="ec-avatar ec-avatar-sm {{ conv.unread > 0 ? 'ec-av-blue' : 'ec-av-green' }}" style="flex-shrink:0;">
+                {{ user.firstName|default('?')|first|upper }}{{ user.lastName|default('')|first|upper }}
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:baseline;gap:4px;">
+                    <div style="font-size:12.5px;font-weight:{{ conv.unread > 0 ? '700' : '600' }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">
+                        {{ user.firstName }} {{ user.lastName }}
+                    </div>
+                    {% if last %}
+                    <div style="font-size:9.5px;color:var(--ec-muted);flex-shrink:0;">{{ last.sentAt|date('H:i') }}</div>
+                    {% endif %}
+                </div>
+                {% if last %}
+                <div style="font-size:11px;color:var(--ec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">
+                    {{ last.content|slice(0, 55) }}{% if last.content|length > 55 %}…{% endif %}
+                </div>
+                {% endif %}
+                {% if conv.unread > 0 %}
+                <div style="margin-top:4px;">
+                    <span style="display:inline-flex;padding:1px 6px;border-radius:999px;background:var(--ec-blue);color:#fff;font-size:9.5px;font-weight:700;">{{ conv.unread }} non lu</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    {# ── Colonne centre : thread messages ────────────────────────── #}
+    <div class="ec-thread-wrap">
+        {% set active = conversations[0] %}
+        <div class="ec-thread-hd">
+            <div class="ec-avatar ec-av-green" style="flex-shrink:0;">
+                {{ active.user.firstName|default('?')|first|upper }}{{ active.user.lastName|default('')|first|upper }}
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:700;">{{ active.user.firstName }} {{ active.user.lastName }}</div>
+                <div style="font-size:10.5px;color:var(--ec-muted);">{{ active.user.email }}</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+                <button class="ec-icon-btn" title="Voir bilan">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </button>
+                <button class="ec-icon-btn" title="Appel">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.72 12 19.79 19.79 0 0 1 1.64 3.38 2 2 0 0 1 3.6 1.21h3.01a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.83a16 16 0 0 0 6.12 6.12l.95-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.92 16.92z"/></svg>
+                </button>
+                <button class="ec-icon-btn" title="Options">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="ec-thread-msgs" id="thread-msgs">
+        {% if active.messages is empty %}
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ec-muted);">
+                <div>
+                    <div style="font-size:22px;margin-bottom:8px;">💬</div>
+                    <div style="font-size:12px;">Aucun échange pour l'instant.<br>Envoyez un premier message.</div>
+                </div>
+            </div>
+        {% else %}
+            {% set lastDate = null %}
+            {% for msg in active.messages %}
+            {% set msgDate = msg.sentAt|date('d/m/Y') %}
+            {% if msgDate != lastDate %}
+            <div style="text-align:center;margin:4px 0;">
+                <span style="font-size:10px;color:var(--ec-muted);background:var(--ec-card2);padding:3px 10px;border-radius:999px;border:1px solid var(--ec-bd);">
+                    {% if msgDate == 'now'|date('d/m/Y') %}Aujourd'hui{% elseif msgDate == 'yesterday'|date('d/m/Y') %}Hier{% else %}{{ msg.sentAt|date('d/m') }}{% endif %}
+                </span>
+            </div>
+            {% set lastDate = msgDate %}
+            {% endif %}
+            {% set isMe = msg.senderRole is defined and msg.senderRole == 'accountant' %}
+            <div class="{{ isMe ? 'ec-bubble me' : 'ec-bubble them' }}">
+                {{ msg.content }}
+                <div class="ec-bubble-meta">{{ msg.sentAt|date('H:i') }}</div>
+            </div>
+            {% endfor %}
+        {% endif %}
+        </div>
+
+        <div class="ec-thread-compose">
+            <form method="post" action="{{ path('expert_messages_send', {id: active.invitation.id}) }}">
+                <div class="ec-compose-box">
+                    <textarea id="compose-text" rows="2" placeholder="Répondre à {{ active.user.firstName }}…" name="content"></textarea>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <button type="button" class="ec-icon-btn" title="Joindre fichier">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        </button>
+                        <button type="button" class="ec-icon-btn" title="Modèle rapide">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        </button>
+                        <div style="flex:1;"></div>
+                        <button type="submit" class="ec-btn ec-btn-primary ec-btn-sm">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            Envoyer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# ── Colonne droite : contexte client ────────────────────────── #}
+    <div class="ec-context-wrap">
+        <div class="ec-context-hd">Contexte client</div>
+
+        <div class="ec-context-sec">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <div class="ec-avatar ec-av-green">
+                    {{ active.user.firstName|default('?')|first|upper }}{{ active.user.lastName|default('')|first|upper }}
+                </div>
+                <div>
+                    <div style="font-size:12.5px;font-weight:700;">{{ active.user.firstName }} {{ active.user.lastName }}</div>
+                    <div style="font-size:10.5px;color:var(--ec-muted);">{{ active.user.email }}</div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;">
+                    <span style="color:var(--ec-muted);">Plan</span>
+                    <span style="font-weight:700;color:var(--ec-accent);text-transform:uppercase;font-size:10.5px;background:rgba(13,138,94,.1);padding:1px 7px;border-radius:4px;">
+                        {{ active.user.plan|default('free')|upper }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ec-context-sec">
+            <div class="ec-context-title">Actions rapides</div>
+            <button type="button" class="ec-quick-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Voir bilans
+            </button>
+            <button type="button" class="ec-quick-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Fiche client
+            </button>
+            <button type="button" class="ec-quick-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg>
+                Valider bilan
+            </button>
+        </div>
+
+        <div class="ec-context-sec">
+            <div class="ec-context-title">Modèles réponse</div>
+            {% for tpl in [
+                {l: 'Bilan reçu, en cours'},
+                {l: 'Document manquant'},
+                {l: 'Bilan validé'},
+                {l: 'RDV disponibles'},
+            ] %}
+            <button type="button" class="ec-quick-btn" onclick="insertTpl(this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                {{ tpl.l }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <div class="ec-context-sec">
+            <div class="ec-context-title">Fichiers partagés</div>
+            <div style="font-size:11px;color:var(--ec-muted);">Aucun fichier joint à cette conversation.</div>
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function filterConvs(q) {
+    q = q.toLowerCase().trim();
+    document.querySelectorAll('#conv-list .ec-conv-item').forEach(item => {
+        item.style.display = !q || (item.dataset.search||'').includes(q) ? '' : 'none';
+    });
+}
+function openConv(el, id) {
+    document.querySelectorAll('.ec-conv-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+}
+const templates = {
+    'Bilan reçu, en cours': 'Bonjour, j\'ai bien reçu votre bilan. Je l\'analyse actuellement, je reviens vers vous sous 48h.',
+    'Document manquant': 'Pour finaliser votre bilan, il me manque : [document à préciser]. Pourriez-vous me l\'envoyer ?',
+    'Bilan validé': 'Bonne nouvelle ! Votre bilan a été validé et tamponné. Vous pouvez le télécharger depuis votre espace.',
+    'RDV disponibles': 'Je suis disponible pour un échange le [dates/créneaux]. Faites-moi signe si vous souhaitez planifier un appel.',
+};
+function insertTpl(btn) {
+    const label = btn.innerText.trim();
+    const ta = document.getElementById('compose-text');
+    if (ta && templates[label]) ta.value = templates[label];
+}
+document.getElementById('thread-msgs')?.scrollTo(0, 99999);
+</script>
+{% endblock %}

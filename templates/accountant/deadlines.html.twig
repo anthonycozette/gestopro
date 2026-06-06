@@ -1,0 +1,226 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Échéances clients{% endblock %}
+{% block breadcrumb %}Échéances clients{% endblock %}
+
+{% block body %}
+
+{# ── Header ─────────────────────────────────────────────────────── #}
+<div class="ec-page-hd">
+    <div>
+        <div class="ec-page-sub">Suivi déclarations & validation bilans · {{ year }}</div>
+        <div class="ec-page-title">Échéances clients</div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex;gap:8px;">
+        <button type="button" class="ec-btn ec-btn-ghost">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Exporter
+        </button>
+        <button type="button" class="ec-btn ec-btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Relances auto
+        </button>
+    </div>
+</div>
+
+{# ── KPI row ─────────────────────────────────────────────────────── #}
+<div class="ec-kpi-grid" style="grid-template-columns:repeat(5,1fr);">
+
+    <div class="ec-kpi {{ lateCount > 0 ? 'alert' }}">
+        <div class="ec-kpi-label" style="{{ lateCount > 0 ? 'color:#dc2626;' }}">EN RETARD</div>
+        <div class="ec-kpi-val" style="{{ lateCount > 0 ? 'color:#dc2626;' }}">{{ lateCount }}</div>
+        <div class="ec-kpi-sub">Dépassé l'échéance</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">CETTE SEMAINE</div>
+        <div class="ec-kpi-val" style="color:var(--ec-warm);">{{ weekCount }}</div>
+        <div class="ec-kpi-sub">À traiter avant vendredi</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">MONTANT DÉCLARÉ</div>
+        <div class="ec-kpi-val">{{ totalAmount|number_format(0,',',' ') }} <span style="font-size:16px;font-weight:500;">€</span></div>
+        <div class="ec-kpi-sub">Total cotisations</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">BILANS EN ATTENTE</div>
+        <div class="ec-kpi-val" style="color:var(--ec-blue);">{{ deadlines|filter(d => d.type == 'bilan')|length }}</div>
+        <div class="ec-kpi-sub">Validation requise</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">DÉCLARATIONS {{ 'now'|date('M')|upper }}</div>
+        <div class="ec-kpi-val" style="color:var(--ec-accent);">{{ declaredMois }}</div>
+        <div class="ec-kpi-sub">Complétées ce mois</div>
+    </div>
+
+</div>
+
+{# ── Alert banner retard ──────────────────────────────────────────── #}
+{% if lateCount > 0 %}
+<div style="margin-bottom:14px;padding:12px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;display:flex;align-items:center;gap:10px;border-left:4px solid #dc2626;">
+    <div style="width:32px;height:32px;border-radius:8px;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div style="flex:1;">
+        <div style="font-size:12.5px;font-weight:700;color:#991b1b;">{{ lateCount }} échéance{{ lateCount != 1 ? 's' : '' }} en retard</div>
+        <div style="font-size:11.5px;color:#b91c1c;margin-top:1px;">Ces clients n'ont pas encore complété leurs démarches. Pensez à les relancer.</div>
+    </div>
+    <button type="button" class="ec-btn ec-btn-sm" style="background:#dc2626;color:#fff;border-color:#dc2626;">Relancer tout</button>
+</div>
+{% endif %}
+
+{# ── Prochaine grosse échéance ─────────────────────────────────── #}
+{% if nextBig is not null %}
+<div style="margin-bottom:14px;padding:12px 16px;background:rgba(13,138,94,.06);border:1px solid rgba(13,138,94,.2);border-radius:10px;display:flex;align-items:center;gap:10px;">
+    <div style="width:32px;height:32px;border-radius:8px;background:rgba(13,138,94,.12);color:var(--ec-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    <div style="flex:1;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);margin-bottom:2px;">Prochaine échéance majeure</div>
+        <div style="font-size:12.5px;font-weight:700;">
+            {{ nextBig.client }} — {{ nextBig.label }} · <span style="color:var(--ec-accent);">dans {{ nextBig.daysLeft }} j</span>
+        </div>
+    </div>
+    {% if nextBig.amount > 0 %}
+    <div style="font-size:16px;font-weight:800;color:var(--ec-accent);">{{ nextBig.amount|number_format(0,',',' ') }} €</div>
+    {% endif %}
+</div>
+{% endif %}
+
+{# ── Toolbar ──────────────────────────────────────────────────────── #}
+<div class="ec-toolbar" style="margin-bottom:10px;">
+    <div style="display:flex;gap:3px;">
+        {% set filters = [
+            {l:'Tous',        k:'all'},
+            {l:'En retard',   k:'late'},
+            {l:'À faire',     k:'todo'},
+            {l:'Bilans',      k:'bilan'},
+            {l:'URSSAF',      k:'urssaf'},
+        ] %}
+        {% for f in filters %}
+        <button class="ec-tab-btn {{ loop.first ? 'active' }}" onclick="filterDeadlines(this,'{{ f.k }}')">{{ f.l }}</button>
+        {% endfor %}
+    </div>
+    <div style="flex:1;"></div>
+    <div class="ec-toolbar-search" style="min-width:200px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="Rechercher client…" oninput="searchDeadlines(this.value)"
+            style="border:none;background:transparent;font-size:11.5px;color:var(--ec-fg);font-family:inherit;outline:none;flex:1;min-width:0;">
+    </div>
+</div>
+
+{# ── Table échéances ─────────────────────────────────────────────── #}
+{% if deadlines is empty %}
+<div class="ec-panel">
+    <div class="ec-empty">
+        <div style="font-size:32px;margin-bottom:12px;">📅</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Aucune échéance</div>
+        <div style="font-size:12px;color:var(--ec-muted);">Quand des déclarations ou bilans sont en attente, ils apparaissent ici.</div>
+    </div>
+</div>
+{% else %}
+<section style="background:var(--ec-card);border:1px solid var(--ec-bd);border-radius:12px;overflow:hidden;">
+    <table class="ec-tbl" id="deadlines-table">
+        <thead>
+            <tr>
+                <th>Client</th>
+                <th>Plan</th>
+                <th>Type</th>
+                <th>Libellé</th>
+                <th style="width:100px;">Échéance</th>
+                <th style="width:80px;text-align:center;">Jours</th>
+                <th style="width:110px;text-align:right;">Montant</th>
+                <th style="width:120px;">Statut</th>
+                <th style="width:100px;text-align:right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+
+        {# Section : En retard #}
+        {% set lateRows = deadlines|filter(d => d.status == 'late') %}
+        {% if lateRows is not empty %}
+        <tr class="ec-tbl-section-hd">
+            <td colspan="9" style="padding:8px 14px;background:rgba(220,38,38,.05);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;border-top:1px solid var(--ec-bd);">
+                En retard · {{ lateRows|length }}
+            </td>
+        </tr>
+        {% for dl in lateRows %}
+        <tr data-status="late" data-type="{{ dl.type }}" data-search="{{ dl.client|lower }}"
+            style="border-top:1px solid var(--ec-bd);border-left:3px solid #dc2626;">
+            {% include 'accountant/_deadline_cells.html.twig' with {dl: dl} only %}
+        </tr>
+        {% endfor %}
+        {% endif %}
+
+        {# Section : À faire #}
+        {% set todoRows = deadlines|filter(d => d.status == 'todo') %}
+        {% if todoRows is not empty %}
+        <tr class="ec-tbl-section-hd">
+            <td colspan="9" style="padding:8px 14px;background:rgba(217,119,6,.05);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-warm);border-top:1px solid var(--ec-bd);">
+                À faire · {{ todoRows|length }}
+            </td>
+        </tr>
+        {% for dl in todoRows %}
+        <tr data-status="todo" data-type="{{ dl.type }}" data-search="{{ dl.client|lower }}"
+            style="border-top:1px solid var(--ec-bd);border-left:3px solid var(--ec-warm);">
+            {% include 'accountant/_deadline_cells.html.twig' with {dl: dl} only %}
+        </tr>
+        {% endfor %}
+        {% endif %}
+
+        {# Section : Fait #}
+        {% set doneRows = deadlines|filter(d => d.status == 'done') %}
+        {% if doneRows is not empty %}
+        <tr class="ec-tbl-section-hd">
+            <td colspan="9" style="padding:8px 14px;background:rgba(13,138,94,.04);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-accent);border-top:1px solid var(--ec-bd);">
+                Complétées · {{ doneRows|length }}
+            </td>
+        </tr>
+        {% for dl in doneRows %}
+        <tr data-status="done" data-type="{{ dl.type }}" data-search="{{ dl.client|lower }}"
+            style="border-top:1px solid var(--ec-bd);border-left:3px solid transparent;">
+            {% include 'accountant/_deadline_cells.html.twig' with {dl: dl} only %}
+        </tr>
+        {% endfor %}
+        {% endif %}
+
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+let activeDeadFilter = 'all';
+function filterDeadlines(btn, key) {
+    activeDeadFilter = key;
+    document.querySelectorAll('.ec-toolbar .ec-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyDeadlineFilters();
+}
+function searchDeadlines(q) { applyDeadlineFilters(q.toLowerCase().trim()); }
+function applyDeadlineFilters(q) {
+    if (q === undefined) q = '';
+    document.querySelectorAll('#deadlines-table tbody tr[data-status]').forEach(row => {
+        let show = true;
+        if (activeDeadFilter !== 'all') {
+            if (activeDeadFilter === 'bilan' || activeDeadFilter === 'urssaf') {
+                show = row.dataset.type === activeDeadFilter;
+            } else if (activeDeadFilter === 'todo') {
+                show = row.dataset.status === 'todo';
+            } else {
+                show = row.dataset.status === activeDeadFilter;
+            }
+        }
+        if (show && q) show = (row.dataset.search || '').includes(q);
+        row.style.display = show ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

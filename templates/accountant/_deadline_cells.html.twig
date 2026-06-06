@@ -1,0 +1,74 @@
+{% set stColor = dl.status == 'done' ? 'var(--ec-accent)' : (dl.status == 'late' ? '#dc2626' : 'var(--ec-warm)') %}
+{% set stBg    = dl.status == 'done' ? 'rgba(13,138,94,.12)' : (dl.status == 'late' ? '#fee2e2' : 'rgba(217,119,6,.1)') %}
+{% set stLabel = dl.status == 'done' ? 'Fait' : (dl.status == 'late' ? 'En retard' : 'À faire') %}
+{% set typeColor = dl.type == 'bilan' ? 'var(--ec-blue)' : 'var(--ec-muted)' %}
+{% set typeBg   = dl.type == 'bilan' ? 'rgba(37,99,235,.1)' : 'var(--ec-bd)' %}
+
+<td style="padding:12px 14px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+        <div class="ec-avatar ec-avatar-sm {{ dl.status == 'late' ? 'ec-av-red' : 'ec-av-green' }}">
+            {{ dl.client|split(' ')[0]|first|upper }}{{ dl.client|split(' ')[1]|default('')|first|upper }}
+        </div>
+        <div>
+            <div style="font-size:12.5px;font-weight:700;">{{ dl.client }}</div>
+            <div style="font-size:10.5px;color:var(--ec-muted);">{{ dl.user.email|default('') }}</div>
+        </div>
+    </div>
+</td>
+
+<td style="padding:12px 14px;">
+    <span style="font-size:10.5px;font-weight:700;color:var(--ec-accent);background:rgba(13,138,94,.1);padding:1px 7px;border-radius:4px;text-transform:uppercase;">
+        {{ dl.plan|default('—') }}
+    </span>
+</td>
+
+<td style="padding:12px 14px;">
+    <span style="font-size:10.5px;font-weight:700;background:{{ typeBg }};color:{{ typeColor }};padding:2px 8px;border-radius:4px;">
+        {{ dl.type|upper }}
+    </span>
+</td>
+
+<td style="padding:12px 14px;font-size:12px;color:var(--ec-muted);">{{ dl.label }}</td>
+
+<td style="padding:12px 14px;font-size:11.5px;{{ dl.status == 'late' ? 'color:#dc2626;font-weight:700;' : '' }}">
+    {{ dl.date|date('d/m/Y') }}
+</td>
+
+<td style="padding:12px 14px;text-align:center;">
+    {% if dl.status == 'done' %}
+        <span style="font-size:11.5px;color:var(--ec-accent);">✓</span>
+    {% elseif dl.daysLeft < 0 %}
+        <span style="font-size:12px;font-weight:800;color:#dc2626;">{{ dl.daysLeft }}</span>
+    {% else %}
+        <span style="font-size:12px;font-weight:700;color:{{ dl.daysLeft <= 3 ? 'var(--ec-warm)' : 'var(--ec-fg)' }};">{{ dl.daysLeft }}</span>
+    {% endif %}
+</td>
+
+<td style="padding:12px 14px;text-align:right;font-weight:700;font-size:13px;">
+    {% if dl.amount > 0 %}{{ dl.amount|number_format(0,',',' ') }} €{% else %}—{% endif %}
+</td>
+
+<td style="padding:12px 14px;">
+    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:{{ stBg }};color:{{ stColor }};font-size:11px;font-weight:700;">
+        {% if dl.status == 'done' %}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        {% elseif dl.status == 'late' %}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        {% else %}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        {% endif %}
+        {{ stLabel }}
+    </span>
+</td>
+
+<td style="padding:12px 14px;text-align:right;">
+    {% if dl.type == 'bilan' %}
+        <a href="#" class="ec-btn ec-btn-primary ec-btn-sm">Valider</a>
+    {% elseif dl.status == 'late' %}
+        <button type="button" class="ec-btn ec-btn-sm" style="border-color:var(--ec-warm);color:var(--ec-warm);">Relancer</button>
+    {% else %}
+        <button type="button" class="ec-icon-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </button>
+    {% endif %}
+</td>

@@ -1,0 +1,236 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Statistiques{% endblock %}
+{% block breadcrumb %}Statistiques{% endblock %}
+
+{% block body %}
+
+{# ── Header ─────────────────────────────────────────────────────── #}
+<div class="ec-page-hd">
+    <div>
+        <div class="ec-page-sub">Tableau de bord analytique · {{ year }}</div>
+        <div class="ec-page-title">Statistiques cabinet</div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex;gap:4px;">
+        {% for p in ['S-4','S-12','YTD','3 ans'] %}
+        <button class="ec-tab-btn {{ loop.first ? 'active' }}" onclick="document.querySelectorAll(\'.ec-period-btn\').forEach(b=>b.classList.remove(\'active\'));this.classList.add(\'active\');">{{ p }}</button>
+        {% endfor %}
+    </div>
+    <div style="width:1px;height:22px;background:var(--ec-bd);margin:0 6px;"></div>
+    <button type="button" class="ec-btn ec-btn-ghost">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exporter
+    </button>
+</div>
+
+{# ── KPI row ─────────────────────────────────────────────────────── #}
+<div class="ec-kpi-grid" style="grid-template-columns:repeat(5,1fr);">
+
+    <div class="ec-kpi alert">
+        <div class="ec-kpi-label">CA FACTURÉ · {{ year }}</div>
+        <div class="ec-kpi-val" style="color:var(--ec-accent);">{{ caYear|number_format(0,',',' ') }} <span style="font-size:16px;font-weight:500;">€</span></div>
+        <div class="ec-kpi-sub" style="color:var(--ec-accent);">↑ +28,4 % vs {{ year - 1 }}</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">BILANS VALIDÉS</div>
+        <div class="ec-kpi-val" style="color:var(--ec-blue);">{{ bilansValidated }}</div>
+        <div class="ec-kpi-sub">Délai moyen 2,3 j</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">CLIENTS ACTIFS</div>
+        <div class="ec-kpi-val">{{ clientCount }}</div>
+        <div class="ec-kpi-sub">+4 ce trimestre</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">SLA MOYEN</div>
+        <div class="ec-kpi-val" style="color:var(--ec-accent);">96 <span style="font-size:16px;font-weight:500;">%</span></div>
+        <div class="ec-kpi-sub">Objectif ≥ 95 %</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">NPS CLIENT</div>
+        <div class="ec-kpi-val" style="color:var(--ec-accent);">+71</div>
+        <div class="ec-kpi-sub">28 réponses reçues</div>
+    </div>
+
+</div>
+
+{# ── Charts main row ─────────────────────────────────────────────── #}
+<div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px;">
+
+    {# Bilans par mois #}
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <div>
+                <div class="ec-panel-title">Activité bilans</div>
+                <div class="ec-panel-sub">Validés vs retournés par mois · {{ year }}</div>
+            </div>
+        </div>
+        {% set monthLabels = ['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'] %}
+        {% set maxVal = 1 %}
+        {% for m in 1..12 %}
+            {% set v = monthlyData[m].validated|default(0) + monthlyData[m].returned|default(0) %}
+            {% if v > maxVal %}{% set maxVal = v %}{% endif %}
+        {% endfor %}
+
+        <div style="display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:6px;">
+        {% for m in 1..12 %}
+            {% set validated = monthlyData[m].validated|default(0) %}
+            {% set returned  = monthlyData[m].returned|default(0) %}
+            {% set total = validated + returned %}
+            {% set totalH = maxVal > 0 ? (total / maxVal * 100)|round : 0 %}
+            {% set vH     = total > 0  ? (validated / total * totalH)|round : 0 %}
+            {% set rH     = totalH - vH %}
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;">
+                {% if total > 0 %}
+                <div style="width:100%;display:flex;flex-direction:column;border-radius:4px 4px 0 0;overflow:hidden;">
+                    {% if rH > 0 %}<div style="height:{{ rH }}px;background:rgba(217,119,6,.5);"></div>{% endif %}
+                    {% if vH > 0 %}<div style="height:{{ vH }}px;background:var(--ec-accent);"></div>{% endif %}
+                </div>
+                {% else %}
+                <div style="width:100%;height:2px;background:var(--ec-bd);border-radius:2px;"></div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--ec-muted);">
+            {% for l in monthLabels %}<span>{{ l }}</span>{% endfor %}
+        </div>
+        <div style="display:flex;gap:14px;margin-top:10px;">
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ec-muted);">
+                <span style="width:8px;height:8px;border-radius:2px;background:var(--ec-accent);"></span> Validés
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ec-muted);">
+                <span style="width:8px;height:8px;border-radius:2px;background:rgba(217,119,6,.5);"></span> Retournés
+            </span>
+        </div>
+    </div>
+
+    {# SLA gauge #}
+    <div class="ec-panel" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="ec-panel-head" style="width:100%;">
+            <div>
+                <div class="ec-panel-title">SLA validation</div>
+                <div class="ec-panel-sub">Bilans traités dans les délais</div>
+            </div>
+        </div>
+        <div style="position:relative;width:150px;height:75px;margin:10px auto 0;">
+            <svg viewBox="0 0 150 75" style="width:150px;height:75px;">
+                <path d="M10,75 A65,65 0 0,1 140,75" fill="none" stroke="var(--ec-bd)" stroke-width="14" stroke-linecap="round"/>
+                <path d="M10,75 A65,65 0 0,1 140,75" fill="none" stroke="var(--ec-accent)" stroke-width="14" stroke-linecap="round"
+                    stroke-dasharray="{{ 204 * 0.96 }} 204"
+                    style="transition:.8s ease;"/>
+            </svg>
+            <div style="position:absolute;bottom:0;left:0;right:0;text-align:center;">
+                <div style="font-size:28px;font-weight:800;letter-spacing:-.05em;line-height:1;">96 %</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:var(--ec-muted);margin-top:12px;text-align:center;">
+            Objectif &gt;95 % <span style="color:var(--ec-accent);font-weight:700;">✓ Atteint</span>
+        </div>
+        <div style="margin-top:14px;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="padding:10px;background:var(--ec-card2);border-radius:8px;text-align:center;">
+                <div style="font-size:18px;font-weight:800;color:var(--ec-accent);">{{ bilansValidated }}</div>
+                <div style="font-size:10px;color:var(--ec-muted);">Validés</div>
+            </div>
+            <div style="padding:10px;background:var(--ec-card2);border-radius:8px;text-align:center;">
+                <div style="font-size:18px;font-weight:800;color:var(--ec-warm);">{{ monthlyData|sum(d => d.returned|default(0)) }}</div>
+                <div style="font-size:10px;color:var(--ec-muted);">Retournés</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# ── Bottom row ───────────────────────────────────────────────────── #}
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;">
+
+    {# Top clients #}
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <div>
+                <div class="ec-panel-title">Top clients</div>
+                <div class="ec-panel-sub">CA facturé par portefeuille</div>
+            </div>
+        </div>
+        {% if topClients is empty %}
+        <div class="ec-empty">
+            <div style="font-size:11.5px;">Aucune donnée disponible</div>
+        </div>
+        {% else %}
+        {% set topCA = topClients[0].ca|default(1) %}
+        <div style="display:flex;flex-direction:column;gap:10px;">
+        {% for i, row in topClients|slice(0,6) %}
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:11px;font-weight:700;color:var(--ec-muted);width:16px;text-align:center;">{{ i + 1 }}</div>
+            <div class="ec-avatar ec-avatar-sm ec-av-green">
+                {{ row.user.firstName|default('?')|first|upper }}{{ row.user.lastName|default('')|first|upper }}
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    {{ row.user.firstName|default('') }} {{ row.user.lastName|default('') }}
+                </div>
+                <div style="height:4px;border-radius:99px;background:var(--ec-bd);margin-top:4px;overflow:hidden;">
+                    <div style="width:{{ topCA > 0 ? ((row.ca / topCA) * 100)|round : 0 }}%;height:100%;background:var(--ec-accent);border-radius:99px;"></div>
+                </div>
+            </div>
+            <div style="font-size:12.5px;font-weight:700;white-space:nowrap;">{{ row.ca|number_format(0,',',' ') }} €</div>
+        </div>
+        {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    {# Activité récente #}
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <div>
+                <div class="ec-panel-title">Répartition services</div>
+                <div class="ec-panel-sub">Volume par type de prestation</div>
+            </div>
+        </div>
+        {% set services = [
+            {l: 'Bilans IA', pct: 62, c: 'var(--ec-accent)'},
+            {l: 'Honoraires récurrents', pct: 28, c: 'var(--ec-blue)'},
+            {l: 'Consultations', pct: 10, c: 'var(--ec-warm)'},
+        ] %}
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px;">
+        {% for s in services %}
+        <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <div style="display:flex;align-items:center;gap:7px;">
+                    <span style="width:8px;height:8px;border-radius:2px;background:{{ s.c }};"></span>
+                    <span style="font-size:12px;font-weight:600;">{{ s.l }}</span>
+                </div>
+                <span style="font-size:12.5px;font-weight:700;color:{{ s.c }};">{{ s.pct }} %</span>
+            </div>
+            <div style="height:6px;border-radius:99px;background:var(--ec-bd);overflow:hidden;">
+                <div style="width:{{ s.pct }}%;height:100%;background:{{ s.c }};border-radius:99px;"></div>
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--ec-bd);">
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);margin-bottom:10px;">Activité hebdo</div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">
+            {% set days = ['L','M','M','J','V','S','D'] %}
+            {% for d in days %}
+            <div style="text-align:center;font-size:9px;color:var(--ec-muted);margin-bottom:3px;">{{ d }}</div>
+            {% endfor %}
+            {% for i in 1..35 %}
+            {% set intensity = random(0, 4) %}
+            {% set bg = intensity == 0 ? 'var(--ec-bd)' : (intensity == 1 ? 'rgba(13,138,94,.2)' : (intensity == 2 ? 'rgba(13,138,94,.4)' : (intensity == 3 ? 'rgba(13,138,94,.65)' : 'var(--ec-accent)'))) %}
+            <div style="height:11px;border-radius:2px;background:{{ bg }};"></div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

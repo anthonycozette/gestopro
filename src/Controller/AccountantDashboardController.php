@@ -602,4 +602,311 @@ class AccountantDashboardController extends AbstractController
 
         return $this->redirectToRoute('expert_client_detail', ['id' => $invitation->getId(), '#' => 'messages']);
     }
+
+    // ── Facturation cabinet ──────────────────────────────────────────────
+    #[Route('/billing', name: 'billing')]
+    public function billing(): Response
+    {
+        $accountant = $this->accountant();
+        $accepted   = $this->invRepo->findAcceptedByAccountant($accountant);
+        $now        = new \DateTimeImmutable();
+        $year       = (int) $now->format('Y');
+        $month      = (int) $now->format('n');
+
+        $invoiceRows  = [];
+        $mrrExpert    = 0;
+        $mrrPro       = 0;
+        $encaisseMois = 0;
+        $enAttente    = 0;
+        $enRetard     = 0;
+        $num          = 1;
+
+        foreach ($accepted as $inv) {
+            $user = $inv->getUser();
+            $plan = $user->getPlan() ?? 'pro';
+            $fee  = match($plan) { 'expert' => 49, 'pro' => 19, default => 0 };
+
+            if ($plan === 'expert') $mrrExpert += 49;
+            elseif ($plan === 'pro') $mrrPro   += 19;
+
+            if ($fee > 0) {
+                $d = new \DateTime('first day of this month');
+                $invoiceRows[] = [
+                    'num' => 'HON-'.$year.'-'.str_pad($num++, 3, '0', STR_PAD_LEFT),
+                    'client' => $user->getFirstName().' '.$user->getLastName(),
+                    'service' => 'Abonnement '.ucfirst($plan).' · '.$this->monthName($month),
+                    'amount' => $fee, 'status' => 'paid',
+                    'issuedAt' => $d, 'dueAt' => $d, 'recurring' => true,
+                ];
+                $encaisseMois += $fee;
+            }
+
+            $validatedBilans = $this->em->getRepository(BalanceSheet::class)->findBy([
+                'user' => $user, 'accountant' => $accountant, 'status' => BalanceSheet::STATUS_VALIDATED,
+            ]);
+            foreach ($validatedBilans as $sheet) {
+                if (!$sheet->getValidatedAt() || $sheet->getValidatedAt()->format('Y') !== (string) $year) continue;
+                $issued = \DateTime::createFromImmutable($sheet->getValidatedAt());
+                $due    = (clone $issued)->modify('+30 days');
+                $isPast = $due < new \DateTime();
+                $status = $isPast ? 'paid' : 'sent';
+                $isPast ? ($encaisseMois += 390) : ($enAttente += 390);
+                $invoiceRows[] = [
+                    'num' => 'HON-'.$year.'-'.str_pad($num++, 3, '0', STR_PAD_LEFT),
+                    'client' => $user->getFirstName().' '.$user->getLastName(),
+                    'service' => 'Validation bilan '.$sheet->getPeriod(),
+                    'amount' => 390, 'status' => $status,
+                    'issuedAt' => $issued, 'dueAt' => $due, 'recurring' => false,
+                ];
+            }
+        }
+
+        usort($invoiceRows, fn($a, $b) => $b['issuedAt'] <=> $a['issuedAt']);
+        $mrr    = $mrrExpert + $mrrPro;
+        $caYear = $mrr * $month + array_sum(array_column($invoiceRows, 'amount'));
+
+        return $this->render('accountant/billing.html.twig', array_merge($this->topbarVars(), [
+            'invoiceRows'  => $invoiceRows,
+            'caYear'       => $caYear,
+            'mrr'          => $mrr,
+            'mrrExpert'    => $mrrExpert,
+            'mrrPro'       => $mrrPro,
+            'encaisseMois' => $encaisseMois,
+            'enAttente'    => $enAttente,
+            'enRetard'     => $enRetard,
+            'year'         => $year,
+            'active_nav'   => 'bill',
+        ]));
+    }
+
+    // ── Statistiques ─────────────────────────────────────────────────────
+    #[Route('/stats', name: 'stats')]
+    public function stats(): Response
+    {
+        $accountant = $this->accountant();
+        $accepted   = $this->invRepo->findAcceptedByAccountant($accountant);
+        $now        = new \DateTimeImmutable();
+        $year       = (int) $now->format('Y');
+
+        $bilansValidated = 0;
+        $caYear          = 0;
+        $monthlyData     = array_fill(1, 12, ['validated' => 0, 'returned' => 0]);
+        $topClients      = [];
+
+        foreach ($accepted as $inv) {
+            $user = $inv->getUser();
+            $ca   = $this->invoiceRepo->getYearRevenue($user, $year);
+            $caYear += $ca;
+            $topClients[] = ['user' => $user, 'ca' => $ca];
+
+            foreach ($this->em->getRepository(BalanceSheet::class)->findBy(['user' => $user]) as $sheet) {
+                if ($sheet->getStatus() === BalanceSheet::STATUS_VALIDATED) {
+                    $bilansValidated++;
+                    if ($sheet->getValidatedAt() && $sheet->getValidatedAt()->format('Y') === (string) $year) {
+                        $m = (int) $sheet->getValidatedAt()->format('n');
+                        $monthlyData[$m]['validated']++;
+                    }
+                }
+                if ($sheet->getStatus() === BalanceSheet::STATUS_ANNOTATED
+                    && $sheet->getCreatedAt()->format('Y') === (string) $year) {
+                    $m = (int) $sheet->getCreatedAt()->format('n');
+                    $monthlyData[$m]['returned']++;
+                }
+            }
+        }
+
+        usort($topClients, fn($a, $b) => $b['ca'] - $a['ca']);
+
+        return $this->render('accountant/stats.html.twig', array_merge($this->topbarVars(), [
+            'bilansValidated' => $bilansValidated,
+            'caYear'          => $caYear,
+            'clientCount'     => count($accepted),
+            'monthlyData'     => $monthlyData,
+            'topClients'      => array_slice($topClients, 0, 5),
+            'year'            => $year,
+            'active_nav'      => 'stats',
+        ]));
+    }
+
+    // ── Messages ─────────────────────────────────────────────────────────
+    #[Route('/messages', name: 'messages')]
+    public function messages(): Response
+    {
+        $accountant = $this->accountant();
+        $accepted   = $this->invRepo->findAcceptedByAccountant($accountant);
+
+        $conversations = [];
+        $totalUnread   = 0;
+
+        foreach ($accepted as $inv) {
+            $msgs = $this->msgRepo->findByInvitation($inv);
+            usort($msgs, fn($a, $b) => $a->getCreatedAt() <=> $b->getCreatedAt());
+            $lastMsg = empty($msgs) ? null : end($msgs);
+            $unread  = count(array_filter($msgs, fn($m) => $m->isFromClient()));
+            $totalUnread += $unread;
+            $conversations[] = [
+                'invitation' => $inv,
+                'user'       => $inv->getUser(),
+                'messages'   => $msgs,
+                'lastMsg'    => $lastMsg,
+                'unread'     => $unread,
+            ];
+        }
+
+        usort($conversations, function ($a, $b) {
+            if (!$a['lastMsg'] && !$b['lastMsg']) return 0;
+            if (!$a['lastMsg']) return 1;
+            if (!$b['lastMsg']) return -1;
+            return $b['lastMsg']->getCreatedAt() <=> $a['lastMsg']->getCreatedAt();
+        });
+
+        $activeConv = null;
+        foreach ($conversations as $conv) {
+            if ($conv['lastMsg']) { $activeConv = $conv; break; }
+        }
+        if (!$activeConv && !empty($conversations)) {
+            $activeConv = $conversations[0];
+        }
+
+        return $this->render('accountant/messages.html.twig', array_merge($this->topbarVars(), [
+            'conversations' => $conversations,
+            'activeConv'    => $activeConv,
+            'totalUnread'   => $totalUnread,
+            'active_nav'    => 'messages',
+        ]));
+    }
+
+    // ── Messages · send from messages page ───────────────────────────────
+    #[Route('/messages/{id}/send', name: 'messages_send', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function messagesSend(AccountantInvitation $invitation, Request $request): Response
+    {
+        $accountant = $this->accountant();
+        if ($invitation->getAccountant() !== $accountant) {
+            throw $this->createAccessDeniedException();
+        }
+        if (!$this->isCsrfTokenValid('msg_send_'.$invitation->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+        $content = trim($request->request->get('content', ''));
+        if ($content !== '') {
+            $msg = (new ExpertMessage())
+                ->setInvitation($invitation)
+                ->setSenderType(ExpertMessage::SENDER_EXPERT)
+                ->setContent($content);
+            $this->em->persist($msg);
+            $this->em->flush();
+        }
+        return $this->redirectToRoute('expert_messages');
+    }
+
+    // ── Échéances clients ────────────────────────────────────────────────
+    #[Route('/deadlines', name: 'deadlines')]
+    public function deadlines(): Response
+    {
+        $accountant = $this->accountant();
+        $accepted   = $this->invRepo->findAcceptedByAccountant($accountant);
+        $now        = new \DateTimeImmutable();
+        $year       = (int) $now->format('Y');
+
+        $deadlines    = [];
+        $lateCount    = 0;
+        $weekCount    = 0;
+        $totalAmount  = 0;
+        $declaredMois = 0;
+        $nextBig      = null;
+
+        foreach ($accepted as $inv) {
+            $user = $inv->getUser();
+
+            $declarations = $this->em->getRepository(\App\Entity\UrssafDeclaration::class)
+                ->findBy(['user' => $user], ['periodEnd' => 'ASC']);
+
+            foreach ($declarations as $decl) {
+                if (!$decl->getPeriodEnd()) continue;
+                $end      = $decl->getPeriodEnd();
+                $daysLeft = (int) ceil(($end->getTimestamp() - $now->getTimestamp()) / 86400);
+                $amount   = (int) round((float) $decl->getCotisationAmount());
+
+                if ($decl->isDeclared()) {
+                    $status = 'done';
+                    $declaredMois++;
+                } elseif ($daysLeft < 0) {
+                    $status = 'late';
+                    $lateCount++;
+                    $totalAmount += $amount;
+                } elseif ($daysLeft <= 7) {
+                    $status = 'todo';
+                    $weekCount++;
+                    $totalAmount += $amount;
+                } else {
+                    $status = 'todo';
+                    $totalAmount += $amount;
+                }
+
+                if ($status !== 'done' && ($nextBig === null || $end < $nextBig['date'])) {
+                    $nextBig = ['date' => $end, 'client' => $user->getFirstName(), 'amount' => $amount];
+                }
+
+                $deadlines[] = [
+                    'client'   => $user->getFirstName().' '.$user->getLastName(),
+                    'user'     => $user,
+                    'type'     => 'URSSAF',
+                    'label'    => 'Cotisations '.($decl->getPeriodLabel() ?? 'URSSAF'),
+                    'date'     => \DateTime::createFromImmutable($end),
+                    'daysLeft' => $daysLeft,
+                    'amount'   => $amount,
+                    'status'   => $status,
+                    'kind'     => 'social',
+                    'plan'     => $user->getPlan() ?? 'pro',
+                ];
+            }
+
+            $bilans = $this->em->getRepository(BalanceSheet::class)->findBy([
+                'user' => $user, 'status' => BalanceSheet::STATUS_PENDING_REVIEW,
+            ]);
+            foreach ($bilans as $sheet) {
+                $deadline = \DateTime::createFromImmutable($sheet->getCreatedAt())->modify('+7 days');
+                $daysLeft = (int) ceil(($deadline->getTimestamp() - (new \DateTime())->getTimestamp()) / 86400);
+                $status   = $daysLeft < 0 ? 'late' : 'todo';
+                if ($status === 'late') $lateCount++;
+                $deadlines[] = [
+                    'client'   => $user->getFirstName().' '.$user->getLastName(),
+                    'user'     => $user,
+                    'type'     => 'Bilan',
+                    'label'    => 'Validation bilan '.$sheet->getPeriod(),
+                    'date'     => $deadline,
+                    'daysLeft' => $daysLeft,
+                    'amount'   => null,
+                    'status'   => $status,
+                    'kind'     => 'compta',
+                    'plan'     => $user->getPlan() ?? 'pro',
+                ];
+            }
+        }
+
+        usort($deadlines, function ($a, $b) {
+            $p = ['late' => 0, 'todo' => 1, 'progress' => 2, 'done' => 3];
+            $ap = $p[$a['status']] ?? 1;
+            $bp = $p[$b['status']] ?? 1;
+            if ($ap !== $bp) return $ap - $bp;
+            return $a['date'] <=> $b['date'];
+        });
+
+        return $this->render('accountant/deadlines.html.twig', array_merge($this->topbarVars(), [
+            'deadlines'    => $deadlines,
+            'lateCount'    => $lateCount,
+            'weekCount'    => $weekCount,
+            'totalAmount'  => $totalAmount,
+            'declaredMois' => $declaredMois,
+            'nextBig'      => $nextBig,
+            'year'         => $year,
+            'active_nav'   => 'deadlines',
+        ]));
+    }
+
+    private function monthName(int $m): string
+    {
+        return ['','janvier','février','mars','avril','mai','juin',
+                'juillet','août','septembre','octobre','novembre','décembre'][$m];
+    }
 }

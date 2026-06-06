@@ -1,0 +1,306 @@
+{% extends 'accountant/base.html.twig' %}
+
+{% block title %}Facturation cabinet{% endblock %}
+{% block breadcrumb %}Facturation cabinet{% endblock %}
+
+{% block body %}
+
+{# ── Header ───────────────────────────────────────────────────────── #}
+<div class="ec-page-hd">
+    <div>
+        <div class="ec-page-sub">Cabinet · honoraires facturés aux clients</div>
+        <div class="ec-page-title">Facturation cabinet</div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex;gap:8px;">
+        <button type="button" class="ec-btn ec-btn-ghost">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Export comptable
+        </button>
+        <button type="button" class="ec-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Relancer impayés
+        </button>
+        <button type="button" class="ec-btn ec-btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nouvelle facture
+        </button>
+    </div>
+</div>
+
+{# ── KPI row ─────────────────────────────────────────────────────── #}
+<div class="ec-kpi-grid" style="grid-template-columns:repeat(5,1fr);">
+
+    <div class="ec-kpi alert">
+        <div class="ec-kpi-label">CA FACTURÉ · {{ year }}</div>
+        <div class="ec-kpi-val" style="color:var(--ec-accent);">{{ caYear|number_format(0,',',' ') }} <span style="font-size:16px;font-weight:500;">€</span></div>
+        <div class="ec-kpi-sub">Honoraires perçus</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">
+            REVENU RÉCURRENT · MRR
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ec-blue)" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="ec-kpi-val" style="color:var(--ec-blue);">{{ mrr|number_format(0,',',' ') }} <span style="font-size:16px;font-weight:500;">€</span></div>
+        <div class="ec-kpi-sub">{{ invoiceRows|filter(r => r.recurring)|length }} abonnements actifs</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">
+            ENCAISSÉ CE MOIS
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ec-accent)" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="ec-kpi-val" style="color:var(--ec-accent);">{{ encaisseMois|number_format(0,',',' ') }} <span style="font-size:16px;font-weight:500;">€</span></div>
+        <div class="ec-kpi-sub">{{ invoiceRows|filter(r => r.status == 'paid')|length }} factures réglées</div>
+    </div>
+
+    <div class="ec-kpi">
+        <div class="ec-kpi-label">
+            EN ATTENTE
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ec-warm)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="ec-kpi-val" style="color:var(--ec-warm);">{{ enAttente|number_format(0,',',' ') }} <span style="font-size:16px;font-weight:500;">€</span></div>
+        <div class="ec-kpi-sub">{{ invoiceRows|filter(r => r.status == 'sent')|length }} factures envoyées</div>
+    </div>
+
+    <div class="ec-kpi {{ enRetard > 0 ? 'alert' }}">
+        <div class="ec-kpi-label">
+            EN RETARD
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{ enRetard > 0 ? '#dc2626' : 'var(--ec-muted)' }}" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+        </div>
+        <div class="ec-kpi-val" style="{{ enRetard > 0 ? 'color:#dc2626;' }}">{{ enRetard|number_format(0,',',' ') }} <span style="font-size:16px;font-weight:500;">€</span></div>
+        <div class="ec-kpi-sub">{{ invoiceRows|filter(r => r.status == 'late')|length }} facture{{ invoiceRows|filter(r => r.status == 'late')|length != 1 ? 's' : '' }}</div>
+    </div>
+
+</div>
+
+{# ── Charts row ───────────────────────────────────────────────────── #}
+<div style="display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:18px;">
+
+    {# Revenue area chart #}
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <div>
+                <div class="ec-panel-title">Honoraires facturés</div>
+                <div class="ec-panel-sub">Mensuel {{ year }} · récurrent vs ponctuel</div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px;">
+            <div style="font-size:28px;font-weight:700;letter-spacing:-.06em;">{{ caYear|number_format(0,',',' ') }} €</div>
+            <span style="font-size:11.5px;font-weight:700;color:var(--ec-accent);background:rgba(13,138,94,.1);padding:3px 8px;border-radius:999px;">↑ +28 %</span>
+            <div style="flex:1;"></div>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ec-muted);">
+                <span style="width:9px;height:9px;border-radius:2px;background:var(--ec-accent);"></span> Encaissé
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ec-muted);">
+                <span style="width:9px;height:9px;border-radius:2px;background:var(--ec-bd);"></span> Facturé
+            </span>
+        </div>
+        {# SVG area chart — données indicatives #}
+        <svg viewBox="0 0 840 120" style="width:100%;height:120px;" preserveAspectRatio="none">
+            <defs>
+                <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--ec-accent)" stop-opacity=".18"/>
+                    <stop offset="100%" stop-color="var(--ec-accent)" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+            <path d="M0,96 L70,88 L140,78 L210,58 L280,68 L350,30 L420,42 L490,56 L560,28 L630,18 L700,14 L770,22 L840,36 L840,120 L0,120 Z"
+                fill="url(#area-grad)"/>
+            <polyline points="0,96 70,88 140,78 210,58 280,68 350,30 420,42 490,56 560,28 630,18 700,14 770,22 840,36"
+                fill="none" stroke="var(--ec-accent)" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--ec-muted);">
+            {% for label in ['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'] %}
+            <span>{{ label }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# MRR breakdown #}
+    <div class="ec-panel">
+        <div class="ec-panel-head">
+            <div>
+                <div class="ec-panel-title">Revenu récurrent</div>
+                <div class="ec-panel-sub">MRR par formule · {{ mrr|number_format(0,',',' ') }} € / mois</div>
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            {% set plans = [
+                {label: 'Abonnement Expert', mrr: mrrExpert, color: 'var(--ec-blue)'},
+                {label: 'Abonnement Pro',    mrr: mrrPro,    color: 'var(--ec-accent)'},
+            ] %}
+            {% set maxMrr = max(mrrExpert, mrrPro, 1) %}
+            {% for p in plans %}
+            <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+                    <div style="display:flex;align-items:center;gap:7px;">
+                        <span style="width:9px;height:9px;border-radius:2px;background:{{ p.color }};"></span>
+                        <span style="font-size:12px;font-weight:600;">{{ p.label }}</span>
+                    </div>
+                    <span style="font-size:12.5px;font-weight:700;">{{ p.mrr|number_format(0,',',' ') }} <span style="font-size:10px;color:var(--ec-muted);font-weight:500;">/mois</span></span>
+                </div>
+                <div style="height:7px;border-radius:99px;background:var(--ec-bd);overflow:hidden;">
+                    <div style="width:{{ maxMrr > 0 ? ((p.mrr / maxMrr) * 100)|round : 0 }}%;height:100%;background:{{ p.color }};border-radius:99px;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if mrr > 0 %}
+        <div style="margin-top:16px;padding:12px 14px;border-radius:10px;background:rgba(13,138,94,.06);border:1px solid rgba(13,138,94,.2);display:flex;align-items:center;gap:10px;">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(13,138,94,.12);color:var(--ec-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div style="flex:1;font-size:11.5px;color:var(--ec-fg);line-height:1.5;">
+                Projection annuelle : <strong>{{ (mrr * 12)|number_format(0,',',' ') }} €</strong> de récurrent.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{# ── Toolbar ──────────────────────────────────────────────────────── #}
+<div class="ec-toolbar" style="margin-bottom:10px;">
+    <div style="display:flex;gap:3px;">
+        {% set statuses = [
+            {l: 'Toutes',    s: 'all',   c: invoiceRows|length},
+            {l: 'Payées',    s: 'paid',  c: invoiceRows|filter(r => r.status == 'paid')|length,  dot: 'var(--ec-accent)'},
+            {l: 'Envoyées',  s: 'sent',  c: invoiceRows|filter(r => r.status == 'sent')|length,  dot: 'var(--ec-blue)'},
+            {l: 'En retard', s: 'late',  c: invoiceRows|filter(r => r.status == 'late')|length,  dot: '#dc2626'},
+            {l: 'Brouillons',s: 'draft', c: invoiceRows|filter(r => r.status == 'draft')|length, dot: 'var(--ec-muted)'},
+        ] %}
+        {% for t in statuses %}
+        <button class="ec-tab-btn {{ loop.first ? 'active' }}" onclick="filterBilling(this,'{{ t.s }}')">
+            {% if t.dot is defined %}<span style="width:5px;height:5px;border-radius:99px;background:{{ t.dot }};display:inline-block;"></span>{% endif %}
+            {{ t.l }} <span style="font-size:10.5px;font-weight:600;color:inherit;">{{ t.c }}</span>
+        </button>
+        {% endfor %}
+    </div>
+    <div style="width:1px;height:22px;background:var(--ec-bd);margin:0 4px;"></div>
+    <button type="button" class="ec-btn ec-btn-sm" style="font-size:11.5px;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Période : <strong>{{ 'now'|date('M Y') }}</strong>
+    </button>
+    <div style="flex:1;"></div>
+    <div class="ec-toolbar-search" style="min-width:220px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="N° facture, client, prestation…" oninput="searchBilling(this.value)"
+            style="border:none;background:transparent;font-size:11.5px;color:var(--ec-fg);font-family:inherit;outline:none;flex:1;min-width:0;">
+    </div>
+</div>
+
+{# ── Table ────────────────────────────────────────────────────────── #}
+{% if invoiceRows is empty %}
+<div class="ec-panel">
+    <div class="ec-empty">
+        <div style="font-size:32px;margin-bottom:12px;">€</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Aucune facture pour le moment</div>
+        <div style="font-size:12px;">Les honoraires facturés à vos clients apparaîtront ici.</div>
+    </div>
+</div>
+{% else %}
+<section style="background:var(--ec-card);border:1px solid var(--ec-bd);border-radius:12px;overflow:hidden;">
+    <table class="ec-tbl" id="billing-table">
+        <thead>
+            <tr>
+                <th style="width:32px;padding:9px 12px;"><span style="width:15px;height:15px;border-radius:4px;border:1.5px solid var(--ec-subtle);display:inline-flex;"></span></th>
+                <th>Facture</th>
+                <th>Client</th>
+                <th>Prestation</th>
+                <th style="width:90px;">Émise</th>
+                <th style="width:90px;">Échéance</th>
+                <th style="width:120px;text-align:right;">Montant HT</th>
+                <th style="width:130px;">Statut</th>
+                <th style="width:120px;text-align:right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for inv in invoiceRows %}
+        {% set stColor = inv.status == 'paid' ? 'var(--ec-accent)' : (inv.status == 'sent' ? 'var(--ec-blue)' : (inv.status == 'late' ? '#dc2626' : 'var(--ec-muted)')) %}
+        {% set stBg    = inv.status == 'paid' ? 'rgba(13,138,94,.12)' : (inv.status == 'sent' ? 'rgba(37,99,235,.1)' : (inv.status == 'late' ? '#fee2e2' : 'var(--ec-bd)')) %}
+        {% set stLabel = inv.status == 'paid' ? 'Payée' : (inv.status == 'sent' ? 'Envoyée' : (inv.status == 'late' ? 'En retard' : 'Brouillon')) %}
+        <tr data-status="{{ inv.status }}"
+            data-search="{{ (inv.num ~ ' ' ~ inv.client ~ ' ' ~ inv.service)|lower }}"
+            style="border-top:1px solid var(--ec-bd);border-left:{{ inv.status == 'late' ? '3px solid #dc2626' : '3px solid transparent' }};">
+            <td style="padding:12px 12px;"><span style="width:15px;height:15px;border-radius:4px;border:1.5px solid var(--ec-subtle);display:inline-flex;"></span></td>
+            <td style="padding:12px 12px;">
+                <div style="font-size:12px;font-weight:700;font-family:var(--font-mono);">{{ inv.num }}</div>
+                {% if inv.recurring %}
+                <span style="display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:1px 6px;border-radius:4px;background:rgba(37,99,235,.1);color:var(--ec-blue);font-size:9px;font-weight:700;letter-spacing:.03em;">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    RÉCURRENT
+                </span>
+                {% endif %}
+            </td>
+            <td style="padding:12px 12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="ec-avatar ec-avatar-sm ec-av-green">{{ inv.client|split(' ')[0]|first|upper }}{{ inv.client|split(' ')[1]|default('')|first|upper }}</div>
+                    <span style="font-size:12.5px;font-weight:700;">{{ inv.client }}</span>
+                </div>
+            </td>
+            <td style="padding:12px 12px;font-size:12px;color:var(--ec-muted);">{{ inv.service }}</td>
+            <td style="padding:12px 12px;font-size:11.5px;color:var(--ec-muted);">{{ inv.issuedAt|date('d/m') }}</td>
+            <td style="padding:12px 12px;font-size:11.5px;{{ inv.status == 'late' ? 'color:#dc2626;font-weight:700;' : 'color:var(--ec-muted);' }}">{{ inv.dueAt|date('d/m') }}</td>
+            <td style="padding:12px 12px;text-align:right;font-weight:700;font-size:13px;">{{ inv.amount|number_format(0,',',' ') }} €</td>
+            <td style="padding:12px 12px;">
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:{{ stBg }};color:{{ stColor }};font-size:11px;font-weight:700;">
+                    {% if inv.status == 'paid' %}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>{% endif %}
+                    {% if inv.status == 'sent' %}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>{% endif %}
+                    {% if inv.status == 'late' %}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>{% endif %}
+                    {{ stLabel }}
+                </span>
+            </td>
+            <td style="padding:12px 12px;text-align:right;">
+                <div style="display:inline-flex;gap:4px;">
+                    {% if inv.status == 'late' %}
+                    <button type="button" class="ec-btn ec-btn-primary ec-btn-sm">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Relancer
+                    </button>
+                    {% elseif inv.status == 'draft' %}
+                    <button type="button" class="ec-btn ec-btn-primary ec-btn-sm">Finaliser</button>
+                    {% else %}
+                    <button type="button" class="ec-icon-btn" title="Télécharger">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </button>
+                    {% endif %}
+                    <button type="button" class="ec-icon-btn" title="Plus">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    </button>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <div style="display:flex;align-items:center;padding:12px 16px;border-top:2px solid var(--ec-bd);background:#fbfcfd;font-size:12px;font-weight:700;color:var(--ec-muted);">
+        <span style="text-transform:uppercase;letter-spacing:.05em;">Total · {{ invoiceRows|length }} factures</span>
+        <div style="flex:1;"></div>
+        <span style="font-size:14px;color:var(--ec-fg);">{{ invoiceRows|sum(r => r.amount)|number_format(0,',',' ') }} €</span>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+let activeBillingFilter = 'all';
+function filterBilling(btn, status) {
+    activeBillingFilter = status;
+    document.querySelectorAll('.ec-toolbar .ec-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyBillingFilters();
+}
+function searchBilling(q) { applyBillingFilters(q.toLowerCase().trim()); }
+function applyBillingFilters(q) {
+    if (q === undefined) q = '';
+    document.querySelectorAll('#billing-table tbody tr').forEach(row => {
+        let show = activeBillingFilter === 'all' || row.dataset.status === activeBillingFilter;
+        if (show && q) show = (row.dataset.search || '').includes(q);
+        row.style.display = show ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

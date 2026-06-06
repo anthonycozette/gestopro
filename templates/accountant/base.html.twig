@@ -65,7 +65,7 @@
             {% if topbar_pending > 0 %}<span class="ec-nav-badge warn">{{ topbar_pending }}</span>{% endif %}
         </a>
 
-        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item {{ active_nav == 'messages' ? 'active' }}">
+        <a href="{{ path('expert_messages') }}" class="ec-nav-item {{ active_nav == 'messages' ? 'active' }}">
             <span class="ec-nav-icon">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </span>
@@ -82,21 +82,21 @@
 
         <div class="ec-nav-section" style="margin-top:14px;">Pilotage</div>
 
-        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item">
+        <a href="{{ path('expert_stats') }}" class="ec-nav-item {{ active_nav == 'stats' ? 'active' }}">
             <span class="ec-nav-icon">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </span>
             Statistiques
         </a>
 
-        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item">
+        <a href="{{ path('expert_deadlines') }}" class="ec-nav-item {{ active_nav == 'deadlines' ? 'active' }}">
             <span class="ec-nav-icon">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </span>
             Échéances clients
         </a>
 
-        <a href="{{ path('expert_dashboard') }}" class="ec-nav-item">
+        <a href="{{ path('expert_billing') }}" class="ec-nav-item {{ active_nav == 'bill' ? 'active' }}">
             <span class="ec-nav-icon">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             </span>
