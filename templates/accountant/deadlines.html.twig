@@ -82,7 +82,8 @@
     <div style="flex:1;">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);margin-bottom:2px;">Prochaine échéance majeure</div>
         <div style="font-size:12.5px;font-weight:700;">
-            {{ nextBig.client }} — {{ nextBig.label }} · <span style="color:var(--ec-accent);">dans {{ nextBig.daysLeft }} j</span>
+            {% set daysLeft = (nextBig.date|date('U') - 'now'|date('U')) // 86400 %}
+            {{ nextBig.client }} · <span style="color:var(--ec-accent);">{{ nextBig.date|date('d/m/Y') }}{% if daysLeft >= 0 %} (dans {{ daysLeft }} j){% else %} (en retard){% endif %}</span>
         </div>
     </div>
     {% if nextBig.amount > 0 %}
