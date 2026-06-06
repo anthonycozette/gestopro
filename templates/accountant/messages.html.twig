@@ -92,7 +92,7 @@
                         {{ user.firstName }} {{ user.lastName }}
                     </div>
                     {% if last %}
-                    <div style="font-size:9.5px;color:var(--ec-muted);flex-shrink:0;">{{ last.sentAt|date('H:i') }}</div>
+                    <div style="font-size:9.5px;color:var(--ec-muted);flex-shrink:0;">{{ last.createdAt|date('H:i') }}</div>
                     {% endif %}
                 </div>
                 {% if last %}
@@ -146,11 +146,11 @@
         {% else %}
             {% set lastDate = null %}
             {% for msg in active.messages %}
-            {% set msgDate = msg.sentAt|date('d/m/Y') %}
+            {% set msgDate = msg.createdAt|date('d/m/Y') %}
             {% if msgDate != lastDate %}
             <div style="text-align:center;margin:4px 0;">
                 <span style="font-size:10px;color:var(--ec-muted);background:var(--ec-card2);padding:3px 10px;border-radius:999px;border:1px solid var(--ec-bd);">
-                    {% if msgDate == 'now'|date('d/m/Y') %}Aujourd'hui{% elseif msgDate == 'yesterday'|date('d/m/Y') %}Hier{% else %}{{ msg.sentAt|date('d/m') }}{% endif %}
+                    {% if msgDate == 'now'|date('d/m/Y') %}Aujourd'hui{% elseif msgDate == 'yesterday'|date('d/m/Y') %}Hier{% else %}{{ msg.createdAt|date('d/m') }}{% endif %}
                 </span>
             </div>
             {% set lastDate = msgDate %}
@@ -158,7 +158,7 @@
             {% set isMe = msg.senderRole is defined and msg.senderRole == 'accountant' %}
             <div class="{{ isMe ? 'ec-bubble me' : 'ec-bubble them' }}">
                 {{ msg.content }}
-                <div class="ec-bubble-meta">{{ msg.sentAt|date('H:i') }}</div>
+                <div class="ec-bubble-meta">{{ msg.createdAt|date('H:i') }}</div>
             </div>
             {% endfor %}
         {% endif %}
