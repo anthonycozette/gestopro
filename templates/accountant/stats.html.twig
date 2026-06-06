@@ -138,7 +138,9 @@
                 <div style="font-size:10px;color:var(--ec-muted);">Validés</div>
             </div>
             <div style="padding:10px;background:var(--ec-card2);border-radius:8px;text-align:center;">
-                <div style="font-size:18px;font-weight:800;color:var(--ec-warm);">{{ monthlyData|sum(d => d.returned|default(0)) }}</div>
+                {% set totalReturned = 0 %}
+                {% for d in monthlyData %}{% set totalReturned = totalReturned + d.returned|default(0) %}{% endfor %}
+                <div style="font-size:18px;font-weight:800;color:var(--ec-warm);">{{ totalReturned }}</div>
                 <div style="font-size:10px;color:var(--ec-muted);">Retournés</div>
             </div>
         </div>
