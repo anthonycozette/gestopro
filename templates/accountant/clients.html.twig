@@ -302,7 +302,7 @@ function toggleClientMenu(btn, invId, bilanId, msgUrl, detailUrl) {
         { label: 'Fiche client', url: detailUrl, icon: '👤' },
         { label: 'Envoyer un message', url: msgUrl, icon: '💬' },
     ];
-    if (bilanId) items.push({ label: 'Voir le bilan', url: `{{ path('expert_bilan_show', {id: '__ID__'}) }}`.replace('__ID__', bilanId), icon: '📄' });
+    if (bilanId) items.push({ label: 'Voir le bilan', url: '{{ path('expert_bilan_show', {id: 0}) }}'.replace('/0', '/' + bilanId), icon: '📄' });
     items.push(null); // separator
     items.push({ label: 'Inviter de nouveau', url: '{{ path("expert_invite") }}', icon: '✉️' });
     items.forEach(item => {
