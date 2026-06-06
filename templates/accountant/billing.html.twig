@@ -277,7 +277,8 @@
     <div style="display:flex;align-items:center;padding:12px 16px;border-top:2px solid var(--ec-bd);background:#fbfcfd;font-size:12px;font-weight:700;color:var(--ec-muted);">
         <span style="text-transform:uppercase;letter-spacing:.05em;">Total · {{ invoiceRows|length }} factures</span>
         <div style="flex:1;"></div>
-        <span style="font-size:14px;color:var(--ec-fg);">{{ invoiceRows|sum(r => r.amount)|number_format(0,',',' ') }} €</span>
+        {% set totalInvoiced = 0 %}{% for r in invoiceRows %}{% set totalInvoiced = totalInvoiced + r.amount %}{% endfor %}
+        <span style="font-size:14px;color:var(--ec-fg);">{{ totalInvoiced|number_format(0,',',' ') }} €</span>
     </div>
 </section>
 {% endif %}
