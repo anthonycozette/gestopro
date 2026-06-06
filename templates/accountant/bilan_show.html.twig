@@ -214,28 +214,30 @@
 
     {# Toolbar #}
     <div style="display:flex;align-items:center;gap:4px;padding:7px 10px;background:var(--ec-card);border:1px solid var(--ec-bd);border-radius:8px;margin-bottom:14px;">
-        <button class="val-toolbar-btn">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <button class="val-toolbar-btn" onclick="document.body.style.zoom=parseFloat(document.body.style.zoom||1)+.1;this.previousElementSibling&&(this.nextElementSibling.textContent=Math.round((parseFloat(document.body.style.zoom||1))*100)+'%')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             Zoom
         </button>
-        <span style="font-size:11px;color:var(--ec-muted);padding:0 4px;">100 %</span>
+        <span style="font-size:11px;color:var(--ec-muted);padding:0 4px;" id="zoom-pct">100 %</span>
         <div style="width:1px;height:16px;background:var(--ec-bd);margin:0 4px;"></div>
-        <button class="val-toolbar-btn active">
+        {% if not isValidated %}
+        <button class="val-toolbar-btn active" onclick="document.getElementById('annot-form').scrollIntoView({behavior:'smooth'});document.querySelector('#annot-form textarea').focus();">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             Annoter
         </button>
-        <button class="val-toolbar-btn">
+        <button class="val-toolbar-btn" onclick="document.getElementById('form-validate').submit()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             Marquer OK
         </button>
-        <button class="val-toolbar-btn">
+        <button class="val-toolbar-btn" onclick="document.getElementById('msg-form').scrollIntoView({behavior:'smooth'});document.querySelector('#msg-form input[name=content]').focus();">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             Question client
         </button>
+        {% endif %}
         <div style="flex:1;"></div>
         <span style="font-size:10.5px;color:var(--ec-muted);font-family:monospace;padding:0 6px;">Page 1 / 1</span>
         <div style="width:1px;height:16px;background:var(--ec-bd);margin:0 4px;"></div>
-        <button class="val-toolbar-btn">
+        <button class="val-toolbar-btn" onclick="window.print()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Télécharger
         </button>

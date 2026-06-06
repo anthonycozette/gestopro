@@ -8,36 +8,36 @@
 {# ── KPI row ─────────────────────────────────────────────────────── #}
 <div class="ec-kpi-grid">
 
-    <div class="ec-kpi {{ topbar_pending > 0 ? 'alert' }}">
+    <a href="{{ path('expert_queue') }}" class="ec-kpi {{ topbar_pending > 0 ? 'alert' }}" style="text-decoration:none;cursor:pointer;">
         <div class="ec-kpi-label">BILANS À VALIDER</div>
         <div class="ec-kpi-val">{{ topbar_pending }}</div>
         <div class="ec-kpi-sub">{{ topbar_pending == 0 ? 'Aucun en attente' : (topbar_pending == 1 ? '1 bilan en file' : topbar_pending ~ ' bilans en file') }}</div>
-    </div>
+    </a>
 
-    <div class="ec-kpi {{ topbar_msgs > 0 ? 'alert' }}">
+    <a href="{{ path('expert_messages') }}" class="ec-kpi {{ topbar_msgs > 0 ? 'alert' }}" style="text-decoration:none;cursor:pointer;">
         <div class="ec-kpi-label">MESSAGES NON LUS</div>
         <div class="ec-kpi-val">{{ topbar_msgs }}</div>
         <div class="ec-kpi-sub">De vos clients</div>
-    </div>
+    </a>
 
-    <div class="ec-kpi">
+    <a href="{{ path('expert_queue') }}" class="ec-kpi" style="text-decoration:none;cursor:pointer;">
         <div class="ec-kpi-label">VALIDÉS CE MOIS</div>
         <div class="ec-kpi-val">{{ validatedThisMonth }}</div>
         <div class="ec-kpi-sub">Bilans signés</div>
-    </div>
+    </a>
 
-    <div class="ec-kpi">
+    <a href="{{ path('expert_clients') }}" class="ec-kpi" style="text-decoration:none;cursor:pointer;">
         <div class="ec-kpi-label">CLIENTS ACTIFS</div>
         <div class="ec-kpi-val">{{ topbar_clients }}</div>
         <div class="ec-kpi-sub">Portefeuille</div>
-    </div>
+    </a>
 
-    <div class="ec-kpi">
+    <a href="{{ path('expert_stats') }}" class="ec-kpi" style="text-decoration:none;cursor:pointer;">
         <div class="ec-kpi-label">SLA SEMAINE</div>
         {% set sla = topbar_pending == 0 ? 100 : (topbar_pending <= 2 ? 96 : 88) %}
         <div class="ec-kpi-val">{{ sla }} <span style="font-size:16px;color:var(--ec-fg-muted);font-weight:500;">%</span></div>
         <div class="ec-kpi-sub">Taux de traitement</div>
-    </div>
+    </a>
 
 </div>
 

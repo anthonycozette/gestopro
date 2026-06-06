@@ -276,7 +276,8 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     </button>
                     {% endif %}
-                    <button type="button" class="ec-icon-btn" title="Plus d'actions">
+                    <button type="button" class="ec-icon-btn" title="Plus d'actions"
+                        onclick="toggleClientMenu(this,'{{ item.invitation.id }}','{{ item.latestBilan ? item.latestBilan.id : '' }}','{{ path('expert_messages') }}?conv={{ item.invitation.id }}','{{ path('expert_client_detail',{id:item.invitation.id}) }}')">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                     </button>
                 </div>
@@ -292,6 +293,37 @@
 
 {% block javascripts %}
 <script>
+function toggleClientMenu(btn, invId, bilanId, msgUrl, detailUrl) {
+    document.querySelectorAll('.client-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'client-menu';
+    menu.style.cssText = 'position:fixed;background:var(--ec-card);border:1px solid var(--ec-bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);z-index:200;min-width:190px;padding:4px;';
+    const items = [
+        { label: 'Fiche client', url: detailUrl, icon: '👤' },
+        { label: 'Envoyer un message', url: msgUrl, icon: '💬' },
+    ];
+    if (bilanId) items.push({ label: 'Voir le bilan', url: `{{ path('expert_bilan_show', {id: '__ID__'}) }}`.replace('__ID__', bilanId), icon: '📄' });
+    items.push(null); // separator
+    items.push({ label: 'Inviter de nouveau', url: '{{ path("expert_invite") }}', icon: '✉️' });
+    items.forEach(item => {
+        if (!item) { const hr = document.createElement('hr'); hr.style.cssText = 'margin:4px 0;border:none;border-top:1px solid var(--ec-bd);'; menu.appendChild(hr); return; }
+        const a = document.createElement('a');
+        a.href = item.url;
+        a.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ec-fg);text-decoration:none;cursor:pointer;';
+        a.innerHTML = `<span style="font-size:13px;">${item.icon}</span>${item.label}`;
+        a.onmouseenter = () => a.style.background = 'var(--ec-subtle)';
+        a.onmouseleave = () => a.style.background = '';
+        menu.appendChild(a);
+    });
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = (rect.bottom + 4) + 'px';
+    menu.style.right = (window.innerWidth - rect.right) + 'px';
+    document.body.appendChild(menu);
+    setTimeout(() => document.addEventListener('click', function h(e) {
+        if (!menu.contains(e.target) && e.target !== btn) { menu.remove(); document.removeEventListener('click', h); }
+    }), 10);
+}
+
 let activeFilter = 'all';
 
 function filterClients(btn, filter) {

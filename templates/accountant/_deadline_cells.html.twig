@@ -63,12 +63,14 @@
 
 <td style="padding:12px 14px;text-align:right;">
     {% if dl.type == 'bilan' %}
-        <a href="#" class="ec-btn ec-btn-primary ec-btn-sm">Valider</a>
+        <a href="{{ path('expert_queue') }}" class="ec-btn ec-btn-primary ec-btn-sm">Valider</a>
     {% elseif dl.status == 'late' %}
-        <button type="button" class="ec-btn ec-btn-sm" style="border-color:var(--ec-warm);color:var(--ec-warm);">Relancer</button>
+        <a href="{{ path('expert_messages') }}" class="ec-btn ec-btn-sm" style="border-color:var(--ec-warm);color:var(--ec-warm);">Relancer</a>
+    {% elseif dl.status == 'done' %}
+        <span style="font-size:11px;color:var(--ec-accent);font-weight:700;">✓ Fait</span>
     {% else %}
-        <button type="button" class="ec-icon-btn">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-        </button>
+        <a href="{{ path('expert_messages') }}" class="ec-icon-btn" title="Contacter le client">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </a>
     {% endif %}
 </td>
