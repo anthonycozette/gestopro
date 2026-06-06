@@ -166,6 +166,7 @@
 
         <div class="ec-thread-compose">
             <form method="post" action="{{ path('expert_messages_send', {id: active.invitation.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('msg_send_' ~ active.invitation.id) }}">
                 <div class="ec-compose-box">
                     <textarea id="compose-text" rows="2" placeholder="Répondre à {{ active.user.firstName }}…" name="content"></textarea>
                     <div style="display:flex;align-items:center;gap:6px;">
